@@ -1,3 +1,5 @@
+import { apiFetch } from "./http";
+
 const API = import.meta.env.VITE_API_URL || "";
 
 export interface Attachment {
@@ -98,20 +100,20 @@ export interface Task {
 }
 
 export async function fetchMessages(limit = 50, offset = 0) {
-  const r = await fetch(`${API}/api/messages?limit=${limit}&offset=${offset}`);
+  const r = await apiFetch(`${API}/api/messages?limit=${limit}&offset=${offset}`);
   if (!r.ok) throw new Error("Failed to load messages");
   return r.json() as Promise<{ items: Message[]; total: number }>;
 }
 
 export async function fetchTasks(status?: string) {
   const q = status ? `?status=${status}` : "";
-  const r = await fetch(`${API}/api/tasks${q}`);
+  const r = await apiFetch(`${API}/api/tasks${q}`);
   if (!r.ok) throw new Error("Failed to load tasks");
   return r.json() as Promise<{ items: Task[] }>;
 }
 
 export async function updateTask(id: string, patch: Partial<Task>) {
-  const r = await fetch(`${API}/api/tasks/${id}`, {
+  const r = await apiFetch(`${API}/api/tasks/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
@@ -121,20 +123,20 @@ export async function updateTask(id: string, patch: Partial<Task>) {
 }
 
 export async function reprocessMessage(messageId: string): Promise<Task | null> {
-  const r = await fetch(`${API}/api/tasks/reprocess/${messageId}`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/tasks/reprocess/${messageId}`, { method: "POST" });
   if (!r.ok) throw new Error("Не удалось создать задачу");
   const data = await r.json();
   return data as Task | null;
 }
 
 export async function dismissTask(id: string) {
-  const r = await fetch(`${API}/api/tasks/${id}/dismiss`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/tasks/${id}/dismiss`, { method: "POST" });
   if (!r.ok) throw new Error("Dismiss failed");
   return r.json() as Promise<Task>;
 }
 
 export async function pushTask(id: string, provider: string) {
-  const r = await fetch(`${API}/api/tasks/${id}/push/${provider}`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/tasks/${id}/push/${provider}`, { method: "POST" });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
     throw new Error((err as { detail?: string }).detail || "Push failed");

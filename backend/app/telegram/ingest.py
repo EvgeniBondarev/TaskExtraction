@@ -9,7 +9,9 @@ from sqlalchemy.orm.attributes import flag_modified
 from telethon.tl.types import User
 
 from app.config import get_settings
-from app.database import async_session_factory
+from app.tenancy.context import require_current_tenant
+from app.tenancy.media import effective_media_dir
+from app.tenancy.registry import tenant_session
 from app.extraction.pipeline import process_message
 from app.models.entities import Chat, Message, Task, TelegramProfile
 from app.services import chat_sync, telegram_auth
@@ -99,8 +101,8 @@ async def store_message(
     if tg_message.reply_to and tg_message.reply_to.reply_to_msg_id:
         reply_to = tg_message.reply_to.reply_to_msg_id
 
-    settings = get_settings()
-    os.makedirs(settings.media_dir, exist_ok=True)
+    media_dir = effective_media_dir()
+    os.makedirs(media_dir, exist_ok=True)
 
     msg = Message(
         chat_id=chat.id,
@@ -121,15 +123,14 @@ async def store_message(
     await session.flush()
 
     try:
-        prepared = await download_message_attachments(client, tg_message, settings.media_dir)
+        prepared = await download_message_attachments(client, tg_message, media_dir)
         if prepared:
             rows = persist_attachments(session, msg, prepared)
             await session.flush()
             if rows and rows[0].stored_path:
-                from app.config import get_settings as _gs
                 from app.utils.telegram_attachments import attachment_abs_path as _abs
 
-                msg.media_path = _abs(_gs().media_dir, rows[0].stored_path)
+                msg.media_path = _abs(media_dir, rows[0].stored_path)
     except Exception:
         logger.exception("Attachment save failed for message %s", msg.id)
 
@@ -171,13 +172,13 @@ async def _broadcast(payload: dict) -> None:
     if not _ws_broadcast:
         return
     try:
-        await _ws_broadcast(payload)
+        await _ws_broadcast(payload, require_current_tenant())
     except Exception:
         logger.exception("WebSocket broadcast failed for message %s", payload.get("message_id"))
 
 
 async def _mark_classification_error(message_id: UUID, reason: str) -> None:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         msg = await session.get(Message, message_id)
         if not msg:
             return
@@ -201,7 +202,7 @@ async def handle_new_message(tg_message):
             return
 
     message_id: UUID | None = None
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         chat = await ensure_chat(session, telegram_chat_id)
         if not chat:
             return
@@ -219,7 +220,7 @@ async def handle_new_message(tg_message):
     task_id = None
     task_payload = None
     try:
-        async with async_session_factory() as session:
+        async with tenant_session() as session:
             result = await process_message(session, message_id)
             if isinstance(result, Task):
                 task_id = str(result.id)
@@ -229,7 +230,7 @@ async def handle_new_message(tg_message):
         logger.exception("Pipeline failed for message %s", message_id)
         await _mark_classification_error(message_id, str(exc))
 
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         msg = await session.get(Message, message_id)
         chat = await session.get(Chat, msg.chat_id) if msg else None
         profile = None
@@ -263,7 +264,7 @@ async def backfill_history(limit: int = 100):
         raise ValueError("No monitored chats configured")
 
     client = await telegram_auth.get_client()
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         for telegram_chat_id in monitored:
             chat = await ensure_chat(session, telegram_chat_id)
             if not chat:

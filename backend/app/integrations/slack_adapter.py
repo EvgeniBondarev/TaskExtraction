@@ -1,6 +1,6 @@
 """Slack adapter — posts task notifications to a channel."""
 
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.integrations.base import ExternalRef
 from app.models.entities import Task
 from app.services.slack_sync import load_task_for_slack, push_task_to_slack
@@ -10,7 +10,7 @@ class SlackAdapter:
     provider = "slack"
 
     async def create_issue(self, task: Task, telegram_link: str | None = None) -> ExternalRef:
-        async with async_session_factory() as session:
+        async with tenant_session() as session:
             loaded = await load_task_for_slack(session, task.id)
             if not loaded:
                 raise ValueError("Task not found")

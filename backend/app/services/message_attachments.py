@@ -39,21 +39,24 @@ def message_has_attachments(message: Message) -> bool:
         return len(attachments) > 0
     if not message.media_path:
         return False
-    settings = get_settings()
     if os.path.isabs(message.media_path):
         return os.path.isfile(message.media_path)
-    return bool(attachment_abs_path(settings.media_dir, message.media_path))
+    from app.tenancy.media import effective_media_dir
+
+    return bool(attachment_abs_path(effective_media_dir(), message.media_path))
 
 
 def primary_media_path(message: Message) -> str | None:
     attachments = getattr(message, "attachments", None) or []
     for att in attachments:
         if att.stored_path:
-            settings = get_settings()
-            return attachment_abs_path(settings.media_dir, att.stored_path)
+            from app.tenancy.media import effective_media_dir
+
+            return attachment_abs_path(effective_media_dir(), att.stored_path)
     if message.media_path:
-        settings = get_settings()
+        from app.tenancy.media import effective_media_dir
+
         if os.path.isabs(message.media_path):
             return message.media_path
-        return attachment_abs_path(settings.media_dir, message.media_path)
+        return attachment_abs_path(effective_media_dir(), message.media_path)
     return None

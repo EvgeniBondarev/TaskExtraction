@@ -5,7 +5,7 @@ from typing import Literal
 import httpx
 from sqlalchemy import select
 
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.models.entities import LlmConfig
 from app.secrets.builtin_openrouter import (
     DEFAULT_MODEL,
@@ -49,7 +49,7 @@ def mask_api_key(api_key: str) -> str:
 
 
 async def _get_row() -> LlmConfig | None:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(LlmConfig).where(LlmConfig.id == CONFIG_ID))
         return result.scalar_one_or_none()
 
@@ -121,7 +121,7 @@ async def save_user_llm_settings(
         if not (row and row.user_api_key_encrypted):
             raise ValueError("Свою модель можно указать только вместе с вашим API-ключом")
 
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(LlmConfig).where(LlmConfig.id == CONFIG_ID))
         row = result.scalar_one_or_none()
         if not row:

@@ -128,7 +128,9 @@ async def push_task_to_jira(session: AsyncSession, task: Task) -> ExternalLink |
         for att_row in _iter_attachment_rows(task):
             if not att_row.stored_path or att_row.kind == "link":
                 continue
-            path = attachment_abs_path(settings.media_dir, att_row.stored_path)
+            from app.tenancy.media import effective_media_dir
+
+            path = attachment_abs_path(effective_media_dir(), att_row.stored_path)
             if path and os.path.isfile(path):
                 try:
                     await client.add_attachment(

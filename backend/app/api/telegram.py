@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.schemas.telegram import (
     PhoneSendIn,
@@ -14,6 +14,8 @@ from app.schemas.telegram import (
     TelegramStatusOut,
 )
 from app.services import telegram_auth
+from app.tenancy import ensure_tenant, set_current_tenant, set_session_tenant
+from app.tenancy.context import reset_current_tenant
 from app.utils.crypto import encryption_configured
 
 logger = logging.getLogger(__name__)
@@ -68,7 +70,11 @@ async def setup_required():
 
 
 @router.post("/credentials", response_model=TelegramCredentialsOut)
-async def save_credentials(body: TelegramCredentialsIn):
+async def save_credentials(body: TelegramCredentialsIn, request: Request):
+    tenant_key = str(body.api_id)
+    ensure_tenant(tenant_key)
+    set_session_tenant(request, tenant_key)
+    token = set_current_tenant(tenant_key)
     try:
         await telegram_auth.save_credentials(
             api_id=body.api_id,
@@ -82,6 +88,9 @@ async def save_credentials(body: TelegramCredentialsIn):
     except Exception as e:
         logger.exception("save_credentials failed")
         raise HTTPException(500, "Ошибка сохранения ключей Telegram") from e
+    finally:
+        if token is not None:
+            reset_current_tenant(token)
     return TelegramCredentialsOut(
         api_id=body.api_id,
         api_hash_masked=_mask_hash(body.api_hash),
@@ -176,7 +185,10 @@ async def logout():
 
 
 @router.post("/reset")
-async def reset_all():
-    """Delete API keys and session."""
+async def reset_all(request: Request):
+    """Delete API keys and session for current tenant."""
+    from app.tenancy import clear_session_tenant
+
     await telegram_auth.clear_all()
+    clear_session_tenant(request)
     return {"ok": True, "message": "Все данные Telegram удалены из БД."}

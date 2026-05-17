@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "../http";
 
 export interface JiraStatus {
   base_url: string | null;
@@ -52,13 +53,13 @@ async function parseError(r: Response): Promise<string> {
 }
 
 export async function fetchJiraStatus(): Promise<JiraStatus> {
-  const r = await fetch(`${API}/api/integrations/jira/status`);
+  const r = await apiFetch(`${API}/api/integrations/jira/status`);
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
 
 export async function saveJiraSettings(body: Record<string, unknown>): Promise<JiraStatus> {
-  const r = await fetch(`${API}/api/integrations/jira/settings`, {
+  const r = await apiFetch(`${API}/api/integrations/jira/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -68,7 +69,7 @@ export async function saveJiraSettings(body: Record<string, unknown>): Promise<J
 }
 
 export async function testJiraConnection(creds?: JiraCredentials): Promise<JiraTestResult> {
-  const r = await fetch(`${API}/api/integrations/jira/test`, {
+  const r = await apiFetch(`${API}/api/integrations/jira/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),
@@ -78,7 +79,7 @@ export async function testJiraConnection(creds?: JiraCredentials): Promise<JiraT
 }
 
 export async function fetchJiraProjects(creds?: JiraCredentials): Promise<JiraProject[]> {
-  const r = await fetch(`${API}/api/integrations/jira/projects`, {
+  const r = await apiFetch(`${API}/api/integrations/jira/projects`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),
@@ -91,7 +92,7 @@ export async function fetchJiraIssueTypes(
   projectKey: string,
   creds?: JiraCredentials
 ): Promise<JiraIssueType[]> {
-  const r = await fetch(`${API}/api/integrations/jira/projects/${encodeURIComponent(projectKey)}/issuetypes`, {
+  const r = await apiFetch(`${API}/api/integrations/jira/projects/${encodeURIComponent(projectKey)}/issuetypes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),

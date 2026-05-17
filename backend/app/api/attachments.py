@@ -44,8 +44,9 @@ async def download_attachment_file(
     if not att or not att.stored_path:
         raise HTTPException(404, "File not found")
 
-    settings = get_settings()
-    path = attachment_abs_path(settings.media_dir, att.stored_path)
+    from app.tenancy.media import effective_media_dir
+
+    path = attachment_abs_path(effective_media_dir(), att.stored_path)
     if not path:
         raise HTTPException(404, "File not found on disk")
 

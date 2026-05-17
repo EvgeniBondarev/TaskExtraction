@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "../http";
 
 export interface TrelloStatus {
   api_key: string | null;
@@ -50,13 +51,13 @@ async function parseError(r: Response): Promise<string> {
 }
 
 export async function fetchTrelloStatus(): Promise<TrelloStatus> {
-  const r = await fetch(`${API}/api/integrations/trello/status`);
+  const r = await apiFetch(`${API}/api/integrations/trello/status`);
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
 
 export async function saveTrelloSettings(body: Record<string, unknown>): Promise<TrelloStatus> {
-  const r = await fetch(`${API}/api/integrations/trello/settings`, {
+  const r = await apiFetch(`${API}/api/integrations/trello/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -66,7 +67,7 @@ export async function saveTrelloSettings(body: Record<string, unknown>): Promise
 }
 
 export async function testTrelloConnection(creds?: TrelloCredentials): Promise<TrelloTestResult> {
-  const r = await fetch(`${API}/api/integrations/trello/test`, {
+  const r = await apiFetch(`${API}/api/integrations/trello/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),
@@ -76,7 +77,7 @@ export async function testTrelloConnection(creds?: TrelloCredentials): Promise<T
 }
 
 export async function fetchTrelloBoards(creds?: TrelloCredentials): Promise<TrelloBoard[]> {
-  const r = await fetch(`${API}/api/integrations/trello/boards`, {
+  const r = await apiFetch(`${API}/api/integrations/trello/boards`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),
@@ -89,7 +90,7 @@ export async function fetchTrelloLists(
   boardId: string,
   creds?: TrelloCredentials
 ): Promise<TrelloList[]> {
-  const r = await fetch(`${API}/api/integrations/trello/boards/${encodeURIComponent(boardId)}/lists`, {
+  const r = await apiFetch(`${API}/api/integrations/trello/boards/${encodeURIComponent(boardId)}/lists`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),

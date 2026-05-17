@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 def _avatars_dir() -> str:
-    settings = get_settings()
-    path = os.path.join(settings.media_dir, "avatars", "users")
+    from app.tenancy.media import effective_media_dir
+
+    path = os.path.join(effective_media_dir(), "avatars", "users")
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -24,8 +25,9 @@ async def ensure_chat_avatar(session: AsyncSession, client, chat: Chat, telegram
         return
     try:
         entity = await client.get_entity(telegram_chat_id)
-        settings = get_settings()
-        avatars_dir = os.path.join(settings.media_dir, "avatars")
+        from app.tenancy.media import effective_media_dir
+
+        avatars_dir = os.path.join(effective_media_dir(), "avatars")
         os.makedirs(avatars_dir, exist_ok=True)
         dest = os.path.join(avatars_dir, f"{telegram_chat_id}.jpg")
         path = await client.download_profile_photo(entity, file=dest)

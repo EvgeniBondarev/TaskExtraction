@@ -8,7 +8,7 @@ from telethon.tl.types import Channel, Chat as TgChat, User
 from telethon.utils import get_peer_id
 
 from app.config import get_settings
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.models.entities import Chat
 from app.services import telegram_auth
 from app.utils.telegram_ids import normalize_telegram_chat_id
@@ -41,7 +41,9 @@ def _dialog_title(dialog) -> str:
 
 async def _download_avatar(client, entity, telegram_chat_id: int) -> str | None:
     settings = get_settings()
-    avatars_dir = os.path.join(settings.media_dir, "avatars")
+    from app.tenancy.media import effective_media_dir
+
+    avatars_dir = os.path.join(effective_media_dir(), "avatars")
     os.makedirs(avatars_dir, exist_ok=True)
     dest = os.path.join(avatars_dir, f"{telegram_chat_id}.jpg")
     try:
@@ -81,11 +83,11 @@ async def sync_dialogs(limit: int = 300) -> list[Chat]:
     client = await telegram_auth.get_client()
     synced: list[Chat] = []
 
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         await _migrate_legacy_monitor(session)
         await session.commit()
 
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         existing = {
             c.telegram_chat_id: c
             for c in (await session.execute(select(Chat))).scalars().all()
@@ -146,7 +148,7 @@ async def sync_dialogs(limit: int = 300) -> list[Chat]:
 
 
 async def get_monitored_telegram_ids() -> list[int]:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(
             select(Chat.telegram_chat_id).where(Chat.is_monitored.is_(True))
         )
@@ -154,7 +156,7 @@ async def get_monitored_telegram_ids() -> list[int]:
 
 
 async def get_chat_status() -> dict:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         total = await session.scalar(select(func.count()).select_from(Chat)) or 0
         monitored = (
             await session.scalar(
@@ -171,7 +173,7 @@ async def get_chat_status() -> dict:
 
 async def set_monitored_chats(telegram_chat_ids: list[int]) -> list[Chat]:
     ids_set = {normalize_telegram_chat_id(i) for i in telegram_chat_ids}
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         await session.execute(update(Chat).values(is_monitored=False))
         if ids_set:
             result = await session.execute(
@@ -198,7 +200,7 @@ async def set_monitored_chats(telegram_chat_ids: list[int]) -> list[Chat]:
 
 
 async def list_chats(monitored_only: bool = False) -> tuple[list[Chat], int, int]:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         q = select(Chat).order_by(Chat.title.nulls_last(), Chat.created_at.desc())
         if monitored_only:
             q = q.where(Chat.is_monitored.is_(True))
@@ -213,6 +215,6 @@ async def list_chats(monitored_only: bool = False) -> tuple[list[Chat], int, int
 
 
 async def get_chat_by_id(chat_uuid) -> Chat | None:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(Chat).where(Chat.id == chat_uuid))
         return result.scalar_one_or_none()

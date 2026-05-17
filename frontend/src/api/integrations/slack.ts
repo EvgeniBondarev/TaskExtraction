@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "../http";
 
 export interface SlackStatus {
   has_token: boolean;
@@ -44,13 +45,13 @@ async function parseError(r: Response): Promise<string> {
 }
 
 export async function fetchSlackStatus(): Promise<SlackStatus> {
-  const r = await fetch(`${API}/api/integrations/slack/status`);
+  const r = await apiFetch(`${API}/api/integrations/slack/status`);
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
 
 export async function saveSlackSettings(body: Record<string, unknown>): Promise<SlackStatus> {
-  const r = await fetch(`${API}/api/integrations/slack/settings`, {
+  const r = await apiFetch(`${API}/api/integrations/slack/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -60,7 +61,7 @@ export async function saveSlackSettings(body: Record<string, unknown>): Promise<
 }
 
 export async function testSlackConnection(creds?: SlackCredentials): Promise<SlackTestResult> {
-  const r = await fetch(`${API}/api/integrations/slack/test`, {
+  const r = await apiFetch(`${API}/api/integrations/slack/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),
@@ -70,7 +71,7 @@ export async function testSlackConnection(creds?: SlackCredentials): Promise<Sla
 }
 
 export async function fetchSlackChannels(creds?: SlackCredentials): Promise<SlackChannel[]> {
-  const r = await fetch(`${API}/api/integrations/slack/channels`, {
+  const r = await apiFetch(`${API}/api/integrations/slack/channels`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),

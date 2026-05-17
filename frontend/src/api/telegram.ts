@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "./http";
 
 export const MY_TELEGRAM_APPS_URL = "https://my.telegram.org/apps";
 
@@ -19,7 +20,7 @@ export interface TelegramStatus {
 }
 
 export async function fetchTelegramStatus(): Promise<TelegramStatus> {
-  const r = await fetch(`${API}/api/telegram/status`);
+  const r = await apiFetch(`${API}/api/telegram/status`);
   if (!r.ok) throw new Error("Failed to load status");
   return r.json();
 }
@@ -31,7 +32,7 @@ export async function saveTelegramCredentials(body: {
   app_title?: string;
   app_short_name?: string;
 }) {
-  const r = await fetch(`${API}/api/telegram/credentials`, {
+  const r = await apiFetch(`${API}/api/telegram/credentials`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -46,7 +47,7 @@ export async function saveTelegramCredentials(body: {
 }
 
 export async function startQrLogin() {
-  const r = await fetch(`${API}/api/telegram/auth/qr/start`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/telegram/auth/qr/start`, { method: "POST" });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
     throw new Error((err as { detail?: string }).detail || "QR start failed");
@@ -61,7 +62,7 @@ export async function startQrLogin() {
 }
 
 export async function refreshQrLogin(loginId: string) {
-  const r = await fetch(`${API}/api/telegram/auth/qr/refresh/${loginId}`, {
+  const r = await apiFetch(`${API}/api/telegram/auth/qr/refresh/${loginId}`, {
     method: "POST",
   });
   if (!r.ok) {
@@ -76,7 +77,7 @@ export async function refreshQrLogin(loginId: string) {
 }
 
 export async function getQrStatus(loginId: string) {
-  const r = await fetch(`${API}/api/telegram/auth/qr/status/${loginId}`);
+  const r = await apiFetch(`${API}/api/telegram/auth/qr/status/${loginId}`);
   if (!r.ok) throw new Error("Status check failed");
   return r.json() as Promise<{
     status: string;
@@ -111,7 +112,7 @@ export function pollQrStatus(
 }
 
 export async function sendPhoneCode(phone: string) {
-  const r = await fetch(`${API}/api/telegram/auth/phone/send`, {
+  const r = await apiFetch(`${API}/api/telegram/auth/phone/send`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone }),
@@ -134,7 +135,7 @@ export async function verifyPhoneCode(
   code: string,
   password?: string
 ) {
-  const r = await fetch(`${API}/api/telegram/auth/phone/verify`, {
+  const r = await apiFetch(`${API}/api/telegram/auth/phone/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ login_id: loginId, code, password: password || undefined }),
@@ -151,7 +152,7 @@ export async function verifyPhoneCode(
 }
 
 export async function fetchTelegramCredentials() {
-  const r = await fetch(`${API}/api/telegram/credentials`);
+  const r = await apiFetch(`${API}/api/telegram/credentials`);
   if (r.status === 404 || r.status === 204) return null;
   if (!r.ok) throw new Error("Failed to load credentials");
   const text = await r.text();
@@ -165,13 +166,13 @@ export async function fetchTelegramCredentials() {
 }
 
 export async function logoutTelegram() {
-  const r = await fetch(`${API}/api/telegram/auth/logout`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/telegram/auth/logout`, { method: "POST" });
   if (!r.ok) throw new Error("Logout failed");
   return r.json() as Promise<{ ok: boolean; message?: string }>;
 }
 
 export async function resetTelegramAll() {
-  const r = await fetch(`${API}/api/telegram/reset`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/telegram/reset`, { method: "POST" });
   if (!r.ok) throw new Error("Reset failed");
   return r.json();
 }

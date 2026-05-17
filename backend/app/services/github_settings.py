@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.models.entities import GitHubConfig
 from app.utils.crypto import decrypt_str, encrypt_str
 
@@ -28,7 +28,7 @@ class GitHubConfigDTO:
 
 
 async def _get_row() -> GitHubConfig | None:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(GitHubConfig).where(GitHubConfig.id == CONFIG_ID))
         return result.scalar_one_or_none()
 
@@ -116,7 +116,7 @@ async def save_github_settings(
     include_message_links: bool | None = None,
     use_type_labels: bool | None = None,
 ) -> GitHubConfigDTO:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         row = await _ensure_row(session)
         if owner is not None:
             row.owner = owner.strip() if owner else None

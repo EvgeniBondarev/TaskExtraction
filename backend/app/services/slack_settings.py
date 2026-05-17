@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.models.entities import SlackConfig
 from app.utils.crypto import decrypt_str, encrypt_str
 
@@ -28,7 +28,7 @@ class SlackConfigDTO:
 
 
 async def _get_row() -> SlackConfig | None:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(SlackConfig).where(SlackConfig.id == CONFIG_ID))
         return result.scalar_one_or_none()
 
@@ -109,7 +109,7 @@ async def save_slack_settings(
     include_message_links: bool | None = None,
     mention_channel: bool | None = None,
 ) -> SlackConfigDTO:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         row = await _ensure_row(session)
         if bot_token:
             row.bot_token_encrypted = encrypt_str(bot_token.strip())

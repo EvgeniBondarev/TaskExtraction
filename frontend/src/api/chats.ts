@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "./http";
 
 export interface ChatItem {
   id: string;
@@ -20,7 +21,7 @@ export interface ChatsStatus {
 }
 
 export async function fetchChatsStatus(): Promise<ChatsStatus> {
-  const r = await fetch(`${API}/api/chats/status`);
+  const r = await apiFetch(`${API}/api/chats/status`);
   if (!r.ok) throw new Error("Failed to load chat status");
   return r.json();
 }
@@ -31,13 +32,13 @@ export async function fetchChats(monitoredOnly = false): Promise<{
   monitored_count: number;
 }> {
   const q = monitoredOnly ? "?monitored_only=true" : "";
-  const r = await fetch(`${API}/api/chats${q}`);
+  const r = await apiFetch(`${API}/api/chats${q}`);
   if (!r.ok) throw new Error("Failed to load chats");
   return r.json();
 }
 
 export async function syncTelegramChats(): Promise<{ synced: number; items: ChatItem[] }> {
-  const r = await fetch(`${API}/api/chats/sync`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/chats/sync`, { method: "POST" });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
     throw new Error((err as { detail?: string }).detail || "Sync failed");
@@ -46,7 +47,7 @@ export async function syncTelegramChats(): Promise<{ synced: number; items: Chat
 }
 
 export async function saveChatSelection(telegramChatIds: number[]): Promise<void> {
-  const r = await fetch(`${API}/api/chats/selection`, {
+  const r = await apiFetch(`${API}/api/chats/selection`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ telegram_chat_ids: telegramChatIds }),

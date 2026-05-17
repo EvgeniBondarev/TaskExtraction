@@ -8,31 +8,49 @@ ensure_encryption_key()
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.requests import Request
 
 from app.api import api_router
 from app.config import get_settings
 from app.telegram.ingest import set_ws_broadcast
 from app.telegram.listener import run_ingest_loop
+from app.tenancy import (
+    get_session_tenant,
+    is_public_path,
+    migrate_legacy_installation,
+    require_session_tenant,
+    reset_current_tenant,
+    session_secret,
+    set_current_tenant,
+)
+from app.tenancy.http import tenant_from_session_cookie
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_ws_clients: set[WebSocket] = set()
+_ws_clients: dict[WebSocket, str] = {}
 
 
-async def _broadcast_ws(payload: dict):
-    dead = []
-    for ws in _ws_clients:
+async def _broadcast_ws(payload: dict, tenant_key: str):
+    dead: list[WebSocket] = []
+    for ws, ws_tenant in _ws_clients.items():
+        if ws_tenant != tenant_key:
+            continue
         try:
             await ws.send_json(payload)
         except Exception:
             dead.append(ws)
     for ws in dead:
-        _ws_clients.discard(ws)
+        _ws_clients.pop(ws, None)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    migrated = migrate_legacy_installation()
+    if migrated:
+        logger.info("Legacy data migrated to tenant api_id=%s", migrated)
     set_ws_broadcast(_broadcast_ws)
     ingest_task = asyncio.create_task(run_ingest_loop())
     yield
@@ -43,9 +61,17 @@ async def lifespan(app: FastAPI):
         pass
 
 
-app = FastAPI(title="TaskExtraction", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="TaskExtraction", version="0.2.0", lifespan=lifespan)
 settings = get_settings()
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_secret(),
+    session_cookie="te_session",
+    max_age=60 * 60 * 24 * 30,
+    same_site="lax",
+    https_only=False,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -53,6 +79,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def tenant_isolation_middleware(request: Request, call_next):
+    path = request.url.path
+    if is_public_path(path, request.method):
+        tenant = get_session_tenant(request)
+        token = None
+        if tenant:
+            token = set_current_tenant(tenant)
+        try:
+            return await call_next(request)
+        finally:
+            if token is not None:
+                reset_current_tenant(token)
+
+    from fastapi import HTTPException
+
+    try:
+        tenant = require_session_tenant(request)
+    except HTTPException as exc:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    token = set_current_tenant(tenant)
+    try:
+        return await call_next(request)
+    finally:
+        reset_current_tenant(token)
+
 
 app.include_router(api_router)
 
@@ -66,12 +121,19 @@ async def root_health():
 
 @app.websocket("/ws/messages")
 async def ws_messages(websocket: WebSocket):
+    tenant = tenant_from_session_cookie(websocket.cookies.get("te_session"))
+    if not tenant:
+        await websocket.close(code=4401)
+        return
+
     await websocket.accept()
-    _ws_clients.add(websocket)
+    _ws_clients[websocket] = str(tenant)
+    token = set_current_tenant(str(tenant))
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         pass
     finally:
-        _ws_clients.discard(websocket)
+        _ws_clients.pop(websocket, None)
+        reset_current_tenant(token)

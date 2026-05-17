@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "./http";
 
 export interface LlmStatus {
   provider: string;
@@ -14,7 +15,7 @@ export interface LlmStatus {
 }
 
 export async function fetchLlmStatus(): Promise<LlmStatus> {
-  const r = await fetch(`${API}/api/llm/status`);
+  const r = await apiFetch(`${API}/api/llm/status`);
   if (!r.ok) throw new Error("Failed to load LLM settings");
   return r.json();
 }
@@ -32,7 +33,7 @@ export async function testLlmSettings(body?: {
   api_key?: string;
   model?: string;
 }): Promise<LlmTestResult> {
-  const r = await fetch(`${API}/api/llm/test`, {
+  const r = await apiFetch(`${API}/api/llm/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body ?? {}),
@@ -54,13 +55,13 @@ export interface PromptSettings {
 }
 
 export async function fetchPromptSettings(): Promise<PromptSettings> {
-  const r = await fetch(`${API}/api/llm/prompts`);
+  const r = await apiFetch(`${API}/api/llm/prompts`);
   if (!r.ok) throw new Error("Failed to load prompts");
   return r.json();
 }
 
 export async function savePromptSettings(body: Partial<PromptSettings>): Promise<PromptSettings> {
-  const r = await fetch(`${API}/api/llm/prompts`, {
+  const r = await apiFetch(`${API}/api/llm/prompts`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -73,7 +74,7 @@ export async function savePromptSettings(body: Partial<PromptSettings>): Promise
 }
 
 export async function resetPromptSettings(): Promise<PromptSettings> {
-  const r = await fetch(`${API}/api/llm/prompts/reset`, { method: "POST" });
+  const r = await apiFetch(`${API}/api/llm/prompts/reset`, { method: "POST" });
   if (!r.ok) throw new Error("Reset failed");
   return r.json();
 }
@@ -83,7 +84,7 @@ export async function saveLlmSettings(body: {
   model?: string;
   clear_user_key?: boolean;
 }): Promise<LlmStatus> {
-  const r = await fetch(`${API}/api/llm/settings`, {
+  const r = await apiFetch(`${API}/api/llm/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

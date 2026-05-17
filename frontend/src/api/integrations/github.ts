@@ -1,4 +1,5 @@
 const API = import.meta.env.VITE_API_URL || "";
+import { apiFetch } from "../http";
 
 export interface GitHubStatus {
   owner: string | null;
@@ -43,13 +44,13 @@ async function parseError(r: Response): Promise<string> {
 }
 
 export async function fetchGitHubStatus(): Promise<GitHubStatus> {
-  const r = await fetch(`${API}/api/integrations/github/status`);
+  const r = await apiFetch(`${API}/api/integrations/github/status`);
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
 
 export async function saveGitHubSettings(body: Record<string, unknown>): Promise<GitHubStatus> {
-  const r = await fetch(`${API}/api/integrations/github/settings`, {
+  const r = await apiFetch(`${API}/api/integrations/github/settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -59,7 +60,7 @@ export async function saveGitHubSettings(body: Record<string, unknown>): Promise
 }
 
 export async function testGitHubConnection(creds?: GitHubCredentials): Promise<GitHubTestResult> {
-  const r = await fetch(`${API}/api/integrations/github/test`, {
+  const r = await apiFetch(`${API}/api/integrations/github/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),
@@ -69,7 +70,7 @@ export async function testGitHubConnection(creds?: GitHubCredentials): Promise<G
 }
 
 export async function fetchGitHubLabels(creds?: GitHubCredentials): Promise<GitHubLabel[]> {
-  const r = await fetch(`${API}/api/integrations/github/labels`, {
+  const r = await apiFetch(`${API}/api/integrations/github/labels`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(creds || {}),

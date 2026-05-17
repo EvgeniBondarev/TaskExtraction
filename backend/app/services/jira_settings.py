@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.models.entities import JiraConfig
 from app.utils.crypto import decrypt_str, encrypt_str
 
@@ -37,7 +37,7 @@ def mask_token(token: str) -> str:
 
 
 async def _get_row() -> JiraConfig | None:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(JiraConfig).where(JiraConfig.id == CONFIG_ID))
         return result.scalar_one_or_none()
 
@@ -122,7 +122,7 @@ async def save_jira_settings(
     include_media: bool | None = None,
     include_message_links: bool | None = None,
 ) -> JiraConfigDTO:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         row = await _ensure_row(session)
         if base_url is not None:
             row.base_url = base_url.strip().rstrip("/") if base_url else None

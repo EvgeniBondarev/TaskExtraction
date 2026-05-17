@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
-from app.database import async_session_factory
+from app.tenancy.registry import tenant_session
 from app.extraction.prompts import (
     DEFAULT_CLASSIFIER_SYSTEM,
     DEFAULT_EXTRACTOR_SYSTEM,
@@ -23,7 +23,7 @@ class PromptConfig:
 
 
 async def get_prompt_config() -> PromptConfig:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(LlmConfig).where(LlmConfig.id == CONFIG_ID))
         row = result.scalar_one_or_none()
 
@@ -53,7 +53,7 @@ async def save_prompt_config(
     confidence_threshold: float | None = None,
     review_threshold: float | None = None,
 ) -> PromptConfig:
-    async with async_session_factory() as session:
+    async with tenant_session() as session:
         result = await session.execute(select(LlmConfig).where(LlmConfig.id == CONFIG_ID))
         row = result.scalar_one_or_none()
         if not row:
