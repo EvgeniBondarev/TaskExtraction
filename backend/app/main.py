@@ -9,6 +9,7 @@ ensure_encryption_key()
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 
@@ -64,6 +65,45 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="TaskExtraction", version="0.2.0", lifespan=lifespan)
 settings = get_settings()
 
+
+class TenantIsolationMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if is_public_path(path, request.method):
+            tenant = get_session_tenant(request)
+            token = None
+            if tenant:
+                token = set_current_tenant(tenant)
+            try:
+                return await call_next(request)
+            finally:
+                if token is not None:
+                    reset_current_tenant(token)
+
+        from fastapi import HTTPException
+
+        try:
+            tenant = require_session_tenant(request)
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+        token = set_current_tenant(tenant)
+        try:
+            return await call_next(request)
+        finally:
+            reset_current_tenant(token)
+
+
+# Порядок: последний add_middleware выполняется первым на входящий запрос.
+# SessionMiddleware должен быть снаружи, чтобы request.session был доступен в TenantIsolationMiddleware.
+app.add_middleware(TenantIsolationMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(
     SessionMiddleware,
     secret_key=session_secret(),
@@ -72,41 +112,6 @@ app.add_middleware(
     same_site="lax",
     https_only=False,
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.middleware("http")
-async def tenant_isolation_middleware(request: Request, call_next):
-    path = request.url.path
-    if is_public_path(path, request.method):
-        tenant = get_session_tenant(request)
-        token = None
-        if tenant:
-            token = set_current_tenant(tenant)
-        try:
-            return await call_next(request)
-        finally:
-            if token is not None:
-                reset_current_tenant(token)
-
-    from fastapi import HTTPException
-
-    try:
-        tenant = require_session_tenant(request)
-    except HTTPException as exc:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
-    token = set_current_tenant(tenant)
-    try:
-        return await call_next(request)
-    finally:
-        reset_current_tenant(token)
 
 
 app.include_router(api_router)

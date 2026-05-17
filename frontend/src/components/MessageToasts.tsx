@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { WsMessagePayload } from "../api";
 import { MessageAvatar } from "./MessageAvatar";
 
@@ -10,10 +11,12 @@ interface Props {
   onOpen: (item: ToastItem) => void;
 }
 
-const AUTO_CLOSE_MS = 5500;
+const AUTO_CLOSE_MS = 8000;
 
 export function MessageToasts({ items, onDismiss, onOpen }: Props) {
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div className="toast-stack" aria-live="polite">
       {items.map((t) => (
         <ToastCard key={t.id} item={t} onDismiss={onDismiss} onOpen={onOpen} />
@@ -23,7 +26,7 @@ export function MessageToasts({ items, onDismiss, onOpen }: Props) {
           position: fixed;
           top: 1rem;
           right: 1rem;
-          z-index: 1000;
+          z-index: 10000;
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
@@ -31,7 +34,8 @@ export function MessageToasts({ items, onDismiss, onOpen }: Props) {
           pointer-events: none;
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -58,46 +62,90 @@ function ToastCard({
   const subtitle = item.chat_title && item.user_display_name ? item.chat_title : null;
 
   return (
-    <button
-      type="button"
+    <div
       className={`toast-card${processing ? " processing" : ""}`}
-      onClick={() => onOpen(item)}
+      role="status"
       aria-label={processing ? `Обработка сообщения от ${title}` : `Новое сообщение от ${title}`}
     >
-      <MessageAvatar
-        senderUrl={item.sender_avatar_url}
-        chatUrl={item.chat_avatar_url}
-        name={title}
-        size={48}
-      />
-      <span className="body">
-        <span className="title-row">
-          <span className="title">{title}</span>
-          {processing && <span className="proc-badge">Обработка</span>}
+      <button type="button" className="toast-open" onClick={() => onOpen(item)}>
+        <MessageAvatar
+          senderUrl={item.sender_avatar_url}
+          chatUrl={item.chat_avatar_url}
+          name={title}
+          size={48}
+        />
+        <span className="body">
+          <span className="title-row">
+            <span className="title">{title}</span>
+            {processing && <span className="proc-badge">Обработка</span>}
+          </span>
+          {subtitle && <span className="subtitle">{subtitle}</span>}
+          <span className="preview">{preview}</span>
         </span>
-        {subtitle && <span className="subtitle">{subtitle}</span>}
-        <span className="preview">{preview}</span>
-      </span>
+      </button>
+      <button
+        type="button"
+        className="toast-close"
+        onClick={() => onDismiss(item.id)}
+        aria-label="Закрыть уведомление"
+        title="Закрыть"
+      >
+        ×
+      </button>
       <style>{`
         .toast-card {
           pointer-events: auto;
+          position: relative;
           display: flex;
           align-items: flex-start;
-          gap: 0.75rem;
+          gap: 0.35rem;
           width: 100%;
-          text-align: left;
-          padding: 0.75rem 0.85rem;
+          padding: 0.65rem 0.5rem 0.65rem 0.65rem;
           background: var(--surface);
           border: 1px solid var(--border);
           border-radius: 14px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-          cursor: pointer;
-          font: inherit;
           color: var(--text);
           animation: toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .toast-card:hover { border-color: var(--accent); }
         .toast-card.processing { border-color: rgba(96, 165, 250, 0.55); }
+        .toast-open {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          padding: 0.1rem 0.15rem;
+          margin: 0;
+          border: none;
+          background: transparent;
+          text-align: left;
+          cursor: pointer;
+          font: inherit;
+          color: inherit;
+        }
+        .toast-close {
+          flex-shrink: 0;
+          width: 1.75rem;
+          height: 1.75rem;
+          margin-top: 0.1rem;
+          margin-right: 0.15rem;
+          border: none;
+          border-radius: 8px;
+          background: transparent;
+          color: var(--muted);
+          font-size: 1.25rem;
+          line-height: 1;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .toast-close:hover {
+          color: var(--text);
+          background: rgba(255, 255, 255, 0.08);
+        }
         .title-row { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
         .proc-badge {
           flex-shrink: 0;
@@ -149,6 +197,6 @@ function ToastCard({
           to { opacity: 1; transform: translateX(0) scale(1); }
         }
       `}</style>
-    </button>
+    </div>
   );
 }

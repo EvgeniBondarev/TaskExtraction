@@ -17,6 +17,7 @@ import { getTaskJiraLink } from "../utils/jiraIntegration";
 import { getTaskGitHubLink } from "../utils/githubIntegration";
 import { getTaskSlackLink } from "../utils/slackIntegration";
 import { getTaskTrelloLink } from "../utils/trelloIntegration";
+import { TaskTelegramReply } from "./TaskTelegramReply";
 
 interface Props {
   task: Task;
@@ -177,11 +178,6 @@ export function TaskModal({
             <span className="date-line">{created}</span>
           </div>
           <div className="source-links">
-            {task.telegram_link && (
-              <a className="tg-link" href={task.telegram_link} target="_blank" rel="noreferrer">
-                Telegram
-              </a>
-            )}
             {jiraActive && hasJira && jiraLink && (
               <a className="jira-link" href={jiraLink.url} target="_blank" rel="noreferrer">
                 Просмотр в Jira
@@ -257,7 +253,9 @@ export function TaskModal({
 
         {error && <p className="error">{error}</p>}
 
-        <footer className="modal-footer">
+        <TaskTelegramReply task={task} />
+
+        <footer className="modal-footer modal-footer--after-compose">
           <div className="actions-primary">
             {action && (
               <button
@@ -426,6 +424,10 @@ export function TaskModal({
             display: flex; flex-direction: column; gap: 0.65rem;
             margin-top: 0.5rem; padding-top: 1rem;
             border-top: 1px solid rgba(255,255,255,0.06);
+          }
+          .modal-footer--after-compose {
+            margin-top: 0.35rem;
+            padding-top: 0.85rem;
           }
           .actions-primary, .actions-secondary {
             display: flex; flex-wrap: wrap; gap: 0.5rem;

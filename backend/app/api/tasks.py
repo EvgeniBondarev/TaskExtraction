@@ -9,7 +9,8 @@ from app.api.deps import get_session
 from app.extraction.pipeline import process_message
 from app.integrations.registry import get_adapter
 from app.models.entities import ExternalLink, Message, Task, TaskComment, TaskFeedback, TaskStatus, TelegramProfile
-from app.schemas.tasks import ExternalLinkOut, TaskList, TaskOut, TaskUpdate
+from app.schemas.tasks import ExternalLinkOut, TaskList, TaskOut, TaskUpdate, TelegramReplyIn, TelegramReplyOut
+from app.services.telegram_reply import build_default_reply_text, build_task_panel_url, send_task_reply
 from app.utils.task_enrich import enrich_task_out
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -129,6 +130,32 @@ async def reprocess_message(message_id: UUID, session: AsyncSession = Depends(ge
         {loaded.source_message.user_id} if loaded.source_message and loaded.source_message.user_id else set(),
     )
     return enrich_task_out(loaded, _profile_for_task(loaded, profiles))
+
+
+@router.post("/{task_id}/reply-telegram", response_model=TelegramReplyOut)
+async def reply_task_in_telegram(
+    task_id: UUID,
+    body: TelegramReplyIn,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await send_task_reply(session, task_id, body.text, body.panel_url)
+    return TelegramReplyOut.model_validate(result)
+
+
+@router.get("/{task_id}/reply-telegram/preview")
+async def preview_task_telegram_reply(
+    task_id: UUID,
+    panel_url: str | None = Query(None, max_length=500),
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        select(Task).where(Task.id == task_id).options(selectinload(Task.source_message))
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(404, "Task not found")
+    url = build_task_panel_url(task.id, panel_url)
+    return {"text": build_default_reply_text(task, url), "panel_url": url}
 
 
 @router.post("/{task_id}/push/{provider}", response_model=ExternalLinkOut)

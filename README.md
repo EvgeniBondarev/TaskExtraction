@@ -4,7 +4,11 @@
 
 Один Docker-образ (`nginx` + `FastAPI`), SQLite на диске, настройка через веб-интерфейс без правки кода.
 
+**Изоляция данных:** у каждого владельца своих `api_id` / `api_hash` с [my.telegram.org](https://my.telegram.org/apps) — отдельная БД, медиа и сессия панели (cookie). Пользователи не видят чужие задачи и чаты.
+
 **Docker Hub:** [`bondarevevgeni/taskextraction:latest`](https://hub.docker.com/r/bondarevevgeni/taskextraction)
+
+**Демо:** [task-extraction.gazonyh.ru](https://task-extraction.gazonyh.ru)
 
 ---
 
@@ -19,6 +23,8 @@
 | **Классификация** | LLM: задача / вопрос / нерелевантное |
 | **Канбан** | Inbox → В работе → Готово → Архив |
 | **Интеграции** | Jira, Trello, GitHub Issues, Slack (auto-push и вручную) |
+
+**В панели:** live-уведомления о новых сообщениях, счётчики на «Задачи» / «Лента», ответ в исходный Telegram-чат из карточки задачи (со ссылкой на карточку), предложение подключить интеграции после первого входа.
 
 Промо-страница и гайд: `/welcome`.
 
@@ -85,8 +91,11 @@ docker run -d \
 2. **Выбор чатов** — отметьте группы/каналы, из которых читать сообщения.
 3. **Настройки → LLM** — URL API, ключ и модель (OpenAI-совместимый endpoint).
 4. По желанию: Jira, Trello, GitHub, Slack.
+5. **Выйти из панели** (в шапке) — сброс cookie-сессии без удаления данных на диске; повторный вход — снова свои `api_id` / `api_hash`.
 
 После сохранения чатов фоновый **ingest** подхватывает новые сообщения автоматически (перезапуск контейнера не обязателен).
+
+**Ответ в Telegram из задачи:** откройте карточку → внизу строка ввода как в Telegram → напишите текст → Enter. К сообщению автоматически добавится ссылка на карточку (`/?task=…`).
 
 ### 4. Проверка
 
@@ -140,9 +149,10 @@ docker run -d \
 
 | Путь | Назначение |
 |------|------------|
-| `taskextraction.db` | SQLite: сообщения, задачи, настройки |
-| `media/` | Вложения из Telegram |
-| `session/` | Сессия Telethon |
+| `tenants/{api_id}/taskextraction.db` | SQLite tenant: сообщения, задачи, настройки |
+| `tenants/{api_id}/media/` | Вложения из Telegram для этого tenant |
+| `session/` | Сессии Telethon (по tenant) |
+| `taskextraction.db` | Устаревший одиночный файл — при старте мигрируется в первый tenant |
 | `.encryption_key` | Fernet-ключ (если создан на хосте; entrypoint может сгенерировать свой при первом запуске без `-e`) |
 
 ---
@@ -185,7 +195,7 @@ docker compose up --build
 
 ```bash
 docker buildx build --platform linux/amd64 \
-  --build-arg VITE_SITE_URL=http://109.196.101.10:8089 \
+  --build-arg VITE_SITE_URL=https://task-extraction.gazonyh.ru \
   -t bondarevevgeni/taskextraction:latest \
   --push .
 ```
@@ -201,11 +211,12 @@ docker buildx build --platform linux/amd64 \
 | Переменная | Назначение |
 |------------|------------|
 | `ENCRYPTION_KEY` | Fernet-ключ для секретов в БД (**обязательно** в проде) |
-| `DATABASE_URL` | По умолчанию `sqlite+aiosqlite:////app/data/taskextraction.db` |
-| `MEDIA_DIR` | `/app/data/media` |
+| `SESSION_SECRET` | Секрет подписи cookie `te_session` (изоляция панели по tenant) |
+| `DATABASE_URL` | Legacy; рабочие БД — `data/tenants/{api_id}/` |
+| `MEDIA_DIR` | Legacy; медиа — `data/tenants/{api_id}/media/` |
 | `TELEGRAM_SESSION_PATH` | `/app/data/session` |
-| `PUBLIC_API_URL` | Публичный URL панели (ссылки в тикетах) |
-| `VITE_SITE_URL` | Публичный URL фронтенда при **сборке** образа (OG, sitemap, SEO) |
+| `PUBLIC_API_URL` | Публичный URL панели (ссылки в тикетах и ответах в Telegram) |
+| `VITE_SITE_URL` | Публичный URL фронтенда при **сборке** образа (OG, sitemap, SEO, ссылки на задачи) |
 | `CORS_ORIGINS` | Разрешённые origin для API |
 
 Telegram, LLM и интеграции удобнее настраивать в UI (**Настройки**).

@@ -37,12 +37,19 @@ def list_tenant_keys() -> list[str]:
 
 
 def run_tenant_migrations(tenant_key: str) -> None:
-    from alembic import command
-    from alembic.config import Config
+    from sqlalchemy import create_engine
 
-    cfg = Config("alembic.ini")
-    cfg.set_main_option("sqlalchemy.url", tenant_db_url_sync(tenant_key))
-    command.upgrade(cfg, "head")
+    from app.database import Base
+    from app.models import entities  # noqa: F401
+
+    engine = create_engine(
+        tenant_db_url_sync(tenant_key),
+        connect_args={"check_same_thread": False},
+    )
+    try:
+        Base.metadata.create_all(engine)
+    finally:
+        engine.dispose()
 
 
 def ensure_tenant(tenant_key: str) -> None:

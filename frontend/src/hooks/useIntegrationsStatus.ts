@@ -3,6 +3,54 @@ import { fetchGitHubStatus, GitHubStatus } from "../api/integrations/github";
 import { fetchJiraStatus, JiraStatus } from "../api/integrations/jira";
 import { fetchSlackStatus, SlackStatus } from "../api/integrations/slack";
 import { fetchTrelloStatus, TrelloStatus } from "../api/integrations/trello";
+
+export const INTEGRATIONS_PROMPT_PENDING_KEY = "te_integrations_prompt_pending";
+export const INTEGRATIONS_PROMPT_DISMISSED_KEY = "te_integrations_prompt_dismissed";
+
+type IntegrationStatus = JiraStatus | TrelloStatus | GitHubStatus | SlackStatus | null;
+
+export function hasAnyIntegrationConfigured(
+  jira: IntegrationStatus,
+  trello: IntegrationStatus,
+  github: IntegrationStatus,
+  slack: IntegrationStatus
+): boolean {
+  return [jira, trello, github, slack].some((s) => Boolean(s?.is_configured || s?.has_token));
+}
+
+export function markIntegrationsPromptPending(): void {
+  try {
+    sessionStorage.setItem(INTEGRATIONS_PROMPT_PENDING_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function dismissIntegrationsPrompt(): void {
+  try {
+    localStorage.setItem(INTEGRATIONS_PROMPT_DISMISSED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isIntegrationsPromptDismissed(): boolean {
+  try {
+    return localStorage.getItem(INTEGRATIONS_PROMPT_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function consumeIntegrationsPromptPending(): boolean {
+  try {
+    const pending = sessionStorage.getItem(INTEGRATIONS_PROMPT_PENDING_KEY) === "1";
+    if (pending) sessionStorage.removeItem(INTEGRATIONS_PROMPT_PENDING_KEY);
+    return pending;
+  } catch {
+    return false;
+  }
+}
 import { integrationState, IntegrationConnectionState } from "../components/IntegrationCardHeader";
 
 export type IntegrationId = "jira" | "trello" | "github" | "slack";

@@ -9,8 +9,22 @@ import {
   WsMessagePayload,
 } from "./api";
 import { fetchChatsStatus } from "./api/chats";
+import { logoutPanel } from "./api/session";
 import { fetchTelegramStatus } from "./api/telegram";
-import { AppLogo } from "./components/AppLogo";
+import { AppTopBar, NavBadges } from "./components/AppTopBar";
+import { IntegrationsOnboardingPrompt } from "./components/IntegrationsOnboardingPrompt";
+import "./styles/app-shell.css";
+import { fetchGitHubStatus } from "./api/integrations/github";
+import { fetchJiraStatus } from "./api/integrations/jira";
+import { fetchSlackStatus } from "./api/integrations/slack";
+import { fetchTrelloStatus } from "./api/integrations/trello";
+import {
+  consumeIntegrationsPromptPending,
+  dismissIntegrationsPrompt,
+  hasAnyIntegrationConfigured,
+  isIntegrationsPromptDismissed,
+  markIntegrationsPromptPending,
+} from "./hooks/useIntegrationsStatus";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { MessageFeed } from "./components/MessageFeed";
 import { AppBootSkeleton, FeedPageSkeleton, KanbanBoardSkeleton } from "./components/PageSkeletons";
@@ -23,6 +37,7 @@ import { TelegramSettings } from "./pages/TelegramSettings";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
 import { useGitHubIntegration } from "./hooks/useGitHubIntegration";
 import { useSlackIntegration } from "./hooks/useSlackIntegration";
+import { useLivePolling } from "./hooks/useLivePolling";
 import { useTrelloIntegration } from "./hooks/useTrelloIntegration";
 import { getTaskGitHubLink } from "./utils/githubIntegration";
 import { getTaskJiraLink } from "./utils/jiraIntegration";
@@ -76,7 +91,17 @@ export default function App() {
   const [selected, setSelected] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [integrationsPromptOpen, setIntegrationsPromptOpen] = useState(false);
+  const [navBadges, setNavBadges] = useState<NavBadges>({ tasks: 0, feed: 0 });
+  const [livePollSeedReady, setLivePollSeedReady] = useState(false);
+  const [liveSessionKey, setLiveSessionKey] = useState(0);
   const seenMessages = useRef<Set<string>>(new Set());
+  const pageRef = useRef(page);
+  const feedBadgeIds = useRef(new Set<string>());
+  const taskBadgeIds = useRef(new Set<string>());
+  const openedTaskFromUrl = useRef<string | null>(null);
+  const reloadRef = useRef<() => Promise<void>>(async () => {});
+  const reloadMessagesRef = useRef<() => Promise<void>>(async () => {});
   const { active: jiraActive, enabled: jiraEnabled } = useJiraIntegration(gate === "ready");
   const { active: trelloActive, enabled: trelloEnabled } = useTrelloIntegration(gate === "ready");
   const { active: githubActive, enabled: githubEnabled } = useGitHubIntegration(gate === "ready");
@@ -101,6 +126,18 @@ export default function App() {
     }
   }, []);
 
+  const openIntegrationsSettings = useCallback(() => {
+    setIntegrationsPromptOpen(false);
+    setPage("settings");
+    window.history.pushState({}, "", "/settings#integrations");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }, []);
+
+  const skipIntegrationsPrompt = useCallback(() => {
+    dismissIntegrationsPrompt();
+    setIntegrationsPromptOpen(false);
+  }, []);
+
   const reloadMessages = useCallback(async () => {
     const m = await fetchMessages();
     setMessages(m.items);
@@ -121,9 +158,95 @@ export default function App() {
     }
   }, [gate]);
 
+  reloadRef.current = reload;
+  reloadMessagesRef.current = reloadMessages;
+  pageRef.current = page;
+
+  useEffect(() => {
+    if (gate !== "ready") {
+      setLivePollSeedReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const [t, m] = await Promise.all([fetchTasks(), fetchMessages(40, 0)]);
+        if (cancelled) return;
+        setTasks(t.items);
+        setMessages(m.items);
+        m.items.forEach((msg) => seenMessages.current.add(msg.id));
+        setLivePollSeedReady(true);
+      } catch (err) {
+        console.error("Live sync bootstrap failed", err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gate, liveSessionKey]);
+
+  useEffect(() => {
+    if (page === "tasks") {
+      setNavBadges((b) => (b.tasks === 0 ? b : { ...b, tasks: 0 }));
+    }
+    if (page === "feed") {
+      setNavBadges((b) => (b.feed === 0 ? b : { ...b, feed: 0 }));
+    }
+  }, [page]);
+
   useEffect(() => {
     checkSetup().catch(() => setGate("setup"));
   }, [checkSetup]);
+
+  useEffect(() => {
+    if (gate !== "ready") return;
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get("task");
+    if (!taskId || openedTaskFromUrl.current === taskId) return;
+
+    setView("app");
+    setPage("tasks");
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      openedTaskFromUrl.current = taskId;
+      setSelected(task);
+      return;
+    }
+    fetchTasks()
+      .then((t) => {
+        setTasks(t.items);
+        const found = t.items.find((x) => x.id === taskId);
+        if (found) {
+          openedTaskFromUrl.current = taskId;
+          setSelected(found);
+        }
+      })
+      .catch(() => {});
+  }, [gate, tasks]);
+
+  useEffect(() => {
+    if (gate !== "ready") return;
+    if (!consumeIntegrationsPromptPending()) return;
+    if (isIntegrationsPromptDismissed()) return;
+
+    let cancelled = false;
+    Promise.all([fetchJiraStatus(), fetchTrelloStatus(), fetchGitHubStatus(), fetchSlackStatus()])
+      .then(([jira, trello, github, slack]) => {
+        if (cancelled) return;
+        if (hasAnyIntegrationConfigured(jira, trello, github, slack)) {
+          dismissIntegrationsPrompt();
+          return;
+        }
+        setIntegrationsPromptOpen(true);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gate]);
 
   useEffect(() => {
     if (window.location.pathname === "/guide") {
@@ -149,6 +272,28 @@ export default function App() {
     if (window.location.pathname !== "/welcome") {
       window.history.pushState({}, "", "/welcome");
     }
+  }, []);
+
+  const handlePanelLogout = useCallback(async () => {
+    try {
+      await logoutPanel();
+    } catch (err) {
+      console.error(err);
+    }
+    setTasks([]);
+    setMessages([]);
+    setSelected(null);
+    setToasts([]);
+    setNavBadges({ tasks: 0, feed: 0 });
+    setLivePollSeedReady(false);
+    setLiveSessionKey((k) => k + 1);
+    feedBadgeIds.current.clear();
+    taskBadgeIds.current.clear();
+    seenMessages.current.clear();
+    setView("app");
+    setGate("setup");
+    setPage("settings");
+    window.history.pushState({}, "", "/settings");
   }, []);
 
   const goHome = useCallback(() => {
@@ -217,8 +362,28 @@ export default function App() {
         }
 
         if (payload.type !== "message_processing") {
+          if (payload.type === "new_task") {
+            const badgeKey = payload.task?.id ?? payload.message_id;
+            if (
+              badgeKey &&
+              !taskBadgeIds.current.has(badgeKey) &&
+              pageRef.current !== "tasks"
+            ) {
+              taskBadgeIds.current.add(badgeKey);
+              setNavBadges((b) => ({ ...b, tasks: b.tasks + 1 }));
+            }
+          } else if (payload.type === "new_message" && payload.message_id) {
+            if (
+              !feedBadgeIds.current.has(payload.message_id) &&
+              pageRef.current !== "feed"
+            ) {
+              feedBadgeIds.current.add(payload.message_id);
+              setNavBadges((b) => ({ ...b, feed: b.feed + 1 }));
+            }
+          }
+
           seenMessages.current.add(payload.message_id);
-          reloadMessages().catch(() => {});
+          reloadMessagesRef.current().catch(() => {});
           if (payload.type === "new_task" && payload.task) {
             const t = payload.task;
             setTasks((prev) => (prev.some((x) => x.id === t.id) ? prev : [t, ...prev]));
@@ -258,14 +423,17 @@ export default function App() {
         }
         return;
       }
-      reload();
+      void reloadRef.current();
     },
-    [reload, reloadMessages]
+    []
   );
 
   useEffect(() => {
     if (gate !== "ready") return;
-    if (page === "settings") return;
+    if (page === "settings") {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     reload();
     const interval = setInterval(reload, 10000);
@@ -277,6 +445,15 @@ export default function App() {
     const close = connectMessagesWs(handleWsEvent);
     return close;
   }, [gate, handleWsEvent]);
+
+  useLivePolling(
+    gate === "ready",
+    handleWsEvent,
+    messages,
+    tasks,
+    livePollSeedReady,
+    liveSessionKey
+  );
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -291,11 +468,16 @@ export default function App() {
   );
 
   const onSetupComplete = async () => {
-    await checkSetup();
+    const s = await checkSetup();
+    if (s?.setup_complete) {
+      const cs = await fetchChatsStatus().catch(() => null);
+      if (cs?.has_monitored) markIntegrationsPromptPending();
+    }
   };
 
   const onChatsSelected = async () => {
     await checkSetup();
+    markIntegrationsPromptPending();
   };
 
   if (view === "welcome") {
@@ -318,7 +500,7 @@ export default function App() {
 
   if (gate === "chats") {
     return (
-      <div className="center-page">
+      <div className="app app--chats">
         <ChatSelection onComplete={onChatsSelected} />
       </div>
     );
@@ -330,38 +512,21 @@ export default function App() {
     >
       <MessageToasts items={toasts} onDismiss={dismissToast} onOpen={openToast} />
 
-      <header className="header app-top-bar">
-        <button type="button" className="app-title" onClick={goHome} title="На главную">
-          <AppLogo size={30} />
-          <span>TaskExtraction</span>
-        </button>
-        <nav>
-          <button
-            type="button"
-            className={page === "tasks" ? "active" : ""}
-            onClick={() => navigate("tasks")}
-          >
-            Задачи
-          </button>
-          <button
-            type="button"
-            className={page === "feed" ? "active" : ""}
-            onClick={() => navigate("feed")}
-          >
-            Лента
-          </button>
-          <button
-            type="button"
-            className={page === "settings" ? "active" : ""}
-            onClick={() => navigate("settings")}
-          >
-            Настройки
-          </button>
-          <button type="button" className="nav-about" onClick={goToWelcome}>
-            О продукте
-          </button>
-        </nav>
-      </header>
+      <AppTopBar
+        page={page}
+        badges={navBadges}
+        onNavigate={navigate}
+        onHome={goHome}
+        onWelcome={goToWelcome}
+        onLogout={handlePanelLogout}
+      />
+
+      {integrationsPromptOpen && (
+        <IntegrationsOnboardingPrompt
+          onSetup={openIntegrationsSettings}
+          onSkip={skipIntegrationsPrompt}
+        />
+      )}
 
       {page === "settings" ? (
         <TelegramSettings
@@ -430,81 +595,6 @@ export default function App() {
         />
       )}
 
-      <style>{`
-        .app { max-width: 100%; margin: 0 auto; padding: 1rem 1.25rem 2rem; }
-        .app.app--settings { padding-top: 1.75rem; }
-        .app.app--feed {
-          padding-top: 1.25rem;
-          background:
-            radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12) 0%, transparent 55%),
-            var(--bg);
-        }
-        .main-feed {
-          width: 100%;
-          margin: 0 auto;
-        }
-        .center-page {
-          min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          padding: 1rem;
-        }
-        .header,
-        .app-top-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          width: 100%;
-          max-width: none;
-          margin-bottom: 1.5rem;
-          flex-wrap: nowrap;
-          gap: 1rem;
-          box-sizing: border-box;
-        }
-        .app-top-bar nav {
-          margin-left: auto;
-          flex-shrink: 0;
-        }
-        @media (max-width: 720px) {
-          .app-top-bar { flex-wrap: wrap; }
-        }
-        .app-title {
-          margin: 0;
-          font-size: 1.35rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-          padding: 0;
-          border: none;
-          background: none;
-          color: inherit;
-          font: inherit;
-          cursor: pointer;
-          border-radius: 10px;
-          transition: opacity 0.15s, background 0.15s;
-        }
-        .app-title:hover {
-          opacity: 0.92;
-          background: rgba(255, 255, 255, 0.04);
-        }
-        .app-title span { letter-spacing: -0.02em; }
-        nav { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        nav button {
-          background: var(--surface); border: 1px solid var(--border);
-          color: var(--muted); padding: 0.45rem 1rem; border-radius: 8px; cursor: pointer;
-          font: inherit;
-        }
-        nav button.active { color: var(--text); border-color: var(--accent); }
-        nav button.nav-about {
-          background: transparent;
-          border-color: transparent;
-          color: var(--muted);
-        }
-        nav button.nav-about:hover {
-          color: #93c5fd;
-          border-color: rgba(59, 130, 246, 0.35);
-        }
-        .muted { color: var(--muted); }
-      `}</style>
     </div>
   );
 }

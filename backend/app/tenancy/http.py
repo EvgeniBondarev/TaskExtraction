@@ -34,6 +34,8 @@ def is_public_path(path: str, method: str = "GET") -> bool:
         return True
     if path == "/api/telegram/credentials" and method.upper() == "POST":
         return True
+    if path == "/api/session/logout" and method.upper() == "POST":
+        return True
     return any(path == p or path.startswith(p + "/") for p in _PUBLIC_PREFIXES)
 
 

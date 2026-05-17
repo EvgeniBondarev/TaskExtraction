@@ -63,6 +63,21 @@ class TaskList(BaseModel):
     total: int
 
 
+class TelegramReplyIn(BaseModel):
+    text: str = Field(..., min_length=1, max_length=4096)
+    panel_url: str | None = Field(
+        None,
+        max_length=500,
+        description="Базовый URL панели (origin), для ссылки на карточку",
+    )
+
+
+class TelegramReplyOut(BaseModel):
+    ok: bool = True
+    telegram_link: str
+    telegram_message_id: int
+
+
 class ExtractionResult(BaseModel):
     is_task: bool
     type: str = "other"

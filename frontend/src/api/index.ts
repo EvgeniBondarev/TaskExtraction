@@ -135,6 +135,23 @@ export async function dismissTask(id: string) {
   return r.json() as Promise<Task>;
 }
 
+export async function replyTaskInTelegram(
+  taskId: string,
+  text: string,
+  panelUrl?: string
+): Promise<{ ok: boolean; telegram_link: string; telegram_message_id: number }> {
+  const r = await apiFetch(`${API}/api/tasks/${taskId}/reply-telegram`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, panel_url: panelUrl }),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail || "Не удалось отправить в Telegram");
+  }
+  return r.json();
+}
+
 export async function pushTask(id: string, provider: string) {
   const r = await apiFetch(`${API}/api/tasks/${id}/push/${provider}`, { method: "POST" });
   if (!r.ok) {
@@ -144,18 +161,30 @@ export async function pushTask(id: string, provider: string) {
   return r.json() as Promise<ExternalLink>;
 }
 
+function messagesWsUrl(): string {
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  // Всегда тот же origin, что и UI — cookie сессии и nginx /ws proxy
+  const host = import.meta.env.VITE_WS_HOST || window.location.host;
+  return `${proto}//${host}/ws/messages`;
+}
+
 export function connectMessagesWs(onEvent: (payload: WsMessagePayload) => void) {
-  const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  const host = import.meta.env.VITE_WS_HOST || location.host;
   let ws: WebSocket | null = null;
   let closed = false;
   let retryMs = 1000;
+  let pingTimer: ReturnType<typeof setInterval> | null = null;
 
   const connect = () => {
     if (closed) return;
-    ws = new WebSocket(`${proto}//${host}/ws/messages`);
+    ws = new WebSocket(messagesWsUrl());
     ws.onopen = () => {
       retryMs = 1000;
+      if (pingTimer) clearInterval(pingTimer);
+      pingTimer = setInterval(() => {
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send("ping");
+        }
+      }, 25000);
     };
     ws.onmessage = (ev) => {
       try {
@@ -164,8 +193,16 @@ export function connectMessagesWs(onEvent: (payload: WsMessagePayload) => void) 
         onEvent({ type: "refresh" });
       }
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
+      if (pingTimer) {
+        clearInterval(pingTimer);
+        pingTimer = null;
+      }
       if (closed) return;
+      if (ev.code === 4401) {
+        // Нет сессии — polling подхватит события
+        retryMs = 15000;
+      }
       setTimeout(connect, retryMs);
       retryMs = Math.min(retryMs * 2, 15000);
     };
@@ -175,6 +212,7 @@ export function connectMessagesWs(onEvent: (payload: WsMessagePayload) => void) 
   connect();
   return () => {
     closed = true;
+    if (pingTimer) clearInterval(pingTimer);
     ws?.close();
   };
 }
