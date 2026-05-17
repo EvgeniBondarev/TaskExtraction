@@ -69,7 +69,7 @@ export function SettingsPanel({ title, lead, icon, children, className = "" }: P
           gap: 1rem;
         }
         .settings-panel--wide {
-          max-width: 680px;
+          max-width: 100%;
         }
         .settings-panel--integrations .panel-icon {
           background: rgba(99, 102, 241, 0.12);

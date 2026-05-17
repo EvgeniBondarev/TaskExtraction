@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.telegram import (
@@ -12,8 +14,21 @@ from app.schemas.telegram import (
     TelegramStatusOut,
 )
 from app.services import telegram_auth
+from app.utils.crypto import encryption_configured
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
+
+
+def _encryption_http_error(exc: ValueError) -> HTTPException:
+    msg = str(exc)
+    if "ENCRYPTION_KEY" in msg or "Fernet" in msg or "расшифровать" in msg:
+        return HTTPException(
+            status_code=503,
+            detail=msg,
+        )
+    return HTTPException(status_code=400, detail=msg)
 
 
 def _mask_hash(api_hash: str) -> str:
@@ -48,18 +63,25 @@ async def setup_required():
         "required": not s.setup_complete,
         "step": s.setup_step,
         "my_telegram_apps_url": telegram_auth.MY_TELEGRAM_APPS_URL,
+        "encryption_configured": encryption_configured(),
     }
 
 
 @router.post("/credentials", response_model=TelegramCredentialsOut)
 async def save_credentials(body: TelegramCredentialsIn):
-    await telegram_auth.save_credentials(
-        api_id=body.api_id,
-        api_hash=body.api_hash.strip(),
-        monitor_chat_id=body.monitor_chat_id,
-        app_title=body.app_title,
-        app_short_name=body.app_short_name,
-    )
+    try:
+        await telegram_auth.save_credentials(
+            api_id=body.api_id,
+            api_hash=body.api_hash.strip(),
+            monitor_chat_id=body.monitor_chat_id,
+            app_title=body.app_title,
+            app_short_name=body.app_short_name,
+        )
+    except ValueError as e:
+        raise _encryption_http_error(e) from e
+    except Exception as e:
+        logger.exception("save_credentials failed")
+        raise HTTPException(500, "Ошибка сохранения ключей Telegram") from e
     return TelegramCredentialsOut(
         api_id=body.api_id,
         api_hash_masked=_mask_hash(body.api_hash),
@@ -95,7 +117,10 @@ async def qr_start():
     try:
         result = await telegram_auth.start_qr_login()
     except ValueError as e:
-        raise HTTPException(400, str(e)) from e
+        raise _encryption_http_error(e) from e
+    except Exception as e:
+        logger.exception("qr_start failed")
+        raise HTTPException(500, "Не удалось начать вход по QR") from e
     return QrStartOut(**result)
 
 
@@ -110,7 +135,10 @@ async def qr_refresh(login_id: str):
     try:
         result = await telegram_auth.refresh_qr_login(login_id)
     except ValueError as e:
-        raise HTTPException(400, str(e)) from e
+        raise _encryption_http_error(e) from e
+    except Exception as e:
+        logger.exception("qr_refresh failed")
+        raise HTTPException(500, "Не удалось обновить QR") from e
     return QrStartOut(**result)
 
 
@@ -119,7 +147,10 @@ async def phone_send(body: PhoneSendIn):
     try:
         result = await telegram_auth.send_phone_code(body.phone)
     except ValueError as e:
-        raise HTTPException(400, str(e)) from e
+        raise _encryption_http_error(e) from e
+    except Exception as e:
+        logger.exception("phone_send failed")
+        raise HTTPException(500, "Не удалось отправить код") from e
     return PhoneSendOut(**result)
 
 
@@ -130,7 +161,10 @@ async def phone_verify(body: PhoneVerifyIn):
             body.login_id, body.code, body.password
         )
     except ValueError as e:
-        raise HTTPException(400, str(e)) from e
+        raise _encryption_http_error(e) from e
+    except Exception as e:
+        logger.exception("phone_verify failed")
+        raise HTTPException(500, "Ошибка проверки кода") from e
     return PhoneVerifyOut(**result)
 
 

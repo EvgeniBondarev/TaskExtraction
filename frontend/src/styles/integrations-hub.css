@@ -1,0 +1,369 @@
+/* Общие стили форм интеграций (hub-режим) */
+
+.integrations-hub {
+  width: 100%;
+  max-width: 100%;
+}
+
+.integrations-hub-intro {
+  background: linear-gradient(160deg, rgba(99, 102, 241, 0.1) 0%, var(--surface) 70%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.integrations-hub-intro h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.integrations-hub-intro > p {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.integrations-hub-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.integrations-hub-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.integrations-hub-steps strong {
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.integrations-hub-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.integrations-hub-pill {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  color: #93c5fd;
+}
+
+.integrations-hub-pill strong {
+  color: #e2e8f0;
+}
+
+.integrations-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.int-accordion-item {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.int-accordion-item.is-open {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.int-accordion-item.state-active {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.int-accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.int-accordion-trigger:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.int-accordion-icon {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+.int-accordion-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.int-accordion-text strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.int-accordion-text span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.int-accordion-badge {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.int-accordion-badge.state-idle {
+  color: #94a3b8;
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.int-accordion-badge.state-ready {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.int-accordion-badge.state-active {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.int-accordion-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.int-accordion-item.is-open .int-accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.int-accordion-panel {
+  padding: 0 1rem 1.1rem;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Форма внутри панели */
+
+.int-form--hub .card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.int-step {
+  border: none;
+  margin: 0 0 1.1rem;
+  padding: 0;
+  min-width: 0;
+}
+
+.int-step-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  margin-bottom: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.int-step-num {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.int-step-hint {
+  margin: -0.35rem 0 0.65rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.int-form--hub label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.int-form--hub input,
+.int-form--hub select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.int-form--hub .row-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.int-form--hub .row-btns button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.int-form--hub .row-btns button:hover {
+  border-color: var(--accent);
+}
+
+.int-form--hub details.int-help {
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.int-form--hub details.int-help summary {
+  cursor: pointer;
+  color: #93c5fd;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.int-form--hub details.int-help p {
+  margin: 0.35rem 0 0;
+  line-height: 1.45;
+}
+
+.int-form--hub .int-ok {
+  color: #4ade80;
+  font-size: 0.85rem;
+  margin: 0 0 0.65rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.int-form--hub .toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.85rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.int-form--hub .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.int-form--hub .check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.15rem 0 0;
+  flex-shrink: 0;
+}
+
+.int-form--hub .primary {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+}
+
+.int-form--hub .error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.int-form--hub .info {
+  color: #4ade80;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.int-form--hub .auth-link {
+  font-weight: 600;
+}

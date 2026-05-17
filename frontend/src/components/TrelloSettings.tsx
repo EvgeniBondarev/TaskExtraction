@@ -10,9 +10,12 @@ import {
   TrelloList,
   TrelloStatus,
 } from "../api/integrations/trello";
+import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
+import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
 
-export function TrelloSettings({ embedded }: { embedded?: boolean } = {}) {
+export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<TrelloStatus | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [token, setToken] = useState("");
@@ -135,6 +138,7 @@ export function TrelloSettings({ embedded }: { embedded?: boolean } = {}) {
       setStatus(s);
       setToken("");
       setInfo("Настройки Trello сохранены");
+      onSaved?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сохранения");
     } finally {
@@ -144,146 +148,195 @@ export function TrelloSettings({ embedded }: { embedded?: boolean } = {}) {
 
   const selectedBoard = boards.find((b) => b.id === boardId);
 
-  return (
-    <div className={`trello-settings${embedded ? " embedded" : ""}`}>
-      <section className="card">
-        <IntegrationCardHeader
-          provider="trello"
-          title="Trello"
-          subtitle={
-            status?.is_configured
-              ? `${status.board_name || "доска"} → ${status.list_name || "список"}`
-              : "API Key + Token · список для новых карточек"
-          }
-          state={integrationState(status || {})}
-          autoPush={status?.auto_push}
-          serviceUrl="https://trello.com"
-        />
-        <p className="hint">
-          Получите API Key на{" "}
-          <a href="https://trello.com/power-ups/admin" target="_blank" rel="noreferrer">
-            trello.com/power-ups/admin
+  const credentialsFields = (
+    <>
+      <label>
+        API Key
+        <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Ключ из Trello Power-Ups" />
+      </label>
+      {authorizeUrl && (
+        <p className="auth-block">
+          <a className="auth-link" href={authorizeUrl} target="_blank" rel="noreferrer">
+            Получить Token (авторизация Trello)
           </a>
-          , затем откройте ссылку авторизации и скопируйте Token.
         </p>
+      )}
+      <label>
+        Token
+        <input
+          type="password"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder={status?.has_token ? "Новый token (оставьте пустым)" : "Вставьте token после авторизации"}
+        />
+      </label>
+      {status?.has_token && status.token_masked && (
+        <p className={hub ? "int-step-hint" : "hint"}>Token сохранён: {status.token_masked}</p>
+      )}
+      <div className="row-btns">
+        <button type="button" onClick={handleTest} disabled={testing || loading}>
+          {testing ? "Проверка…" : "Проверить подключение"}
+        </button>
+        {!hub && (
+          <button type="button" onClick={loadBoards} disabled={loading}>
+            Загрузить доски
+          </button>
+        )}
+      </div>
+    </>
+  );
 
-        {status?.is_configured && (
-          <p className="ok-line">
-            Настроено: {status.board_name} → {status.list_name || status.list_id}
-            {status.enabled && status.auto_push && " · автосоздание включено"}
+  const destinationFields = (
+    <>
+      {hub && (
+        <div className="row-btns">
+          <button type="button" onClick={loadBoards} disabled={loading}>
+            {loading ? "Загрузка…" : "Загрузить доски"}
+          </button>
+        </div>
+      )}
+      {boards.length > 0 && (
+        <label>
+          Доска
+          <select
+            value={boardId}
+            onChange={(e) => {
+              setBoardId(e.target.value);
+              setListId("");
+              setLists([]);
+            }}
+          >
+            {boards.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {selectedBoard && lists.length > 0 && (
+        <label>
+          Список для новых карточек
+          <select value={listId} onChange={(e) => setListId(e.target.value)}>
+            {lists.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </>
+  );
+
+  const toggleFields = (
+    <div className="toggles">
+      <label className="check">
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <span>{hub ? "Включить интеграцию Trello" : "Интеграция включена"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
+        <span>{hub ? "Автоматически создавать карточку при новой задаче" : "Создавать карточку в Trello при новой задаче"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
+        <span>{hub ? "Прикреплять медиафайлы" : "Прикреплять медиафайлы к карточке"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
+        <span>{hub ? "Добавлять ссылки на Telegram и URL" : "Добавлять ссылки (Telegram, URL из сообщения)"}</span>
+      </label>
+    </div>
+  );
+
+  return (
+    <div className={`trello-settings${embedded ? " embedded" : ""}${hub ? " int-form--hub" : ""}`}>
+      <section className="card">
+        {!hub && (
+          <>
+            <IntegrationCardHeader
+              provider="trello"
+              title="Trello"
+              subtitle={
+                status?.is_configured
+                  ? `${status.board_name || "доска"} → ${status.list_name || "список"}`
+                  : "API Key + Token · список для новых карточек"
+              }
+              state={integrationState(status || {})}
+              autoPush={status?.auto_push}
+              serviceUrl="https://trello.com"
+            />
+            <p className="hint">
+              Получите API Key на{" "}
+              <a href="https://trello.com/power-ups/admin" target="_blank" rel="noreferrer">
+                trello.com/power-ups/admin
+              </a>
+              , затем откройте ссылку авторизации и скопируйте Token.
+            </p>
+            {status?.is_configured && (
+              <p className="ok-line">
+                Настроено: {status.board_name} → {status.list_name || status.list_id}
+                {status.enabled && status.auto_push && " · автосоздание включено"}
+              </p>
+            )}
+          </>
+        )}
+
+        {hub && status?.is_configured && (
+          <p className="int-ok">
+            Сейчас: {status.board_name} → {status.list_name || status.list_id}
+            {status.enabled && status.auto_push && " · авто включено"}
           </p>
         )}
-        {status?.has_token && status.token_masked && (
-          <p className="hint">Token сохранён: {status.token_masked}</p>
+
+        {hub && (
+          <details className="int-help">
+            <summary>Как получить API Key и Token?</summary>
+            <p>
+              API Key — на{" "}
+              <a href="https://trello.com/power-ups/admin" target="_blank" rel="noreferrer">
+                trello.com/power-ups/admin
+              </a>
+              . Token — через ссылку «Получить Token» после ввода API Key.
+            </p>
+          </details>
         )}
 
         <form onSubmit={handleSave}>
-          <label>
-            API Key
-            <input
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="5de72d28c4fa004be777a58f1bb1bfee"
-            />
-          </label>
-
-          {authorizeUrl && (
-            <p className="auth-block">
-              <a className="auth-link" href={authorizeUrl} target="_blank" rel="noreferrer">
-                Получить Token (авторизация Trello)
-              </a>
-            </p>
+          {hub ? (
+            <>
+              <IntegrationFormStep step={1} title="Доступ к Trello" hint="Проверьте подключение перед выбором доски">
+                {credentialsFields}
+              </IntegrationFormStep>
+              <IntegrationFormStep step={2} title="Доска и список" hint="Карточки будут создаваться в выбранном списке">
+                {destinationFields}
+              </IntegrationFormStep>
+              <IntegrationFormStep step={3} title="Включение и автоматизация">
+                {toggleFields}
+                <button type="submit" className="primary" disabled={loading} style={{ background: "#0079bf" }}>
+                  {loading ? "Сохранение…" : "Сохранить"}
+                </button>
+              </IntegrationFormStep>
+            </>
+          ) : (
+            <>
+              {credentialsFields}
+              {destinationFields}
+              {toggleFields}
+              <button type="submit" className="primary" disabled={loading}>
+                Сохранить настройки Trello
+              </button>
+            </>
           )}
-
-          <label>
-            Token
-            <input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder={status?.has_token ? "Новый token (оставьте пустым)" : "Вставьте token после авторизации"}
-            />
-          </label>
-
-          <div className="row-btns">
-            <button type="button" onClick={handleTest} disabled={testing || loading}>
-              {testing ? "Проверка…" : "Проверить подключение"}
-            </button>
-            <button type="button" onClick={loadBoards} disabled={loading}>
-              Загрузить доски
-            </button>
-          </div>
-
-          {boards.length > 0 && (
-            <label>
-              Доска
-              <select
-                value={boardId}
-                onChange={(e) => {
-                  setBoardId(e.target.value);
-                  setListId("");
-                  setLists([]);
-                }}
-              >
-                {boards.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          {selectedBoard && lists.length > 0 && (
-            <label>
-              Список (куда создавать карточки)
-              <select value={listId} onChange={(e) => setListId(e.target.value)}>
-                {lists.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          <div className="toggles">
-            <label className="check">
-              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-              Интеграция включена
-            </label>
-            <label className="check">
-              <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
-              Создавать карточку в Trello при новой задаче
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={includeMedia}
-                onChange={(e) => setIncludeMedia(e.target.checked)}
-              />
-              Прикреплять медиафайлы к карточке
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={includeLinks}
-                onChange={(e) => setIncludeLinks(e.target.checked)}
-              />
-              Добавлять ссылки (Telegram, URL из сообщения)
-            </label>
-          </div>
-
-          <button type="submit" className="primary" disabled={loading}>
-            Сохранить настройки Trello
-          </button>
         </form>
       </section>
 
       {error && <p className="error">{error}</p>}
       {info && <p className="info">{info}</p>}
 
-      <style>{`
+      {!hub && (
+        <style>{`
         .trello-settings .card {
           background: var(--surface);
           border: 1px solid var(--border);
@@ -300,9 +353,7 @@ export function TrelloSettings({ embedded }: { embedded?: boolean } = {}) {
           color: var(--text); border-radius: 8px; padding: 0.45rem 0.55rem; font: inherit;
         }
         .auth-block { margin: 0.25rem 0 0.75rem; }
-        .auth-link {
-          font-size: 0.85rem; font-weight: 600; color: #0079bf;
-        }
+        .auth-link { font-size: 0.85rem; font-weight: 600; color: #0079bf; }
         .row-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
         .row-btns button {
           background: var(--bg); border: 1px solid var(--border);
@@ -318,6 +369,7 @@ export function TrelloSettings({ embedded }: { embedded?: boolean } = {}) {
         .error { color: #f87171; font-size: 0.85rem; }
         .info { color: #4ade80; font-size: 0.85rem; }
       `}</style>
+      )}
     </div>
   );
 }

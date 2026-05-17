@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.database import async_session_factory
 from app.models.entities import Chat
 from app.services import telegram_auth
+from app.utils.telegram_ids import normalize_telegram_chat_id
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +170,7 @@ async def get_chat_status() -> dict:
 
 
 async def set_monitored_chats(telegram_chat_ids: list[int]) -> list[Chat]:
-    ids_set = set(telegram_chat_ids)
+    ids_set = {normalize_telegram_chat_id(i) for i in telegram_chat_ids}
     async with async_session_factory() as session:
         await session.execute(update(Chat).values(is_monitored=False))
         if ids_set:

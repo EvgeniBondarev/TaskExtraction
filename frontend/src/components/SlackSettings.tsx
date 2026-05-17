@@ -8,9 +8,12 @@ import {
   SlackStatus,
   testSlackConnection,
 } from "../api/integrations/slack";
+import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
+import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
 
-export function SlackSettings({ embedded }: { embedded?: boolean } = {}) {
+export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<SlackStatus | null>(null);
   const [botToken, setBotToken] = useState("");
   const [channels, setChannels] = useState<SlackChannel[]>([]);
@@ -110,6 +113,7 @@ export function SlackSettings({ embedded }: { embedded?: boolean } = {}) {
       setStatus(s);
       setBotToken("");
       setInfo("Настройки Slack сохранены");
+      onSaved?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сохранения");
     } finally {
@@ -117,126 +121,171 @@ export function SlackSettings({ embedded }: { embedded?: boolean } = {}) {
     }
   };
 
-  const channelLabel =
-    channels.find((c) => c.id === channelId)?.name ||
-    status?.channel_name?.replace(/^#/, "") ||
-    "";
+  const credentialsFields = (
+    <>
+      <label>
+        Bot User OAuth Token
+        <input
+          type="password"
+          value={botToken}
+          onChange={(e) => setBotToken(e.target.value)}
+          placeholder={status?.has_token ? "Новый xoxb-… (оставьте пустым)" : "xoxb-…"}
+        />
+      </label>
+      {status?.has_token && status.token_masked && (
+        <p className={hub ? "int-step-hint" : "hint"}>Token сохранён: {status.token_masked}</p>
+      )}
+      <div className="row-btns">
+        <button type="button" onClick={handleTest} disabled={testing || loading}>
+          {testing ? "Проверка…" : "Проверить подключение"}
+        </button>
+        {!hub && (
+          <button type="button" onClick={loadChannels} disabled={loading}>
+            Загрузить каналы
+          </button>
+        )}
+      </div>
+    </>
+  );
+
+  const destinationFields = (
+    <>
+      {hub && (
+        <div className="row-btns">
+          <button type="button" onClick={loadChannels} disabled={loading}>
+            {loading ? "Загрузка…" : "Загрузить каналы"}
+          </button>
+        </div>
+      )}
+      {channels.length > 0 && (
+        <label>
+          Канал для уведомлений
+          <select value={channelId} onChange={(e) => setChannelId(e.target.value)}>
+            {channels.map((c) => (
+              <option key={c.id} value={c.id}>
+                #{c.name}
+                {c.is_private ? " (private)" : ""}
+                {c.num_members != null ? ` · ${c.num_members}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </>
+  );
+
+  const toggleFields = (
+    <div className="toggles">
+      <label className="check">
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <span>{hub ? "Включить интеграцию Slack" : "Интеграция включена"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
+        <span>{hub ? "Автоматически отправлять сообщение при новой задаче" : "Отправлять сообщение в Slack при новой задаче"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={mentionChannel} onChange={(e) => setMentionChannel(e.target.checked)} />
+        <span>Упоминать @channel в сообщении</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
+        <span>{hub ? "Добавлять ссылки на медиа" : "Добавлять ссылки на медиафайлы в сообщение"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
+        <span>Добавлять ссылку на Telegram</span>
+      </label>
+    </div>
+  );
 
   return (
-    <div className={`slack-settings${embedded ? " embedded" : ""}`}>
+    <div className={`slack-settings${embedded ? " embedded" : ""}${hub ? " int-form--hub" : ""}`}>
       <section className="card">
-        <IntegrationCardHeader
-          provider="slack"
-          title="Slack"
-          subtitle={
-            status?.is_configured
-              ? `${workspaceName || "Workspace"} · ${status.channel_name || channelLabel}`
-              : "Bot token · канал для уведомлений о задачах"
-          }
-          state={integrationState(status || {})}
-          autoPush={status?.auto_push}
-          serviceUrl={workspaceUrl || "https://slack.com"}
-        />
-        <p className="hint">
-          Создайте приложение на{" "}
-          <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer">
-            api.slack.com/apps
-          </a>
-          , добавьте scopes бота: <code>chat:write</code>, <code>channels:read</code>,{" "}
-          <code>channels:history</code>, <code>users:read</code>, установите в workspace и
-          пригласите бота в канал (<code>/invite @YourBot</code>).
-        </p>
+        {!hub && (
+          <>
+            <IntegrationCardHeader
+              provider="slack"
+              title="Slack"
+              subtitle={
+                status?.is_configured
+                  ? `${workspaceName || "Workspace"} · ${status.channel_name || ""}`
+                  : "Bot token · канал для уведомлений"
+              }
+              state={integrationState(status || {})}
+              autoPush={status?.auto_push}
+              serviceUrl={workspaceUrl || "https://slack.com"}
+            />
+            <p className="hint">
+              Создайте приложение на{" "}
+              <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer">
+                api.slack.com/apps
+              </a>
+              , scopes: chat:write, channels:read. Пригласите бота в канал: /invite @YourBot
+            </p>
+            {status?.is_configured && (
+              <p className="ok-line">
+                Канал: {status.channel_name}
+                {status.enabled && status.auto_push && " · автосоздание включено"}
+              </p>
+            )}
+          </>
+        )}
 
-        {status?.is_configured && (
-          <p className="ok-line">
+        {hub && status?.is_configured && (
+          <p className="int-ok">
             Канал: {status.channel_name}
-            {status.enabled && status.auto_push && " · автосоздание включено"}
+            {status.enabled && status.auto_push && " · авто включено"}
           </p>
         )}
-        {status?.has_token && status.token_masked && (
-          <p className="hint">Token сохранён: {status.token_masked}</p>
+
+        {hub && (
+          <details className="int-help">
+            <summary>Как настроить Slack-бота?</summary>
+            <p>
+              Приложение на{" "}
+              <a href="https://api.slack.com/apps" target="_blank" rel="noreferrer">
+                api.slack.com/apps
+              </a>
+              : scopes chat:write, channels:read. Установите в workspace и выполните /invite @YourBot в канале.
+            </p>
+          </details>
         )}
 
         <form onSubmit={handleSave}>
-          <label>
-            Bot User OAuth Token
-            <input
-              type="password"
-              value={botToken}
-              onChange={(e) => setBotToken(e.target.value)}
-              placeholder={status?.has_token ? "Новый xoxb-… (оставьте пустым)" : "xoxb-…"}
-            />
-          </label>
-
-          <div className="row-btns">
-            <button type="button" onClick={handleTest} disabled={testing || loading}>
-              {testing ? "Проверка…" : "Проверить подключение"}
-            </button>
-            <button type="button" onClick={loadChannels} disabled={loading}>
-              Загрузить каналы
-            </button>
-          </div>
-
-          {channels.length > 0 && (
-            <label>
-              Канал для уведомлений
-              <select value={channelId} onChange={(e) => setChannelId(e.target.value)}>
-                {channels.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    #{c.name}
-                    {c.is_private ? " (private)" : ""}
-                    {c.num_members != null ? ` · ${c.num_members}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {hub ? (
+            <>
+              <IntegrationFormStep step={1} title="Токен бота" hint="Проверьте подключение перед выбором канала">
+                {credentialsFields}
+              </IntegrationFormStep>
+              <IntegrationFormStep step={2} title="Канал" hint="Куда отправлять уведомления о задачах">
+                {destinationFields}
+              </IntegrationFormStep>
+              <IntegrationFormStep step={3} title="Включение и автоматизация">
+                {toggleFields}
+                <button type="submit" className="primary" disabled={loading} style={{ background: "#e01e5a" }}>
+                  {loading ? "Сохранение…" : "Сохранить"}
+                </button>
+              </IntegrationFormStep>
+            </>
+          ) : (
+            <>
+              {credentialsFields}
+              {destinationFields}
+              {toggleFields}
+              <button type="submit" className="primary" disabled={loading}>
+                Сохранить настройки Slack
+              </button>
+            </>
           )}
-
-          <div className="toggles">
-            <label className="check">
-              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-              Интеграция включена
-            </label>
-            <label className="check">
-              <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
-              Отправлять сообщение в Slack при новой задаче
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={mentionChannel}
-                onChange={(e) => setMentionChannel(e.target.checked)}
-              />
-              Упоминать @channel в сообщении
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={includeMedia}
-                onChange={(e) => setIncludeMedia(e.target.checked)}
-              />
-              Добавлять ссылки на медиафайлы в сообщение
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={includeLinks}
-                onChange={(e) => setIncludeLinks(e.target.checked)}
-              />
-              Добавлять ссылку на Telegram
-            </label>
-          </div>
-
-          <button type="submit" className="primary" disabled={loading}>
-            Сохранить настройки Slack
-          </button>
         </form>
       </section>
 
       {error && <p className="error">{error}</p>}
       {info && <p className="info">{info}</p>}
 
-      <style>{`
+      {!hub && (
+        <style>{`
         .slack-settings .card {
           background: var(--surface);
           border: 1px solid var(--border);
@@ -245,7 +294,6 @@ export function SlackSettings({ embedded }: { embedded?: boolean } = {}) {
           margin-top: 1rem;
         }
         .slack-settings .hint { font-size: 0.82rem; color: var(--muted); margin: 0 0 0.75rem; line-height: 1.4; }
-        .slack-settings .hint code { font-size: 0.78rem; }
         .slack-settings .ok-line { color: #4ade80; font-size: 0.85rem; margin: 0 0 0.5rem; }
         .slack-settings label { display: block; margin-bottom: 0.65rem; font-size: 0.78rem; color: var(--muted); }
         .slack-settings input, .slack-settings select {
@@ -268,6 +316,7 @@ export function SlackSettings({ embedded }: { embedded?: boolean } = {}) {
         .error { color: #f87171; font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; }
         .info { color: #4ade80; font-size: 0.85rem; }
       `}</style>
+      )}
     </div>
   );
 }

@@ -2,21 +2,22 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+from app.bootstrap import ensure_encryption_key
+
+ensure_encryption_key()
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from telethon import events
 
 from app.api import api_router
 from app.config import get_settings
-from app.services import telegram_auth
-from app.telegram.ingest import get_monitored_chat_ids, handle_new_message, set_ws_broadcast
+from app.telegram.ingest import set_ws_broadcast
+from app.telegram.listener import run_ingest_loop
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 _ws_clients: set[WebSocket] = set()
-_monitored_ids: set[int] = set()
-_handler_registered = False
 
 
 async def _broadcast_ws(payload: dict):
@@ -30,68 +31,10 @@ async def _broadcast_ws(payload: dict):
         _ws_clients.discard(ws)
 
 
-async def _refresh_monitored():
-    global _monitored_ids
-    ids = await get_monitored_chat_ids()
-    _monitored_ids = set(ids)
-    return _monitored_ids
-
-
-async def _ingest_loop():
-    global _handler_registered
-    status = await telegram_auth.get_status()
-    if not status.has_credentials:
-        logger.warning("Telegram ingest disabled — configure credentials")
-        return
-
-    if not status.is_authorized:
-        logger.warning("Telegram not authorized — complete login")
-        return
-
-    try:
-        client = await telegram_auth.get_client()
-        if not await client.is_user_authorized():
-            logger.error("Telegram session invalid — re-login")
-            return
-
-        monitored = await _refresh_monitored()
-        if not monitored:
-            logger.warning("No monitored chats — select chats in the app")
-        else:
-            logger.info("Monitoring %s chat(s): %s", len(monitored), list(monitored))
-
-        if not _handler_registered:
-
-            @client.on(events.NewMessage())
-            async def _on_message(event):
-                chat_id = event.chat_id
-                if _monitored_ids and chat_id not in _monitored_ids:
-                    return
-                try:
-                    await handle_new_message(event.message)
-                except Exception:
-                    logger.exception("Failed to ingest message from chat %s", chat_id)
-
-            _handler_registered = True
-            logger.info("Ingest listener registered (all incoming messages filtered by monitored set)")
-
-        while True:
-            await asyncio.sleep(30)
-            new_set = await _refresh_monitored()
-            if new_set != monitored:
-                monitored = new_set
-                logger.info("Monitored chats updated: %s", list(monitored))
-    except asyncio.CancelledError:
-        logger.info("Ingest loop stopped")
-        raise
-    except Exception:
-        logger.exception("Ingest loop error")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     set_ws_broadcast(_broadcast_ws)
-    ingest_task = asyncio.create_task(_ingest_loop())
+    ingest_task = asyncio.create_task(run_ingest_loop())
     yield
     ingest_task.cancel()
     try:
@@ -116,7 +59,9 @@ app.include_router(api_router)
 
 @app.get("/health")
 async def root_health():
-    return {"status": "ok"}
+    from app.telegram.listener import get_ingest_status
+
+    return {"status": "ok", "ingest": get_ingest_status()}
 
 
 @app.websocket("/ws/messages")

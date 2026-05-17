@@ -18,6 +18,7 @@ from app.services.message_attachments import persist_attachments
 from app.services.task_broadcast import load_task_for_broadcast
 from app.utils.message_media import chat_avatar_url, sender_avatar_url
 from app.utils.telegram_attachments import download_message_attachments
+from app.utils.telegram_ids import chat_id_matches, normalize_telegram_chat_id
 from app.utils.telegram_link import build_telegram_message_link
 
 logger = logging.getLogger(__name__)
@@ -187,10 +188,17 @@ async def _mark_classification_error(message_id: UUID, reason: str) -> None:
 
 
 async def handle_new_message(tg_message):
-    telegram_chat_id = tg_message.chat_id
+    telegram_chat_id = normalize_telegram_chat_id(tg_message.chat_id)
     monitored = await get_monitored_chat_ids()
-    if monitored and telegram_chat_id not in monitored:
-        return
+    if monitored:
+        monitored_set = {normalize_telegram_chat_id(i) for i in monitored}
+        if not chat_id_matches(telegram_chat_id, monitored_set):
+            logger.debug(
+                "Message ignored: chat %s not in monitored %s",
+                telegram_chat_id,
+                monitored_set,
+            )
+            return
 
     message_id: UUID | None = None
     async with async_session_factory() as session:

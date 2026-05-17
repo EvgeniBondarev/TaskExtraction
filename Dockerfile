@@ -3,10 +3,12 @@
 
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
+RUN apk add --no-cache python3 py3-pillow
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci 2>/dev/null || npm install
 COPY frontend/ .
-ENV VITE_API_URL=
+ARG VITE_SITE_URL=
+ENV VITE_API_URL= VITE_SITE_URL=$VITE_SITE_URL
 RUN npm run build
 
 FROM python:3.12-slim

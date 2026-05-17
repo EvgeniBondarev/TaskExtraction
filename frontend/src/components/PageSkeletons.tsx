@@ -205,9 +205,19 @@ export function FeedPageSkeleton() {
   );
 }
 
-export function ChatListSkeleton({ rows = 6 }: { rows?: number }) {
+export function ChatListSkeleton({
+  rows = 6,
+  message = "Загрузка чатов",
+}: {
+  rows?: number;
+  message?: string;
+}) {
   return (
-    <SkeletonGroup label="Загрузка чатов">
+    <SkeletonGroup className="sk-chat-list" label={message}>
+      <div className="sk-chat-loading-head">
+        <span className="sk-chat-spinner" aria-hidden />
+        <span>{message}</span>
+      </div>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="sk-chat-row">
           <Skeleton width={42} height={42} circle />
@@ -219,6 +229,32 @@ export function ChatListSkeleton({ rows = 6 }: { rows?: number }) {
         </div>
       ))}
       <style>{`
+        .sk-chat-list { width: 100%; }
+        .sk-chat-loading-head {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          padding: 0.85rem 1rem;
+          font-size: 0.88rem;
+          color: #93c5fd;
+          background: rgba(59, 130, 246, 0.08);
+          border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .sk-chat-spinner {
+          width: 1.1rem;
+          height: 1.1rem;
+          border: 2px solid rgba(59, 130, 246, 0.25);
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: sk-chat-spin 0.75s linear infinite;
+          flex-shrink: 0;
+        }
+        @keyframes sk-chat-spin {
+          to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .sk-chat-spinner { animation: none; border-top-color: rgba(59, 130, 246, 0.5); }
+        }
         .sk-chat-row {
           display: flex;
           align-items: center;

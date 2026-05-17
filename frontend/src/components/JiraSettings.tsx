@@ -10,9 +10,12 @@ import {
   saveJiraSettings,
   testJiraConnection,
 } from "../api/integrations/jira";
+import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
+import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
 
-export function JiraSettings({ embedded }: { embedded?: boolean } = {}) {
+export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<JiraStatus | null>(null);
   const [baseUrl, setBaseUrl] = useState("");
   const [email, setEmail] = useState("");
@@ -133,6 +136,7 @@ export function JiraSettings({ embedded }: { embedded?: boolean } = {}) {
       setStatus(s);
       setApiToken("");
       setInfo("Настройки Jira сохранены");
+      onSaved?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сохранения");
     } finally {
@@ -142,146 +146,194 @@ export function JiraSettings({ embedded }: { embedded?: boolean } = {}) {
 
   const selectedProject = projects.find((p) => p.key === projectKey);
 
-  return (
-    <div className={`jira-settings${embedded ? " embedded" : ""}`}>
-      <section className="card">
-        <IntegrationCardHeader
-          provider="jira"
-          title="Jira Cloud"
-          subtitle={
-            status?.is_configured
-              ? `${status.project_name || status.project_key} · ${status.issue_type_name || "тип задачи"}`
-              : "REST API v3 · проект и тип задачи"
-          }
-          state={integrationState(status || {})}
-          autoPush={status?.auto_push}
-          serviceUrl={status?.base_url || null}
+  const credentialsFields = (
+    <>
+      <label>
+        URL сайта Jira
+        <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://your-domain.atlassian.net" />
+      </label>
+      <label>
+        Email
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" />
+      </label>
+      <label>
+        API Token
+        <input
+          type="password"
+          value={apiToken}
+          onChange={(e) => setApiToken(e.target.value)}
+          placeholder={status?.has_token ? "Новый токен (оставьте пустым)" : "ATATT..."}
         />
-        <p className="hint">
-          Подключение через REST API v3. Создайте API token в{" "}
-          <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer">
-            Atlassian Account
-          </a>
-          . Email — адрес аккаунта Atlassian.
-        </p>
+      </label>
+      {status?.has_token && status.token_masked && (
+        <p className={hub ? "int-step-hint" : "hint"}>Токен сохранён: {status.token_masked}</p>
+      )}
+      <div className="row-btns">
+        <button type="button" onClick={handleTest} disabled={testing || loading}>
+          {testing ? "Проверка…" : "Проверить подключение"}
+        </button>
+        {!hub && (
+          <button type="button" onClick={loadProjects} disabled={loading}>
+            Загрузить проекты
+          </button>
+        )}
+      </div>
+    </>
+  );
 
-        {status?.is_configured && (
-          <p className="ok-line">
-            Настроено: {status.project_key} / {status.issue_type_name || status.issue_type_id}
-            {status.enabled && status.auto_push && " · автосоздание включено"}
+  const destinationFields = (
+    <>
+      {hub && (
+        <div className="row-btns">
+          <button type="button" onClick={loadProjects} disabled={loading}>
+            {loading ? "Загрузка…" : "Загрузить проекты"}
+          </button>
+        </div>
+      )}
+      {projects.length > 0 && (
+        <label>
+          Проект
+          <select
+            value={projectKey}
+            onChange={(e) => {
+              setProjectKey(e.target.value);
+              setIssueTypeId("");
+              setIssueTypes([]);
+            }}
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.key}>
+                {p.name} ({p.key})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {selectedProject && issueTypes.length > 0 && (
+        <label>
+          Тип задачи
+          <select value={issueTypeId} onChange={(e) => setIssueTypeId(e.target.value)}>
+            {issueTypes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </>
+  );
+
+  const toggleFields = (
+    <div className="toggles">
+      <label className="check">
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <span>{hub ? "Включить интеграцию Jira" : "Интеграция включена"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
+        <span>
+          {hub ? "Автоматически создавать задачу при новой карточке" : "Создавать задачу в Jira при новой карточке"}
+        </span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
+        <span>{hub ? "Загружать медиафайлы во вложения" : "Загружать медиафайлы во вложения Jira"}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
+        <span>{hub ? "Добавлять ссылки на Telegram и URL" : "Добавлять ссылки (Telegram, URL из сообщения)"}</span>
+      </label>
+    </div>
+  );
+
+  return (
+    <div className={`jira-settings${embedded ? " embedded" : ""}${hub ? " int-form--hub" : ""}`}>
+      <section className="card">
+        {!hub && (
+          <>
+            <IntegrationCardHeader
+              provider="jira"
+              title="Jira Cloud"
+              subtitle={
+                status?.is_configured
+                  ? `${status.project_name || status.project_key} · ${status.issue_type_name || "тип задачи"}`
+                  : "REST API v3 · проект и тип задачи"
+              }
+              state={integrationState(status || {})}
+              autoPush={status?.auto_push}
+              serviceUrl={status?.base_url || null}
+            />
+            <p className="hint">
+              Подключение через REST API v3. Создайте API token в{" "}
+              <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer">
+                Atlassian Account
+              </a>
+              . Email — адрес аккаунта Atlassian.
+            </p>
+            {status?.is_configured && (
+              <p className="ok-line">
+                Настроено: {status.project_key} / {status.issue_type_name || status.issue_type_id}
+                {status.enabled && status.auto_push && " · автосоздание включено"}
+              </p>
+            )}
+          </>
+        )}
+
+        {hub && status?.is_configured && (
+          <p className="int-ok">
+            Сейчас: {status.project_key} / {status.issue_type_name || status.issue_type_id}
+            {status.enabled && status.auto_push && " · авто включено"}
           </p>
         )}
-        {status?.has_token && status.token_masked && (
-          <p className="hint">Токен сохранён: {status.token_masked}</p>
+
+        {hub && (
+          <details className="int-help">
+            <summary>Где взять API token?</summary>
+            <p>
+              Создайте токен в{" "}
+              <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noreferrer">
+                Atlassian Account
+              </a>
+              . Email — адрес аккаунта Atlassian.
+            </p>
+          </details>
         )}
 
         <form onSubmit={handleSave}>
-          <label>
-            URL сайта Jira
-            <input
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://your-domain.atlassian.net"
-            />
-          </label>
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-            />
-          </label>
-          <label>
-            API Token
-            <input
-              type="password"
-              value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
-              placeholder={status?.has_token ? "Новый токен (оставьте пустым)" : "ATATT..."}
-            />
-          </label>
-
-          <div className="row-btns">
-            <button type="button" onClick={handleTest} disabled={testing || loading}>
-              {testing ? "Проверка…" : "Проверить подключение"}
-            </button>
-            <button type="button" onClick={loadProjects} disabled={loading}>
-              Загрузить проекты
-            </button>
-          </div>
-
-          {projects.length > 0 && (
-            <label>
-              Проект
-              <select
-                value={projectKey}
-                onChange={(e) => {
-                  setProjectKey(e.target.value);
-                  setIssueTypeId("");
-                  setIssueTypes([]);
-                }}
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.key}>
-                    {p.name} ({p.key})
-                  </option>
-                ))}
-              </select>
-            </label>
+          {hub ? (
+            <>
+              <IntegrationFormStep step={1} title="Доступ к Jira" hint="Сначала проверьте подключение">
+                {credentialsFields}
+              </IntegrationFormStep>
+              <IntegrationFormStep step={2} title="Куда создавать задачи" hint="Загрузите проекты после успешной проверки">
+                {destinationFields}
+              </IntegrationFormStep>
+              <IntegrationFormStep step={3} title="Включение и автоматизация">
+                {toggleFields}
+                <button type="submit" className="primary" disabled={loading} style={{ background: "var(--accent)" }}>
+                  {loading ? "Сохранение…" : "Сохранить"}
+                </button>
+              </IntegrationFormStep>
+            </>
+          ) : (
+            <>
+              {credentialsFields}
+              {destinationFields}
+              {toggleFields}
+              <button type="submit" className="primary" disabled={loading}>
+                Сохранить настройки Jira
+              </button>
+            </>
           )}
-
-          {selectedProject && issueTypes.length > 0 && (
-            <label>
-              Тип задачи
-              <select value={issueTypeId} onChange={(e) => setIssueTypeId(e.target.value)}>
-                {issueTypes.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          <div className="toggles">
-            <label className="check">
-              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-              Интеграция включена
-            </label>
-            <label className="check">
-              <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
-              Создавать задачу в Jira при новой карточке
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={includeMedia}
-                onChange={(e) => setIncludeMedia(e.target.checked)}
-              />
-              Загружать медиафайлы во вложения Jira
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={includeLinks}
-                onChange={(e) => setIncludeLinks(e.target.checked)}
-              />
-              Добавлять ссылки (Telegram, URL из сообщения)
-            </label>
-          </div>
-
-          <button type="submit" className="primary" disabled={loading}>
-            Сохранить настройки Jira
-          </button>
         </form>
       </section>
 
       {error && <p className="error">{error}</p>}
       {info && <p className="info">{info}</p>}
 
-      <style>{`
+      {!hub && (
+        <style>{`
         .jira-settings .card {
           background: var(--surface);
           border: 1px solid var(--border);
@@ -311,6 +363,7 @@ export function JiraSettings({ embedded }: { embedded?: boolean } = {}) {
         .error { color: #f87171; font-size: 0.85rem; }
         .info { color: #4ade80; font-size: 0.85rem; }
       `}</style>
+      )}
     </div>
   );
 }

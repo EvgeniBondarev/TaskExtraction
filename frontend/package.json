@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "og-image": "python3 scripts/generate-og-image.py",
+    "build": "npm run og-image && tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

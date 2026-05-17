@@ -26,6 +26,8 @@ media/
 *.db-journal
 *.db-wal
 *.db-shm
+.encryption_key
+**/.encryption_key
 
 # --- Python ---
 __pycache__/

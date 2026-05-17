@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_session
 from app.schemas.chats import ChatList, ChatOut, ChatSelectionIn, ChatStatusOut, ChatSyncOut
 from app.services import chat_sync
+from app.telegram.listener import wake_ingest
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -59,6 +60,7 @@ async def update_selection(body: ChatSelectionIn):
     if not body.telegram_chat_ids:
         raise HTTPException(400, "Select at least one chat")
     selected = await chat_sync.set_monitored_chats(body.telegram_chat_ids)
+    wake_ingest()
     return ChatList(
         items=[_to_out(c) for c in selected],
         total=len(selected),

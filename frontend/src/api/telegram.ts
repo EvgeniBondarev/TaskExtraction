@@ -38,7 +38,9 @@ export async function saveTelegramCredentials(body: {
   });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail || "Save failed");
+    const detail = (err as { detail?: string | string[] }).detail;
+    const msg = Array.isArray(detail) ? detail.join(", ") : detail;
+    throw new Error(msg || `Ошибка сохранения (${r.status})`);
   }
   return r.json();
 }

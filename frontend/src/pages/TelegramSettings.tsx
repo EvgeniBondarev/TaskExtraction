@@ -4,11 +4,7 @@ import { fetchTelegramStatus, TelegramStatus } from "../api/telegram";
 import { SetupStepper } from "../components/SetupStepper";
 import { getTelegramWizardStep, TELEGRAM_WIZARD_STEPS } from "../utils/telegramWizardSteps";
 import { ChatPicker } from "../components/ChatPicker";
-import { JiraSettings } from "../components/JiraSettings";
-import { GitHubSettings } from "../components/GitHubSettings";
-import { SlackSettings } from "../components/SlackSettings";
-import { IntegrationsOverview } from "../components/IntegrationsOverview";
-import { TrelloSettings } from "../components/TrelloSettings";
+import { IntegrationsSettingsHub } from "../components/integrations/IntegrationsSettingsHub";
 import { LlmSettings } from "../components/LlmSettings";
 import { PromptSettings } from "../components/PromptSettings";
 import { SettingsPanel } from "../components/SettingsPanel";
@@ -79,7 +75,7 @@ export function TelegramSettings({ onStatusChange }: Props) {
   tabs.push("integrations");
 
   return (
-    <div className="settings-page">
+    <div className={`settings-page${tab === "integrations" ? " settings-page--integrations" : ""}`}>
       {tab === "telegram" && (
         <section className="settings-steps-top" aria-label="Этапы настройки Telegram">
           <SetupStepper
@@ -131,13 +127,9 @@ export function TelegramSettings({ onStatusChange }: Props) {
           className="settings-panel--integrations settings-panel--wide"
           icon="⬡"
           title="Интеграции"
-          lead="Подключите трекеры — задачи из Telegram будут автоматически отправляться в Jira, Trello, GitHub или Slack."
+          lead="Подключите сервисы по шагам — откройте карточку и следуйте инструкции."
         >
-          <IntegrationsOverview />
-          <JiraSettings embedded />
-          <TrelloSettings embedded />
-          <GitHubSettings embedded />
-          <SlackSettings embedded />
+          <IntegrationsSettingsHub />
         </SettingsPanel>
       )}
 
@@ -183,6 +175,9 @@ export function TelegramSettings({ onStatusChange }: Props) {
           max-width: 720px;
           margin: 0 auto;
           padding-top: 1.25rem;
+        }
+        .settings-page--integrations {
+          max-width: 880px;
         }
         .settings-steps-top {
           margin-bottom: 1.5rem;

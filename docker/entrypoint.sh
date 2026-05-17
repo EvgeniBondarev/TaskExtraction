@@ -5,10 +5,16 @@ DATA_DIR="${DATA_DIR:-/app/data}"
 export DATABASE_URL="${DATABASE_URL:-sqlite+aiosqlite:////app/data/taskextraction.db}"
 export MEDIA_DIR="${MEDIA_DIR:-/app/data/media}"
 export TELEGRAM_SESSION_PATH="${TELEGRAM_SESSION_PATH:-/app/data/session}"
+export DATA_DIR
 
 mkdir -p "$DATA_DIR" "$MEDIA_DIR" "$(dirname "$TELEGRAM_SESSION_PATH")"
 
 cd /app
+
+# Валидный Fernet-ключ (проверка + автогенерация в /app/data/.encryption_key)
+export ENCRYPTION_KEY=$(python -m app.bootstrap)
+echo "ENCRYPTION_KEY ready"
+
 echo "Running database migrations..."
 alembic upgrade head
 

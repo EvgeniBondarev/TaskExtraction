@@ -102,8 +102,7 @@ async def save_credentials(
     app_title: Optional[str] = None,
     app_short_name: Optional[str] = None,
 ) -> None:
-    global _client
-    _client = None
+    _drop_client()
     _cancel_all_pending()
 
     app_meta = {
@@ -156,7 +155,10 @@ def _persist_user_session(row: TelegramConfig, session_string: str, me: User) ->
 
 async def save_session_from_client(client: TelegramClient) -> None:
     global _client
+    from app.telegram.listener import on_telegram_client_reset, wake_ingest
+
     _client = None
+    on_telegram_client_reset()
     me = await client.get_me()
     if not isinstance(me, User):
         raise ValueError("Could not load Telegram user profile")
@@ -171,6 +173,7 @@ async def save_session_from_client(client: TelegramClient) -> None:
             raise ValueError("Save API credentials first")
         _persist_user_session(row, session_string, me)
         await session.commit()
+    wake_ingest()
 
 
 def _cancel_all_pending() -> None:
@@ -180,10 +183,17 @@ def _cancel_all_pending() -> None:
         _cleanup_phone(login_id)
 
 
+def _drop_client() -> None:
+    global _client
+    from app.telegram.listener import on_telegram_client_reset
+
+    _client = None
+    on_telegram_client_reset()
+
+
 async def clear_session() -> None:
     """Logout from Telegram — keep api_id/api_hash in DB."""
-    global _client
-    _client = None
+    _drop_client()
     _cancel_all_pending()
 
     async with async_session_factory() as session:
@@ -206,8 +216,7 @@ async def clear_session() -> None:
 
 async def clear_all() -> None:
     """Remove credentials, session, and app metadata."""
-    global _client
-    _client = None
+    _drop_client()
     _cancel_all_pending()
 
     async with async_session_factory() as session:
