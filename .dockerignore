@@ -1,0 +1,13 @@
+.git
+.env
+*.md
+doc/
+data/
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.db
+**/*.session
+frontend/dist
+agent-transcripts

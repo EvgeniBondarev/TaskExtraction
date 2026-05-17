@@ -1,0 +1,90 @@
+# --- Секреты и локальная конфигурация ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+*.secret
+
+# --- Telegram ---
+*.session
+*.session-journal
+telegram_sessions/
+**/session/
+
+# --- Данные приложения (БД, медиа, сессии) ---
+data/
+app/data/
+taskextraction-data/
+media/
+**/media/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# --- Node / frontend ---
+node_modules/
+frontend/dist/
+.npm
+*.tsbuildinfo
+
+# --- IDE и ОС ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Jupyter / черновики с возможными ключами ---
+.ipynb_checkpoints/
+doc/Untitled1.ipynb
+
+# --- Логи и временные файлы ---
+*.log
+logs/
+tmp/
+temp/
+.cache/
+
+# --- Docker (локальные override) ---
+docker-compose.override.yml
+.docker/
+
+# --- Cursor / агенты (локальная среда) ---
+.cursor/
+agent-transcripts/
+
+# --- Прочее ---
+*.bak
+*.tmp
+.terraform/
