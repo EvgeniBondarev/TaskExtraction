@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { JiraLogoIcon } from "../icons/JiraLogoIcon";
+import { TrelloLogoIcon } from "../icons/TrelloLogoIcon";
 
 /** Встроенные SVG-иконки для hero (без текста). */
 
@@ -64,24 +66,36 @@ export function HeroAppLogoMark({ cx, cy, size }: { cx: number; cy: number; size
   );
 }
 
+function brandLogoTransform(boxX: number, boxY: number, boxSize: number, viewSize: number) {
+  const pad = 10;
+  const inner = boxSize - pad * 2;
+  const scale = inner / viewSize;
+  const cx = boxX + boxSize / 2;
+  const cy = boxY + boxSize / 2;
+  return `translate(${cx}, ${cy}) scale(${scale}) translate(${-viewSize / 2}, ${-viewSize / 2})`;
+}
+
 export function HeroIconJiraBox(props: BoxIconProps) {
+  const { boxX, boxY, boxSize } = props;
   return (
-    <IconBox {...props}>
-      <path
-        fill="#2684FF"
-        d="M11.57 11.51H0a5.22 5.22 0 0 0 5.23 5.22h2.13v2.05A5.22 5.22 0 0 0 12.57 23.8V12.52a1 1 0 0 0-1-1.01zm5.72-5.76H5.82a5.22 5.22 0 0 0 5.22 5.21h2.13v2.06a5.22 5.22 0 0 0 5.22 5.21V6.76a1 1 0 0 0-1-1.01zM23.01 0H11.46a5.22 5.22 0 0 0 5.22 5.22v2.12h2.13a5.22 5.22 0 0 0 5.21 5.22V1a1 1 0 0 0-1-1z"
-      />
-    </IconBox>
+    <g filter="url(#lp-shadow)">
+      <rect x={boxX} y={boxY} width={boxSize} height={boxSize} rx="14" fill="#ffffff" stroke={props.ring} strokeWidth="2" />
+      <g transform={brandLogoTransform(boxX, boxY, boxSize, 256)}>
+        <JiraLogoIcon size={256} />
+      </g>
+    </g>
   );
 }
 
 export function HeroIconTrelloBox(props: BoxIconProps) {
+  const { boxX, boxY, boxSize } = props;
   return (
-    <IconBox {...props}>
-      <rect x="2" y="4" width="9" height="14" rx="2" fill="#0079BF" opacity="0.95" />
-      <rect x="13" y="4" width="9" height="7" rx="2" fill="#0079BF" opacity="0.75" />
-      <rect x="13" y="13" width="9" height="5" rx="2" fill="#0079BF" opacity="0.55" />
-    </IconBox>
+    <g filter="url(#lp-shadow)">
+      <rect x={boxX} y={boxY} width={boxSize} height={boxSize} rx="14" fill="#ffffff" stroke={props.ring} strokeWidth="2" />
+      <g transform={brandLogoTransform(boxX, boxY, boxSize, 512)}>
+        <TrelloLogoIcon size={512} />
+      </g>
+    </g>
   );
 }
 
@@ -97,12 +111,33 @@ export function HeroIconGitHubBox(props: BoxIconProps) {
 }
 
 export function HeroIconSlackBox(props: BoxIconProps) {
+  const { boxX, boxY, boxSize } = props;
+  const cx = boxX + boxSize / 2;
+  const cy = boxY + boxSize / 2;
+  const scale = (boxSize - 16) / 512;
   return (
-    <IconBox {...props}>
-      <path
-        fill="#E01E5A"
-        d="M5.04 15.31a2.17 2.17 0 0 1-2.16-2.17v-2.16a2.17 2.17 0 0 1 2.16-2.16h2.16v2.16a2.17 2.17 0 0 1-2.16 2.16H5.04zm2.16-8.65a2.17 2.17 0 0 1-2.16-2.16V2.34a2.17 2.17 0 0 1 2.16-2.16h2.16v2.16a2.17 2.17 0 0 1-2.16 2.16H7.2zm8.65 2.16a2.17 2.17 0 0 1 2.16-2.16h2.16v2.16a2.17 2.17 0 0 1-2.16 2.16h-2.16V8.82zm-2.16 8.65a2.17 2.17 0 0 1 2.16 2.16v2.16a2.17 2.17 0 0 1-2.16 2.16h-2.16v-2.16a2.17 2.17 0 0 1 2.16-2.16h2.16z"
+    <g filter="url(#lp-shadow)">
+      <rect
+        x={boxX}
+        y={boxY}
+        width={boxSize}
+        height={boxSize}
+        rx="14"
+        fill="#ffffff"
+        stroke={props.ring}
+        strokeWidth="2"
       />
-    </IconBox>
+      <g transform={`translate(${cx}, ${cy}) scale(${scale}) translate(-256, -256)`}>
+        <g fill="#e01e5a">
+          <path
+            id="lp-slack-shape"
+            d="M149 305a39 39 0 01-78 0c0-22 17-39 39-39h39zM168 305a39 39 0 0178 0v97a39 39 0 01-78 0z"
+          />
+        </g>
+        <use href="#lp-slack-shape" fill="#36c5f0" transform="rotate(90 256 256)" />
+        <use href="#lp-slack-shape" fill="#2eb67d" transform="rotate(180 256 256)" />
+        <use href="#lp-slack-shape" fill="#ecb22e" transform="rotate(270 256 256)" />
+      </g>
+    </g>
   );
 }

@@ -1,3 +1,7 @@
+import { JiraLogoIcon } from "./icons/JiraLogoIcon";
+import { SlackLogoIcon } from "./icons/SlackLogoIcon";
+import { TrelloLogoIcon } from "./icons/TrelloLogoIcon";
+
 export type IntegrationProvider = "jira" | "trello" | "github" | "slack" | "youtrack";
 
 const META: Record<
@@ -7,13 +11,13 @@ const META: Record<
   jira: {
     label: "Jira",
     color: "#2684ff",
-    bg: "rgba(38, 132, 255, 0.12)",
+    bg: "rgba(255, 255, 255, 0.95)",
     border: "rgba(38, 132, 255, 0.35)",
   },
   trello: {
     label: "Trello",
     color: "#0079bf",
-    bg: "rgba(0, 121, 191, 0.12)",
+    bg: "rgba(255, 255, 255, 0.95)",
     border: "rgba(0, 121, 191, 0.35)",
   },
   github: {
@@ -25,7 +29,7 @@ const META: Record<
   slack: {
     label: "Slack",
     color: "#e01e5a",
-    bg: "rgba(224, 30, 90, 0.12)",
+    bg: "rgba(255, 255, 255, 0.95)",
     border: "rgba(224, 30, 90, 0.35)",
   },
   youtrack: {
@@ -38,23 +42,10 @@ const META: Record<
 
 function IconSvg({ provider, size }: { provider: IntegrationProvider; size: number }) {
   if (provider === "jira") {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-        <path
-          fill="currentColor"
-          d="M11.57 11.51H0a5.22 5.22 0 0 0 5.23 5.22h2.13v2.05A5.22 5.22 0 0 0 12.57 23.8V12.52a1 1 0 0 0-1-1.01zm5.72-5.76H5.82a5.22 5.22 0 0 0 5.22 5.21h2.13v2.06a5.22 5.22 0 0 0 5.22 5.21V6.76a1 1 0 0 0-1-1.01zM23.01 0H11.46a5.22 5.22 0 0 0 5.22 5.22v2.12h2.13a5.22 5.22 0 0 0 5.21 5.22V1a1 1 0 0 0-1-1z"
-        />
-      </svg>
-    );
+    return <JiraLogoIcon size={size} />;
   }
   if (provider === "trello") {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-        <rect x="2" y="4" width="9" height="14" rx="2" fill="currentColor" opacity="0.95" />
-        <rect x="13" y="4" width="9" height="7" rx="2" fill="currentColor" opacity="0.75" />
-        <rect x="13" y="13" width="9" height="5" rx="2" fill="currentColor" opacity="0.55" />
-      </svg>
-    );
+    return <TrelloLogoIcon size={size} />;
   }
   if (provider === "github") {
     return (
@@ -67,14 +58,7 @@ function IconSvg({ provider, size }: { provider: IntegrationProvider; size: numb
     );
   }
   if (provider === "slack") {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
-        <path
-          fill="currentColor"
-          d="M5.04 15.31a2.17 2.17 0 0 1-2.16-2.17v-2.16a2.17 2.17 0 0 1 2.16-2.16h2.16v2.16a2.17 2.17 0 0 1-2.16 2.16H5.04zm2.16-8.65a2.17 2.17 0 0 1-2.16-2.16V2.34a2.17 2.17 0 0 1 2.16-2.16h2.16v2.16a2.17 2.17 0 0 1-2.16 2.16H7.2zm8.65 2.16a2.17 2.17 0 0 1 2.16-2.16h2.16v2.16a2.17 2.17 0 0 1-2.16 2.16h-2.16V8.82zm-2.16 8.65a2.17 2.17 0 0 1 2.16 2.16v2.16a2.17 2.17 0 0 1-2.16 2.16h-2.16v-2.16a2.17 2.17 0 0 1 2.16-2.16h2.16z"
-        />
-      </svg>
-    );
+    return <SlackLogoIcon size={size} withBackground />;
   }
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>

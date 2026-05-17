@@ -17,7 +17,7 @@ import { AppBootSkeleton, FeedPageSkeleton, KanbanBoardSkeleton } from "./compon
 import { MessageToasts, ToastItem } from "./components/MessageToasts";
 import { TaskModal } from "./components/TaskModal";
 import { ChatSelection } from "./pages/ChatSelection";
-import { LandingPage, markWelcomeSeen } from "./pages/LandingPage";
+import { hasSeenWelcome, LandingPage, markWelcomeSeen } from "./pages/LandingPage";
 import { TelegramAuth } from "./pages/TelegramAuth";
 import { TelegramSettings } from "./pages/TelegramSettings";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
@@ -148,6 +148,19 @@ export default function App() {
     setView("welcome");
     if (window.location.pathname !== "/welcome") {
       window.history.pushState({}, "", "/welcome");
+    }
+  }, []);
+
+  const goHome = useCallback(() => {
+    if (hasSeenWelcome()) {
+      setView("app");
+      setPage("tasks");
+    } else {
+      setView("welcome");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (window.location.pathname !== "/") {
+      window.history.pushState({}, "", "/");
     }
   }, []);
 
@@ -287,10 +300,7 @@ export default function App() {
 
   if (view === "welcome") {
     return (
-      <LandingPage
-        onTry={enterApp}
-        onSkip={enterApp}
-      />
+      <LandingPage onTry={enterApp} onSkip={enterApp} onHome={goHome} />
     );
   }
 
@@ -320,11 +330,11 @@ export default function App() {
     >
       <MessageToasts items={toasts} onDismiss={dismissToast} onOpen={openToast} />
 
-      <header className="header">
-        <h1 className="app-title">
+      <header className="header app-top-bar">
+        <button type="button" className="app-title" onClick={goHome} title="На главную">
           <AppLogo size={30} />
           <span>TaskExtraction</span>
-        </h1>
+        </button>
         <nav>
           <button
             type="button"
@@ -429,15 +439,6 @@ export default function App() {
             radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12) 0%, transparent 55%),
             var(--bg);
         }
-        .app.app--feed .header {
-          max-width: 880px;
-          margin-left: auto;
-          margin-right: auto;
-          width: 100%;
-          padding-left: 1rem;
-          padding-right: 1rem;
-          box-sizing: border-box;
-        }
         .main-feed {
           width: 100%;
           margin: 0 auto;
@@ -446,8 +447,25 @@ export default function App() {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
           padding: 1rem;
         }
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; }
-        .header h1,
+        .header,
+        .app-top-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          max-width: none;
+          margin-bottom: 1.5rem;
+          flex-wrap: nowrap;
+          gap: 1rem;
+          box-sizing: border-box;
+        }
+        .app-top-bar nav {
+          margin-left: auto;
+          flex-shrink: 0;
+        }
+        @media (max-width: 720px) {
+          .app-top-bar { flex-wrap: wrap; }
+        }
         .app-title {
           margin: 0;
           font-size: 1.35rem;
@@ -455,6 +473,18 @@ export default function App() {
           display: flex;
           align-items: center;
           gap: 0.55rem;
+          padding: 0;
+          border: none;
+          background: none;
+          color: inherit;
+          font: inherit;
+          cursor: pointer;
+          border-radius: 10px;
+          transition: opacity 0.15s, background 0.15s;
+        }
+        .app-title:hover {
+          opacity: 0.92;
+          background: rgba(255, 255, 255, 0.04);
         }
         .app-title span { letter-spacing: -0.02em; }
         nav { display: flex; gap: 0.5rem; flex-wrap: wrap; }

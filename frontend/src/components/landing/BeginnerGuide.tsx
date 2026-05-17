@@ -1,3 +1,5 @@
+import { ScrollReveal } from "./ScrollReveal";
+
 const GUIDE_STEPS = [
   {
     step: 1,
@@ -52,18 +54,24 @@ interface Props {
 export function BeginnerGuide({ onTry }: Props) {
   return (
     <section className="lp-guide" id="guide" aria-labelledby="lp-guide-title">
-      <div className="lp-section-head lp-section-head--center">
+      <ScrollReveal className="lp-section-head lp-section-head--center">
         <span className="lp-badge">Гайд для новичков</span>
-        <h2 id="lp-guide-title">С нуля до первой задачи за 20 минут</h2>
+        <h2 id="lp-guide-title">С нуля до первой задачи за 5 минут</h2>
         <p className="lp-section-lead">
           Пошаговая инструкция — как в мастере настройки внутри приложения. Следуйте порядку, и панель
           начнёт работать с первого сообщения в чате.
         </p>
-      </div>
+      </ScrollReveal>
 
       <ol className="lp-guide-list">
-        {GUIDE_STEPS.map((item) => (
-          <li key={item.step} className="lp-guide-item">
+        {GUIDE_STEPS.map((item, index) => (
+          <ScrollReveal
+            key={item.step}
+            as="li"
+            className="lp-guide-item"
+            delay={index * 50}
+            direction="up"
+          >
             <div className="lp-guide-marker" aria-hidden>
               <span className="lp-guide-num">{item.step}</span>
             </div>
@@ -80,16 +88,16 @@ export function BeginnerGuide({ onTry }: Props) {
                 </a>
               )}
             </div>
-          </li>
+          </ScrollReveal>
         ))}
       </ol>
 
-      <div className="lp-guide-cta">
+      <ScrollReveal className="lp-guide-cta" direction="scale">
         <p>Готовы? Мастер настройки проведёт через шаги 1–3 автоматически.</p>
         <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={onTry}>
           Начать настройку
         </button>
-      </div>
+      </ScrollReveal>
     </section>
   );
 }

@@ -1,14 +1,18 @@
 import { useEffect } from "react";
-import { absoluteUrl, SITE } from "../config/site";
+import { absoluteUrl, hasPublicSiteUrl, SITE } from "../config/site";
 
 type PageMeta = {
+  /** Заголовок вкладки; для OG по умолчанию — shareTitle */
   title?: string;
+  /** Meta description; для OG по умолчанию — shareDescription */
   description?: string;
   path?: string;
   noindex?: boolean;
+  /** false — og:title/description как у вкладки, не карточки мессенджера */
+  useSharePreview?: boolean;
 };
 
-function setMeta(attr: "name" | "property", key: string, content: string) {
+function setMeta(attr: "name" | "property" | "itemprop", key: string, content: string) {
   let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
@@ -25,50 +29,79 @@ function setCanonical(href: string) {
     el.setAttribute("rel", "canonical");
     document.head.appendChild(el);
   }
-  el.setAttribute("href", href);
+  el.href = href;
 }
 
-/** Обновляет title и meta для SPA-страниц (краулеры без JS читают index.html). */
-export function SeoHead({ title, description, path = "/", noindex }: PageMeta) {
-  const pageTitle = title || SITE.title;
-  const pageDesc = description || SITE.description;
+function setLinkRel(rel: string, href: string) {
+  let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+  if (!el) {
+    el = document.createElement("link");
+    el.rel = rel;
+    document.head.appendChild(el);
+  }
+  el.href = href;
+}
+
+/**
+ * Обновляет title и meta для SPA.
+ * Краулеры мессенджеров (Telegram) читают статический index.html при сборке —
+ * задайте VITE_SITE_URL=https://ваш-домен.
+ */
+export function SeoHead({
+  title,
+  description,
+  path = SITE.welcomePath,
+  noindex,
+  useSharePreview = true,
+}: PageMeta) {
+  const tabTitle = title || SITE.title;
+  const tabDesc = description || SITE.description;
+  const ogTitle = useSharePreview ? SITE.shareTitle : tabTitle;
+  const ogDesc = useSharePreview ? SITE.shareDescription : tabDesc;
   const url = absoluteUrl(path);
   const image = absoluteUrl(SITE.ogImagePath);
+  const publicUrl = hasPublicSiteUrl();
 
   useEffect(() => {
-    document.title = pageTitle;
+    document.title = tabTitle;
     document.documentElement.lang = "ru";
 
-    setMeta("name", "description", pageDesc);
+    setMeta("name", "description", tabDesc);
     setMeta("name", "keywords", SITE.keywords);
-    setMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow");
+    setMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large");
 
     setMeta("property", "og:type", "website");
-    setMeta("property", "og:site_name", SITE.name);
-    setMeta("property", "og:title", pageTitle);
-    setMeta("property", "og:description", pageDesc);
+    setMeta("property", "og:site_name", SITE.siteName);
+    setMeta("property", "og:title", ogTitle);
+    setMeta("property", "og:description", ogDesc);
     setMeta("property", "og:locale", SITE.locale);
-    if (url.startsWith("http")) {
+
+    if (publicUrl) {
       setMeta("property", "og:url", url);
-    }
-    if (image.startsWith("http")) {
       setMeta("property", "og:image", image);
-      setMeta("property", "og:image:width", "1200");
-      setMeta("property", "og:image:height", "630");
-      setMeta("property", "og:image:alt", SITE.name);
+      setMeta("property", "og:image:secure_url", image);
+      setMeta("property", "og:image:type", "image/png");
+      setMeta("property", "og:image:width", String(SITE.ogImageWidth));
+      setMeta("property", "og:image:height", String(SITE.ogImageHeight));
+      setMeta("property", "og:image:alt", SITE.ogImageAlt);
+      setCanonical(url);
+      setLinkRel("image_src", image);
     }
 
     setMeta("name", "twitter:card", SITE.twitterCard);
-    setMeta("name", "twitter:title", pageTitle);
-    setMeta("name", "twitter:description", pageDesc);
-    if (image.startsWith("http")) {
+    setMeta("name", "twitter:title", ogTitle);
+    setMeta("name", "twitter:description", ogDesc);
+    if (publicUrl) {
       setMeta("name", "twitter:image", image);
+      setMeta("name", "twitter:image:alt", SITE.ogImageAlt);
     }
 
-    if (url.startsWith("http")) {
-      setCanonical(url);
+    setMeta("itemprop", "name", ogTitle);
+    setMeta("itemprop", "description", ogDesc);
+    if (publicUrl) {
+      setMeta("itemprop", "image", image);
     }
-  }, [pageTitle, pageDesc, url, image, noindex]);
+  }, [tabTitle, tabDesc, ogTitle, ogDesc, url, image, noindex, publicUrl]);
 
   return null;
 }

@@ -4,6 +4,8 @@ RUN apk add --no-cache python3 py3-pillow
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
+ARG VITE_SITE_URL=
+ENV VITE_SITE_URL=$VITE_SITE_URL
 RUN npm run build
 
 FROM nginx:alpine
