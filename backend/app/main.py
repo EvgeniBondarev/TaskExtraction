@@ -18,15 +18,17 @@ from app.config import get_settings
 from app.telegram.ingest import set_ws_broadcast
 from app.telegram.listener import run_ingest_loop
 from app.tenancy import (
-    get_session_tenant,
+    bind_request_tenant,
     is_public_path,
     migrate_legacy_installation,
+    migrate_all_tenant_databases,
     require_session_tenant,
     reset_current_tenant,
     session_secret,
     set_current_tenant,
 )
 from app.tenancy.http import tenant_from_session_cookie
+from app.tenancy.registry import list_tenant_keys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ async def lifespan(app: FastAPI):
     migrated = migrate_legacy_installation()
     if migrated:
         logger.info("Legacy data migrated to tenant api_id=%s", migrated)
+    migrate_all_tenant_databases()
     set_ws_broadcast(_broadcast_ws)
     ingest_task = asyncio.create_task(run_ingest_loop())
     yield
@@ -70,7 +73,7 @@ class TenantIsolationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
         if is_public_path(path, request.method):
-            tenant = get_session_tenant(request)
+            tenant = bind_request_tenant(request)
             token = None
             if tenant:
                 token = set_current_tenant(tenant)
@@ -127,6 +130,9 @@ async def root_health():
 @app.websocket("/ws/messages")
 async def ws_messages(websocket: WebSocket):
     tenant = tenant_from_session_cookie(websocket.cookies.get("te_session"))
+    keys = list_tenant_keys()
+    if not tenant and len(keys) == 1:
+        tenant = keys[0]
     if not tenant:
         await websocket.close(code=4401)
         return

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import shutil
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -34,6 +35,26 @@ def list_tenant_keys() -> list[str]:
         if child.is_dir() and (child / "taskextraction.db").is_file():
             keys.append(child.name)
     return sorted(keys)
+
+
+def migrate_all_tenant_databases() -> None:
+    """Alembic upgrade для каждой tenant-БД (entrypoint мигрирует только legacy path)."""
+    from alembic import command
+    from alembic.config import Config
+
+    keys = list_tenant_keys()
+    if not keys:
+        return
+    ini_path = Path(__file__).resolve().parents[2] / "alembic.ini"
+    for key in keys:
+        ensure_tenant(key)
+        cfg = Config(str(ini_path))
+        cfg.set_main_option("sqlalchemy.url", tenant_db_url(key))
+        try:
+            command.upgrade(cfg, "head")
+            logger.info("Alembic upgrade head for tenant api_id=%s", key)
+        except Exception as exc:
+            logger.warning("Alembic upgrade failed for tenant %s: %s", key, exc)
 
 
 def run_tenant_migrations(tenant_key: str) -> None:

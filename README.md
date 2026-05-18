@@ -127,6 +127,16 @@ docker logs -f taskextraction
 
 ### 5. Обновление образа
 
+На сервере:
+
+```bash
+curl -sO https://raw.githubusercontent.com/EvgeniBondarev/TaskExtraction/master/scripts/redeploy-prod.sh
+chmod +x redeploy-prod.sh
+./redeploy-prod.sh
+```
+
+Или вручную:
+
 ```bash
 docker pull bondarevevgeni/taskextraction:latest
 docker stop taskextraction
@@ -138,8 +148,12 @@ docker run -d \
   -p 8089:80 \
   -v /home/taskextraction/taskextraction-data:/app/data \
   -e ENCRYPTION_KEY="$(cat /home/taskextraction/taskextraction-data/.encryption_key)" \
+  -e PUBLIC_API_URL=https://task-extraction.gazonyh.ru \
+  -e CORS_ORIGINS=https://task-extraction.gazonyh.ru \
   bondarevevgeni/taskextraction:latest
 ```
+
+> На VPS с **одним** tenant cookie сессии восстанавливается автоматически — интеграции (Jira/Trello/GitHub/Slack) снова доступны без повторного ввода `api_id`.
 
 Данные на volume (`taskextraction.db`, `media/`, сессия Telegram) сохраняются между перезапусками.
 
