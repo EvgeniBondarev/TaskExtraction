@@ -40,6 +40,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Python for og-image
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow (generate-og-image.py)
+        run: pip install Pillow
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
