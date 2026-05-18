@@ -46,7 +46,41 @@ async def get_monitored_chat_ids() -> list[int]:
     return []
 
 
-async def ensure_chat(session: AsyncSession, telegram_chat_id: int) -> Chat | None:
+async def _enrich_chat_from_telegram(session: AsyncSession, chat: Chat, tg_message) -> None:
+    """Сохранить username/type из Telegram — помогает отправлять ответы в личку."""
+    from telethon.tl.types import Channel, Chat as TgChat, User
+
+    try:
+        client = await telegram_auth.get_client()
+        ent = await client.get_entity(tg_message.peer_id)
+    except Exception:
+        try:
+            ent = await tg_message.get_chat()
+        except Exception:
+            return
+
+    if isinstance(ent, User):
+        chat.chat_type = "private"
+        if ent.username:
+            chat.username = ent.username
+        parts = [ent.first_name or "", ent.last_name or ""]
+        title = " ".join(p for p in parts if p).strip()
+        if title:
+            chat.title = title[:255]
+    elif isinstance(ent, TgChat):
+        chat.chat_type = "group"
+        if getattr(ent, "title", None):
+            chat.title = str(ent.title)[:255]
+    elif isinstance(ent, Channel):
+        chat.chat_type = "supergroup" if getattr(ent, "megagroup", False) else "channel"
+        if getattr(ent, "title", None):
+            chat.title = str(ent.title)[:255]
+        if ent.username:
+            chat.username = ent.username
+    await session.flush()
+
+
+async def ensure_chat(session: AsyncSession, telegram_chat_id: int, tg_message=None) -> Chat | None:
     result = await session.execute(
         select(Chat).where(
             Chat.telegram_chat_id == telegram_chat_id,
@@ -55,16 +89,22 @@ async def ensure_chat(session: AsyncSession, telegram_chat_id: int) -> Chat | No
     )
     chat = result.scalar_one_or_none()
     if chat:
+        if tg_message:
+            await _enrich_chat_from_telegram(session, chat, tg_message)
         return chat
     result = await session.execute(select(Chat).where(Chat.telegram_chat_id == telegram_chat_id))
     chat = result.scalar_one_or_none()
     if chat:
         chat.is_monitored = True
+        if tg_message:
+            await _enrich_chat_from_telegram(session, chat, tg_message)
         await session.flush()
         return chat
     chat = Chat(telegram_chat_id=telegram_chat_id, title=f"Chat {telegram_chat_id}", is_monitored=True)
     session.add(chat)
     await session.flush()
+    if tg_message:
+        await _enrich_chat_from_telegram(session, chat, tg_message)
     return chat
 
 
@@ -203,7 +243,7 @@ async def handle_new_message(tg_message):
 
     message_id: UUID | None = None
     async with tenant_session() as session:
-        chat = await ensure_chat(session, telegram_chat_id)
+        chat = await ensure_chat(session, telegram_chat_id, tg_message)
         if not chat:
             return
         msg, profile = await store_message(session, chat, tg_message)
@@ -273,6 +313,7 @@ async def backfill_history(limit: int = 100):
             if not chat:
                 continue
             async for tg_message in client.iter_messages(telegram_chat_id, limit=limit):
+                chat = await ensure_chat(session, telegram_chat_id, tg_message) or chat
                 msg, _profile = await store_message(session, chat, tg_message)
                 if msg:
                     await process_message(session, msg.id)

@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.entities import Message, Task
 from app.services import telegram_auth
+from app.utils.telegram_entity_resolve import resolve_chat_input_entity
 from app.utils.telegram_link import build_telegram_message_link
 
 logger = logging.getLogger(__name__)
@@ -84,8 +85,9 @@ async def send_task_reply(
         raise HTTPException(400, "Не удалось подключиться к Telegram")
 
     try:
+        peer = await resolve_chat_input_entity(client, chat, msg)
         sent = await client.send_message(
-            chat.telegram_chat_id,
+            peer,
             body,
             reply_to=msg.telegram_message_id,
             link_preview=True,
