@@ -217,18 +217,21 @@ async def handle_new_message(tg_message):
             _ws_payload(msg, chat, profile, event_type="message_processing", processing=True)
         )
 
-    task_id = None
-    task_payload = None
+    task_id: str | None = None
     try:
         async with tenant_session() as session:
             result = await process_message(session, message_id)
             if isinstance(result, Task):
                 task_id = str(result.id)
-                task_payload = await load_task_for_broadcast(session, result.id)
             await session.commit()
     except Exception as exc:
         logger.exception("Pipeline failed for message %s", message_id)
         await _mark_classification_error(message_id, str(exc))
+
+    task_payload = None
+    if task_id:
+        async with tenant_session() as session:
+            task_payload = await load_task_for_broadcast(session, UUID(task_id))
 
     async with tenant_session() as session:
         msg = await session.get(Message, message_id)

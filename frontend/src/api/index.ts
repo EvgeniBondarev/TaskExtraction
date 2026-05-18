@@ -112,6 +112,12 @@ export async function fetchTasks(status?: string) {
   return r.json() as Promise<{ items: Task[] }>;
 }
 
+export async function fetchTask(id: string): Promise<Task> {
+  const r = await apiFetch(`${API}/api/tasks/${id}`);
+  if (!r.ok) throw new Error("Failed to load task");
+  return r.json() as Promise<Task>;
+}
+
 export async function updateTask(id: string, patch: Partial<Task>) {
   const r = await apiFetch(`${API}/api/tasks/${id}`, {
     method: "PATCH",

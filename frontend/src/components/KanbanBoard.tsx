@@ -12,10 +12,6 @@ interface Column {
 interface Props {
   columns: Column[];
   tasks: Task[];
-  jiraActive?: boolean;
-  trelloActive?: boolean;
-  githubActive?: boolean;
-  slackActive?: boolean;
   onSelect: (t: Task) => void;
   onStatusChange: (task: Task, status: string) => void;
 }
@@ -23,10 +19,6 @@ interface Props {
 export function KanbanBoard({
   columns,
   tasks,
-  jiraActive = false,
-  trelloActive = false,
-  githubActive = false,
-  slackActive = false,
   onSelect,
   onStatusChange,
 }: Props) {
@@ -72,10 +64,6 @@ export function KanbanBoard({
                 <KanbanCard
                   key={task.id}
                   task={task}
-                  jiraActive={jiraActive}
-                  trelloActive={trelloActive}
-                  githubActive={githubActive}
-                  slackActive={slackActive}
                   onClick={() => onSelect(task)}
                   onDragStart={(e) => {
                     e.dataTransfer.setData("taskId", task.id);

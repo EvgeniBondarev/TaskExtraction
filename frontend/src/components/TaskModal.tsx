@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { dismissTask, pushTask, Task, updateTask } from "../api";
+import { dismissTask, fetchTask, pushTask, Task, updateTask } from "../api";
 import { AttachmentList } from "./AttachmentList";
 import { MessageAvatar } from "./MessageAvatar";
 import { mediaUrl } from "../utils/mediaUrl";
@@ -21,13 +21,9 @@ import { TaskTelegramReply } from "./TaskTelegramReply";
 
 interface Props {
   task: Task;
-  jiraActive?: boolean;
-  trelloActive?: boolean;
-  githubActive?: boolean;
   jiraEnabled?: boolean;
   trelloEnabled?: boolean;
   githubEnabled?: boolean;
-  slackActive?: boolean;
   slackEnabled?: boolean;
   onClose: () => void;
   onUpdate: (t: Task) => void;
@@ -35,13 +31,9 @@ interface Props {
 
 export function TaskModal({
   task,
-  jiraActive = false,
-  trelloActive = false,
-  githubActive = false,
   jiraEnabled = false,
   trelloEnabled = false,
   githubEnabled = false,
-  slackActive = false,
   slackEnabled = false,
   onClose,
   onUpdate,
@@ -104,10 +96,7 @@ export function TaskModal({
     setError("");
     try {
       await pushTask(task.id, provider);
-      const refreshed = (await fetch(
-        `${import.meta.env.VITE_API_URL || ""}/api/tasks/${task.id}`
-      ).then((r) => r.json())) as Task;
-      onUpdate(refreshed);
+      onUpdate(await fetchTask(task.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -178,22 +167,22 @@ export function TaskModal({
             <span className="date-line">{created}</span>
           </div>
           <div className="source-links">
-            {jiraActive && hasJira && jiraLink && (
+            {hasJira && jiraLink && (
               <a className="jira-link" href={jiraLink.url} target="_blank" rel="noreferrer">
                 Просмотр в Jira
               </a>
             )}
-            {trelloActive && hasTrello && trelloLink && (
+            {hasTrello && trelloLink && (
               <a className="trello-link" href={trelloLink.url} target="_blank" rel="noreferrer">
                 Просмотр в Trello
               </a>
             )}
-            {githubActive && hasGitHub && githubLink && (
+            {hasGitHub && githubLink && (
               <a className="github-link" href={githubLink.url} target="_blank" rel="noreferrer">
                 Просмотр в GitHub
               </a>
             )}
-            {slackActive && hasSlack && slackLink && (
+            {hasSlack && slackLink && (
               <a className="slack-link" href={slackLink.url} target="_blank" rel="noreferrer">
                 Просмотр в Slack
               </a>

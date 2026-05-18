@@ -12,20 +12,12 @@ import { hasAttachments, PRIORITY_LABELS, STATUS_COLORS, TYPE_LABELS } from "../
 
 interface Props {
   task: Task;
-  jiraActive?: boolean;
-  trelloActive?: boolean;
-  githubActive?: boolean;
-  slackActive?: boolean;
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
 }
 
 export function KanbanCard({
   task,
-  jiraActive = false,
-  trelloActive = false,
-  githubActive = false,
-  slackActive = false,
   onClick,
   onDragStart,
 }: Props) {
@@ -33,10 +25,11 @@ export function KanbanCard({
   const trelloLinkRaw = getTaskTrelloLink(task);
   const githubLinkRaw = getTaskGitHubLink(task);
   const slackLinkRaw = getTaskSlackLink(task);
-  const jiraLink = jiraActive && jiraLinkRaw ? jiraLinkRaw : null;
-  const trelloLink = trelloActive && trelloLinkRaw ? trelloLinkRaw : null;
-  const githubLink = githubActive && githubLinkRaw ? githubLinkRaw : null;
-  const slackLink = slackActive && slackLinkRaw ? slackLinkRaw : null;
+  // Показываем иконки по факту external_links на задаче (не зависим от статуса API интеграции)
+  const jiraLink = jiraLinkRaw;
+  const trelloLink = trelloLinkRaw;
+  const githubLink = githubLinkRaw;
+  const slackLink = slackLinkRaw;
   const accent = STATUS_COLORS[task.status] || STATUS_COLORS.inbox;
   const imageAtt = task.attachments?.find((a) => a.is_image && a.download_url);
 

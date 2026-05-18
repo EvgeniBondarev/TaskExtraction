@@ -23,18 +23,10 @@ function canCreateTask(c: Message["classification"]): boolean {
 export function MessageFeed({
   messages,
   tasks = [],
-  jiraActive = false,
-  trelloActive = false,
-  githubActive = false,
-  slackActive = false,
   onTaskCreated,
 }: {
   messages: Message[];
   tasks?: Task[];
-  jiraActive?: boolean;
-  trelloActive?: boolean;
-  githubActive?: boolean;
-  slackActive?: boolean;
   onTaskCreated?: (task: Task) => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -157,10 +149,10 @@ export function MessageFeed({
               const trelloLinkRaw = getMessageTrelloLink(m, trelloByMessage);
               const githubLinkRaw = getMessageGitHubLink(m, githubByMessage);
               const slackLinkRaw = getMessageSlackLink(m, slackByMessage);
-              const jiraLink = jiraActive && jiraLinkRaw ? jiraLinkRaw : null;
-              const trelloLink = trelloActive && trelloLinkRaw ? trelloLinkRaw : null;
-              const githubLink = githubActive && githubLinkRaw ? githubLinkRaw : null;
-              const slackLink = slackActive && slackLinkRaw ? slackLinkRaw : null;
+              const jiraLink = jiraLinkRaw;
+              const trelloLink = trelloLinkRaw;
+              const githubLink = githubLinkRaw;
+              const slackLink = slackLinkRaw;
               const showCreate = canCreateTask(m.classification);
               const isFirst = index === 0;
 

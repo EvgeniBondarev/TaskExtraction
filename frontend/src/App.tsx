@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   connectMessagesWs,
   fetchMessages,
+  fetchTask,
   fetchTasks,
   Task,
   updateTask,
@@ -102,10 +103,10 @@ export default function App() {
   const openedTaskFromUrl = useRef<string | null>(null);
   const reloadRef = useRef<() => Promise<void>>(async () => {});
   const reloadMessagesRef = useRef<() => Promise<void>>(async () => {});
-  const { active: jiraActive, enabled: jiraEnabled } = useJiraIntegration(gate === "ready");
-  const { active: trelloActive, enabled: trelloEnabled } = useTrelloIntegration(gate === "ready");
-  const { active: githubActive, enabled: githubEnabled } = useGitHubIntegration(gate === "ready");
-  const { active: slackActive, enabled: slackEnabled } = useSlackIntegration(gate === "ready");
+  const { enabled: jiraEnabled } = useJiraIntegration(gate === "ready");
+  const { enabled: trelloEnabled } = useTrelloIntegration(gate === "ready");
+  const { enabled: githubEnabled } = useGitHubIntegration(gate === "ready");
+  const { enabled: slackEnabled } = useSlackIntegration(gate === "ready");
 
   const checkSetup = useCallback(async () => {
     const s = await fetchTelegramStatus();
@@ -385,8 +386,18 @@ export default function App() {
           seenMessages.current.add(payload.message_id);
           reloadMessagesRef.current().catch(() => {});
           if (payload.type === "new_task" && payload.task) {
-            const t = payload.task;
-            setTasks((prev) => (prev.some((x) => x.id === t.id) ? prev : [t, ...prev]));
+            const t = payload.task as Task;
+            const upsertTask = (full: Task) => {
+              setTasks((prev) =>
+                prev.some((x) => x.id === full.id)
+                  ? prev.map((x) => (x.id === full.id ? full : x))
+                  : [full, ...prev]
+              );
+            };
+            upsertTask(t);
+            fetchTask(t.id)
+              .then(upsertTask)
+              .catch(() => {});
             const jira = getTaskJiraLink(t);
             const trello = getTaskTrelloLink(t);
             const github = getTaskGitHubLink(t);
@@ -548,10 +559,6 @@ export default function App() {
         <MessageFeed
           messages={messages}
           tasks={tasks}
-          jiraActive={jiraActive}
-          trelloActive={trelloActive}
-          githubActive={githubActive}
-          slackActive={slackActive}
           onTaskCreated={(task) => {
             setTasks((prev) => (prev.some((x) => x.id === task.id) ? prev : [task, ...prev]));
             reloadMessages().catch(() => {});
@@ -562,10 +569,6 @@ export default function App() {
         <KanbanBoard
           columns={COLUMNS}
           tasks={tasks}
-          jiraActive={jiraActive}
-          trelloActive={trelloActive}
-          githubActive={githubActive}
-          slackActive={slackActive}
           onSelect={setSelected}
           onStatusChange={async (task, status) => {
             const updated = await updateTask(task.id, { status });
@@ -578,13 +581,9 @@ export default function App() {
       {selected && page !== "settings" && (
         <TaskModal
           task={selected}
-          jiraActive={jiraActive}
-          trelloActive={trelloActive}
-          githubActive={githubActive}
           jiraEnabled={jiraEnabled}
           trelloEnabled={trelloEnabled}
           githubEnabled={githubEnabled}
-          slackActive={slackActive}
           slackEnabled={slackEnabled}
           onClose={() => setSelected(null)}
           onUpdate={(t) => {

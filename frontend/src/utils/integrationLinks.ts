@@ -1,7 +1,7 @@
 import { ExternalLink, Message, Task } from "../api";
 
 export function getTaskIntegrationLink(task: Task, provider: string): ExternalLink | null {
-  return task.external_links.find((l) => l.provider === provider) ?? null;
+  return (task.external_links ?? []).find((l) => l.provider === provider) ?? null;
 }
 
 export function integrationLinksByMessageId(
