@@ -1,18 +1,19 @@
 import { ChatPicker } from "../components/ChatPicker";
+import { useI18n } from "../i18n";
 
 interface Props {
   onComplete: () => void;
 }
 
 export function ChatSelection({ onComplete }: Props) {
+  const { messages: t } = useI18n();
+
   return (
     <main className="chats-setup-page">
       <div className="chats-setup-panel">
-        <h1>Чаты для отслеживания</h1>
-        <p className="lead">
-          Выберите чаты, из которых TaskExtraction будет получать сообщения в реальном времени.
-        </p>
-        <ChatPicker onSaved={onComplete} submitLabel="Начать отслеживание" />
+        <h1>{t.app.chatsTitle}</h1>
+        <p className="lead">{t.app.chatsLead}</p>
+        <ChatPicker onSaved={onComplete} submitLabel={t.app.chatsSubmit} />
       </div>
       <style>{`
         .chats-setup-page { width: 100%; }

@@ -1,21 +1,25 @@
 import { IntegrationBrandIcon } from "../IntegrationBrandIcon";
+import { useI18n } from "../../i18n";
 import { ScrollReveal } from "./ScrollReveal";
 
 const INTEGRATIONS = ["jira", "trello", "github", "slack"] as const;
 
 export function LandingStats() {
+  const { messages: t } = useI18n();
+  const lp = t.landing;
+
   return (
     <ScrollReveal as="div" className="lp-stats" delay={80}>
       <div className="lp-stat">
         <strong className="lp-stat-word lp-stat-word--ai">AI</strong>
-        <span>автораспознавание задач без тегов и спецслов</span>
+        <span>{lp.statsAiSub}</span>
       </div>
       <div className="lp-stat">
         <strong>∞</strong>
-        <span>чатов Telegram</span>
+        <span>{lp.statsChats}</span>
       </div>
       <div className="lp-stat lp-stat--integrations">
-        <p className="lp-stat-integrations-title">Интеграции с внешними системами</p>
+        <p className="lp-stat-integrations-title">{lp.statsIntegrations}</p>
         <div className="lp-stat-icons">
           {INTEGRATIONS.map((p) => (
             <IntegrationBrandIcon key={p} provider={p} size={22} />
@@ -24,7 +28,7 @@ export function LandingStats() {
       </div>
       <div className="lp-stat">
         <strong>~5</strong>
-        <span>мин до старта</span>
+        <span>{lp.statsStartSub}</span>
       </div>
     </ScrollReveal>
   );

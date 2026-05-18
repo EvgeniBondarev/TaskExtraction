@@ -1,0 +1,53 @@
+/* Language switcher — minimal, matches nav links */
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  flex-shrink: 0;
+}
+
+.lang-switch-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.42rem;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: color 0.15s, background 0.15s;
+}
+
+.lang-switch-btn:hover:not(.is-active) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lang-switch-btn.is-active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.lang-switch-btn:focus {
+  outline: none;
+}
+
+.lang-switch-btn:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.lp-nav .lang-switch {
+  margin-right: 0.1rem;
+}
+
+.app-top-bar .lang-switch {
+  align-self: center;
+}

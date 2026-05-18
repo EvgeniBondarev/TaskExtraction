@@ -1,5 +1,7 @@
 import { AppBrandName } from "./AppBrandName";
 import { AppLogo } from "./AppLogo";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useI18n } from "../i18n";
 
 export type AppMainPage = "tasks" | "feed" | "settings";
 
@@ -32,31 +34,39 @@ function NavBadge({ count }: { count: number }) {
 }
 
 export function AppTopBar({ page, badges, onNavigate, onHome, onWelcome, onLogout }: Props) {
+  const { messages: t } = useI18n();
+  const nav = t.nav;
   const tasksUnread = badges?.tasks ?? 0;
   const feedUnread = badges?.feed ?? 0;
+
+  const tasksAria =
+    tasksUnread > 0 ? `${nav.tasks}, ${tasksUnread} ${nav.tasksNew}` : nav.tasks;
+  const feedAria =
+    feedUnread > 0 ? `${nav.feed}, ${feedUnread} ${nav.feedNew}` : nav.feed;
+
   return (
     <header className="app-top-bar">
-      <button type="button" className="app-title" onClick={onHome} title="На главную">
+      <button type="button" className="app-title" onClick={onHome} title={nav.homeTitle}>
         <AppLogo size={30} />
         <AppBrandName />
       </button>
-      <nav aria-label="Основная навигация">
+      <nav aria-label={nav.mainNav}>
         <button
           type="button"
           className={page === "tasks" ? "active" : ""}
           onClick={() => onNavigate("tasks")}
-          aria-label={tasksUnread > 0 ? `Задачи, ${tasksUnread} новых` : "Задачи"}
+          aria-label={tasksAria}
         >
-          Задачи
+          {nav.tasks}
           <NavBadge count={tasksUnread} />
         </button>
         <button
           type="button"
           className={page === "feed" ? "active" : ""}
           onClick={() => onNavigate("feed")}
-          aria-label={feedUnread > 0 ? `Лента, ${feedUnread} новых` : "Лента"}
+          aria-label={feedAria}
         >
-          Лента
+          {nav.feed}
           <NavBadge count={feedUnread} />
         </button>
         <button
@@ -64,18 +74,14 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onWelcome, onLogou
           className={page === "settings" ? "active" : ""}
           onClick={() => onNavigate("settings")}
         >
-          Настройки
+          {nav.settings}
         </button>
         <button type="button" className="nav-about" onClick={onWelcome}>
-          О продукте
+          {nav.aboutProduct}
         </button>
-        <button
-          type="button"
-          className="nav-about"
-          onClick={onLogout}
-          title="Сбросить сессию панели (данные сохранятся)"
-        >
-          Выйти из панели
+        <LanguageSwitcher className="lang-switch--app" />
+        <button type="button" className="nav-about" onClick={onLogout} title={nav.logoutPanelTitle}>
+          {nav.logoutPanel}
         </button>
       </nav>
     </header>

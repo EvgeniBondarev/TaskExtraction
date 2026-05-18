@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { absoluteUrl, hasPublicSiteUrl, SITE } from "../config/site";
+import { useI18n } from "../i18n";
 
 type PageMeta = {
   /** Заголовок вкладки; для OG по умолчанию — shareTitle */
@@ -10,6 +11,8 @@ type PageMeta = {
   noindex?: boolean;
   /** false — og:title/description как у вкладки, не карточки мессенджера */
   useSharePreview?: boolean;
+  /** false — не подставлять meta из i18n (внутренние страницы) */
+  useLocaleMeta?: boolean;
 };
 
 function setMeta(attr: "name" | "property" | "itemprop", key: string, content: string) {
@@ -53,28 +56,34 @@ export function SeoHead({
   path = SITE.welcomePath,
   noindex,
   useSharePreview = true,
+  useLocaleMeta = true,
 }: PageMeta) {
-  const tabTitle = title || SITE.title;
-  const tabDesc = description || SITE.description;
-  const ogTitle = useSharePreview ? SITE.shareTitle : tabTitle;
-  const ogDesc = useSharePreview ? SITE.shareDescription : tabDesc;
+  const { locale, messages } = useI18n();
+  const meta = useLocaleMeta ? messages.meta : null;
+  const tabTitle = title || meta?.title || SITE.title;
+  const tabDesc = description || meta?.description || SITE.description;
+  const ogTitle = useSharePreview ? meta?.shareTitle || SITE.shareTitle : tabTitle;
+  const ogDesc = useSharePreview ? meta?.shareDescription || SITE.shareDescription : tabDesc;
+  const keywords = meta?.keywords || SITE.keywords;
+  const ogImageAlt = meta?.ogImageAlt || SITE.ogImageAlt;
+  const ogLocale = meta?.locale || SITE.locale;
   const url = absoluteUrl(path);
   const image = absoluteUrl(SITE.ogImagePath);
   const publicUrl = hasPublicSiteUrl();
 
   useEffect(() => {
     document.title = tabTitle;
-    document.documentElement.lang = "ru";
+    document.documentElement.lang = locale === "en" ? "en" : "ru";
 
     setMeta("name", "description", tabDesc);
-    setMeta("name", "keywords", SITE.keywords);
+    setMeta("name", "keywords", keywords);
     setMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large");
 
     setMeta("property", "og:type", "website");
     setMeta("property", "og:site_name", SITE.siteName);
     setMeta("property", "og:title", ogTitle);
     setMeta("property", "og:description", ogDesc);
-    setMeta("property", "og:locale", SITE.locale);
+    setMeta("property", "og:locale", ogLocale);
 
     if (publicUrl) {
       setMeta("property", "og:url", url);
@@ -83,7 +92,7 @@ export function SeoHead({
       setMeta("property", "og:image:type", "image/png");
       setMeta("property", "og:image:width", String(SITE.ogImageWidth));
       setMeta("property", "og:image:height", String(SITE.ogImageHeight));
-      setMeta("property", "og:image:alt", SITE.ogImageAlt);
+      setMeta("property", "og:image:alt", ogImageAlt);
       setCanonical(url);
       setLinkRel("image_src", image);
     }
@@ -93,7 +102,7 @@ export function SeoHead({
     setMeta("name", "twitter:description", ogDesc);
     if (publicUrl) {
       setMeta("name", "twitter:image", image);
-      setMeta("name", "twitter:image:alt", SITE.ogImageAlt);
+      setMeta("name", "twitter:image:alt", ogImageAlt);
     }
 
     setMeta("itemprop", "name", ogTitle);
@@ -101,7 +110,20 @@ export function SeoHead({
     if (publicUrl) {
       setMeta("itemprop", "image", image);
     }
-  }, [tabTitle, tabDesc, ogTitle, ogDesc, url, image, noindex, publicUrl]);
+  }, [
+    tabTitle,
+    tabDesc,
+    ogTitle,
+    ogDesc,
+    keywords,
+    ogImageAlt,
+    ogLocale,
+    url,
+    image,
+    noindex,
+    publicUrl,
+    locale,
+  ]);
 
   return null;
 }

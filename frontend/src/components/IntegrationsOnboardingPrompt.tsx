@@ -1,5 +1,6 @@
 import { IntegrationBrandIcon } from "./IntegrationBrandIcon";
 import { INTEGRATIONS } from "../hooks/useIntegrationsStatus";
+import { useI18n } from "../i18n";
 
 interface Props {
   onSetup: () => void;
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export function IntegrationsOnboardingPrompt({ onSetup, onSkip }: Props) {
+  const { messages: t } = useI18n();
+
   return (
     <div
       className="int-onboarding-backdrop"
@@ -15,12 +18,9 @@ export function IntegrationsOnboardingPrompt({ onSetup, onSkip }: Props) {
       aria-labelledby="int-onboarding-title"
     >
       <div className="int-onboarding-card">
-        <p className="int-onboarding-eyebrow">Готово — Telegram подключён</p>
-        <h2 id="int-onboarding-title">Куда отправлять задачи?</h2>
-        <p className="int-onboarding-lead">
-          Подключите готовые интеграции: новые задачи из чатов можно автоматически создавать в
-          трекерах или дублировать в Slack.
-        </p>
+        <p className="int-onboarding-eyebrow">{t.app.intEyebrow}</p>
+        <h2 id="int-onboarding-title">{t.app.intTitle}</h2>
+        <p className="int-onboarding-lead">{t.app.intLead}</p>
 
         <ul className="int-onboarding-list">
           {INTEGRATIONS.map((item) => (
@@ -38,10 +38,10 @@ export function IntegrationsOnboardingPrompt({ onSetup, onSkip }: Props) {
 
         <div className="int-onboarding-actions">
           <button type="button" className="int-onboarding-primary" onClick={onSetup}>
-            Настроить интеграции
+            {t.app.intSetup}
           </button>
           <button type="button" className="int-onboarding-secondary" onClick={onSkip}>
-            Позже
+            {t.app.intSkip}
           </button>
         </div>
       </div>

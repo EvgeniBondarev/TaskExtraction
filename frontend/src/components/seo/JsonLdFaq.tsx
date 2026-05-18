@@ -1,39 +1,33 @@
-import { useEffect } from "react";
-import { FAQ_ITEMS } from "../../../seo.config";
+import { useMemo } from "react";
 import { absoluteUrl, SITE } from "../../config/site";
-
-const SCRIPT_ID = "te-jsonld-faq";
+import { useI18n } from "../../i18n";
 
 export function JsonLdFaq() {
-  useEffect(() => {
-    const pageUrl = absoluteUrl(SITE.welcomePath);
-    const payload = {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: FAQ_ITEMS.map((item) => ({
-        "@type": "Question",
-        name: item.question,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: item.answer,
-        },
-      })),
-      url: pageUrl,
-    };
+  const { messages } = useI18n();
 
-    let el = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
-    if (!el) {
-      el = document.createElement("script");
-      el.id = SCRIPT_ID;
-      el.type = "application/ld+json";
-      document.head.appendChild(el);
-    }
-    el.textContent = JSON.stringify(payload);
+  const json = useMemo(
+    () =>
+      JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: messages.faq.items.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.answer,
+          },
+        })),
+      }),
+    [messages.faq.items],
+  );
 
-    return () => {
-      el?.remove();
-    };
-  }, []);
-
-  return null;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: json }}
+      // canonical for FAQ block on welcome page
+      data-page={absoluteUrl(SITE.welcomePath)}
+    />
+  );
 }

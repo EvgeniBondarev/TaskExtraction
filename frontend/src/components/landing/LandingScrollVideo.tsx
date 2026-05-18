@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../../i18n";
 import { ScrollReveal } from "./ScrollReveal";
 
 const VIDEO_SRC = "/videos/welcome-demo.mp4";
 
 export function LandingScrollVideo() {
+  const { messages: t } = useI18n();
+  const lp = t.landing;
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
@@ -36,13 +39,11 @@ export function LandingScrollVideo() {
   }, []);
 
   return (
-    <section className="lp-section lp-demo" id="demo" aria-label="Демонстрация продукта">
+    <section className="lp-section lp-demo" id="demo" aria-label={lp.demoAria}>
       <ScrollReveal className="lp-section-head lp-section-head--center">
-        <span className="lp-badge">Демо</span>
-        <h2>Как выглядит панель в работе</h2>
-        <p className="lp-section-lead">
-          Запись экрана: от сообщения в Telegram до задачи на доске — без ручного копирования.
-        </p>
+        <span className="lp-badge">{lp.demoBadge}</span>
+        <h2>{lp.demoTitle}</h2>
+        <p className="lp-section-lead">{lp.demoLead}</p>
       </ScrollReveal>
 
       <ScrollReveal delay={60} direction="scale">
@@ -60,7 +61,7 @@ export function LandingScrollVideo() {
             preload="metadata"
             disablePictureInPicture
             controlsList="nodownload nofullscreen noremoteplayback"
-            aria-label="Демонстрация TaskExtraction"
+            aria-label={lp.demoVideoAria}
             onLoadedData={() => setReady(true)}
             onContextMenu={(e) => e.preventDefault()}
           />

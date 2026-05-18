@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   connectMessagesWs,
   fetchMessages,
@@ -47,16 +47,23 @@ import { getTaskTrelloLink } from "./utils/trelloIntegration";
 import { trackVisit } from "./api/analytics";
 import { captureUtmFromUrl } from "./utils/utm";
 import { SeoHead } from "./components/SeoHead";
+import { useI18n } from "./i18n";
 
 type MainPage = "tasks" | "feed" | "settings";
 type Gate = "loading" | "setup" | "chats" | "ready";
 
-const COLUMNS = [
-  { id: "inbox", label: "Inbox", color: "var(--inbox)" },
-  { id: "in_progress", label: "В работе", color: "var(--progress)" },
-  { id: "done", label: "Готово", color: "var(--done)" },
-  { id: "archive", label: "Архив", color: "var(--archive)" },
-];
+function useKanbanColumns() {
+  const { messages } = useI18n();
+  return useMemo(
+    () => [
+      { id: "inbox", label: messages.kanban.inbox, color: "var(--inbox)" },
+      { id: "in_progress", label: messages.kanban.inProgress, color: "var(--progress)" },
+      { id: "done", label: messages.kanban.done, color: "var(--done)" },
+      { id: "archive", label: messages.kanban.archive, color: "var(--archive)" },
+    ],
+    [messages.kanban],
+  );
+}
 
 function pathToPage(path: string): MainPage {
   if (path === "/settings" || path === "/telegram") return "settings";
@@ -114,6 +121,7 @@ export default function App() {
   const openedTaskFromUrl = useRef<string | null>(null);
   const reloadRef = useRef<() => Promise<void>>(async () => {});
   const reloadMessagesRef = useRef<() => Promise<void>>(async () => {});
+  const kanbanColumns = useKanbanColumns();
   const { enabled: jiraEnabled } = useJiraIntegration(gate === "ready");
   const { enabled: trelloEnabled } = useTrelloIntegration(gate === "ready");
   const { enabled: githubEnabled } = useGitHubIntegration(gate === "ready");
@@ -522,7 +530,9 @@ export default function App() {
     );
   }
 
-  const panelSeo = <SeoHead noindex path={window.location.pathname || "/"} />;
+  const panelSeo = (
+    <SeoHead noindex useLocaleMeta={false} path={window.location.pathname || "/"} />
+  );
 
   if (gate === "loading") {
     return (
@@ -607,7 +617,7 @@ export default function App() {
         </main>
       ) : (
         <KanbanBoard
-          columns={COLUMNS}
+          columns={kanbanColumns}
           tasks={tasks}
           onSelect={setSelected}
           onStatusChange={async (task, status) => {

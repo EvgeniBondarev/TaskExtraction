@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AppBrandName } from "../components/AppBrandName";
 import { AppLogo } from "../components/AppLogo";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { SeoHead } from "../components/SeoHead";
 import { BeginnerGuide } from "../components/landing/BeginnerGuide";
 import { LandingFaq } from "../components/landing/LandingFaq";
@@ -12,6 +13,7 @@ import { LandingScrollVideo } from "../components/landing/LandingScrollVideo";
 import { LandingStats } from "../components/landing/LandingStats";
 import { ScrollReveal } from "../components/landing/ScrollReveal";
 import { SITE } from "../config/site";
+import { useI18n } from "../i18n";
 import "../styles/landing.css";
 
 const WELCOME_SEEN_KEY = "te_seen_welcome";
@@ -39,6 +41,10 @@ interface Props {
 }
 
 export function LandingPage({ onTry, onSkip, onHome }: Props) {
+  const { messages: t } = useI18n();
+  const lp = t.landing;
+  const nav = t.nav;
+
   useEffect(() => {
     if (window.location.hash === "#guide") {
       document.getElementById("guide")?.scrollIntoView({ behavior: "smooth" });
@@ -67,23 +73,24 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
             e.preventDefault();
             onHome?.();
           }}
-          title="На главную"
+          title={nav.homeTitle}
         >
           <AppLogo size={28} />
           <AppBrandName />
         </a>
-        <nav className="lp-nav-links" aria-label="Навигация">
+        <nav className="lp-nav-links" aria-label={nav.mainNav}>
+          <LanguageSwitcher />
           <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo("features"); }}>
-            Возможности
+            {nav.features}
           </a>
           <a href="#how" onClick={(e) => { e.preventDefault(); scrollTo("how"); }}>
-            Как работает
+            {nav.how}
           </a>
           <a href="#guide" onClick={(e) => { e.preventDefault(); scrollTo("guide"); }}>
-            Гайд
+            {nav.guide}
           </a>
           <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
-            FAQ
+            {nav.faq}
           </a>
           <a
             href="https://t.me/Burn1ngSnow"
@@ -91,40 +98,36 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
             rel="noopener noreferrer"
             className="lp-nav-tg"
           >
-            Контакт
+            {nav.contact}
           </a>
           {onSkip && (
             <button type="button" className="lp-btn lp-btn--ghost lp-btn--sm" onClick={onSkip}>
-              В приложение
+              {nav.toApp}
             </button>
           )}
           <button type="button" className="lp-btn lp-btn--primary lp-btn--sm" onClick={handleTry}>
-            Попробовать
+            {nav.try}
           </button>
         </nav>
       </header>
 
       <section className="lp-hero">
         <ScrollReveal className="lp-hero-copy" immediate direction="up">
-          <p className="lp-hero-slogan">Пиши в Telegram — выполняй везде</p>
+          <p className="lp-hero-slogan">{lp.heroSlogan}</p>
           <h1>
-            Задачи из Telegram — <span>в одной панели</span>
+            {lp.heroTitle} <span>{lp.heroTitleAccent}</span>
           </h1>
-          <p className="lp-hero-lead">
-            TaskExtraction подключается к рабочим чатам, извлекает поручения из обычных сообщений через
-            LLM — без тегов и спецслов — и ведёт учёт в канбане. Выгрузка в Jira, Trello, GitHub Issues
-            и Slack.
-          </p>
+          <p className="lp-hero-lead">{lp.heroLead}</p>
           <div className="lp-hero-actions">
             <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={handleTry}>
-              Попробовать
+              {lp.try}
             </button>
             <button
               type="button"
               className="lp-btn lp-btn--ghost lp-btn--lg"
               onClick={() => scrollTo("guide")}
             >
-              Гайд для новичков
+              {lp.guideLink}
             </button>
           </div>
         </ScrollReveal>
@@ -137,12 +140,9 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
 
       <section className="lp-section" id="how">
         <ScrollReveal className="lp-section-head lp-section-head--center">
-          <span className="lp-badge">Схема</span>
-          <h2>Как устроен процесс</h2>
-          <p className="lp-section-lead">
-            Цепочка от входящего сообщения до записи во внешней системе — четыре этапа, без ручного
-            переноса текста между сервисами.
-          </p>
+          <span className="lp-badge">{lp.howBadge}</span>
+          <h2>{lp.howTitle}</h2>
+          <p className="lp-section-lead">{lp.howLead}</p>
         </ScrollReveal>
         <ScrollReveal delay={80}>
           <FlowDiagram />
@@ -162,8 +162,8 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
       <ScrollReveal as="section" className="lp-contact" id="contact" direction="up">
         <div className="lp-contact-inner">
           <div className="lp-contact-text">
-            <h2>Вопросы по настройке и использованию</h2>
-            <p>Напишите в Telegram — помогу с подключением чатов, LLM и интеграций.</p>
+            <h2>{lp.contactTitle}</h2>
+            <p>{lp.contactLead}</p>
           </div>
           <a
             href="https://t.me/Burn1ngSnow"
@@ -174,33 +174,33 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
             <TelegramMark />
             <span>
               <strong>@Burn1ngSnow</strong>
-              <small>Открыть в Telegram</small>
+              <small>{lp.contactTelegramSmall}</small>
             </span>
           </a>
         </div>
       </ScrollReveal>
 
       <ScrollReveal as="footer" className="lp-footer-cta" direction="scale">
-        <h2>Запустить панель</h2>
-        <p>Пройдите мастер настройки: ключи API, вход в Telegram, выбор чатов.</p>
+        <h2>{lp.footerTitle}</h2>
+        <p>{lp.footerLead}</p>
         <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={handleTry}>
-          Попробовать
+          {lp.try}
         </button>
-        <nav className="lp-footer-links" aria-label="Разделы страницы">
+        <nav className="lp-footer-links" aria-label={lp.footerNav}>
           <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo("features"); }}>
-            Возможности
+            {nav.features}
           </a>
           <a href="#how" onClick={(e) => { e.preventDefault(); scrollTo("how"); }}>
-            Как работает
+            {nav.how}
           </a>
           <a href="#guide" onClick={(e) => { e.preventDefault(); scrollTo("guide"); }}>
-            Гайд
+            {nav.guide}
           </a>
           <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
-            FAQ
+            {nav.faq}
           </a>
         </nav>
-        <p className="lp-footer-note">Развёртывание через Docker · данные хранятся локально</p>
+        <p className="lp-footer-note">{lp.footerNote}</p>
       </ScrollReveal>
     </div>
   );
