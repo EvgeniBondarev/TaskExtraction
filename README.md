@@ -1,5 +1,7 @@
 # TaskExtraction
 
+**Сайт:** [https://task-extraction.ru/](https://task-extraction.ru/)
+
 Панель для команд поддержки: **сообщения из Telegram → классификация LLM → задачи на канбане → синхронизация с Jira, Trello, GitHub Issues и Slack**.
 
 Один Docker-образ (`nginx` + `FastAPI`), SQLite на диске, настройка через веб-интерфейс без правки кода.
@@ -7,8 +9,6 @@
 **Изоляция данных:** у каждого владельца своих `api_id` / `api_hash` с [my.telegram.org](https://my.telegram.org/apps) — отдельная БД, медиа и сессия панели (cookie). Пользователи не видят чужие задачи и чаты.
 
 **Docker Hub:** [`bondarevevgeni/taskextraction:latest`](https://hub.docker.com/r/bondarevevgeni/taskextraction)
-
-**Демо:** [task-extraction.gazonyh.ru](https://task-extraction.gazonyh.ru)
 
 ---
 
@@ -148,8 +148,8 @@ docker run -d \
   -p 8089:80 \
   -v /home/taskextraction/taskextraction-data:/app/data \
   -e ENCRYPTION_KEY="$(cat /home/taskextraction/taskextraction-data/.encryption_key)" \
-  -e PUBLIC_API_URL=https://task-extraction.gazonyh.ru \
-  -e CORS_ORIGINS=https://task-extraction.gazonyh.ru \
+  -e PUBLIC_API_URL=https://task-extraction.ru \
+  -e CORS_ORIGINS=https://task-extraction.ru \
   bondarevevgeni/taskextraction:latest
 ```
 
@@ -209,7 +209,7 @@ docker compose up --build
 
 ```bash
 docker buildx build --platform linux/amd64 \
-  --build-arg VITE_SITE_URL=https://task-extraction.gazonyh.ru \
+  --build-arg VITE_SITE_URL=https://task-extraction.ru \
   -t bondarevevgeni/taskextraction:latest \
   --push .
 ```

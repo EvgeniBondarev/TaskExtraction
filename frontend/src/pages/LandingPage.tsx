@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppBrandName } from "../components/AppBrandName";
 import { AppLogo } from "../components/AppLogo";
 import { SeoHead } from "../components/SeoHead";
 import { BeginnerGuide } from "../components/landing/BeginnerGuide";
@@ -69,7 +70,7 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
           title="На главную"
         >
           <AppLogo size={28} />
-          TaskExtraction
+          <AppBrandName />
         </a>
         <nav className="lp-nav-links" aria-label="Навигация">
           <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo("features"); }}>

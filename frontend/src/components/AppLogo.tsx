@@ -1,3 +1,5 @@
+import { AppBrandName } from "./AppBrandName";
+
 interface Props {
   size?: number;
   showText?: boolean;
@@ -38,7 +40,7 @@ export function AppLogo({ size = 28, showText = false, className = "" }: Props) 
         />
         <circle cx="23" cy="8" r="1.5" fill="#4ade80" />
       </svg>
-      {showText && <span className="app-logo-text">TaskExtraction</span>}
+      {showText && <AppBrandName className="app-logo-text" />}
       <style>{`
         .app-logo {
           display: inline-flex;
@@ -49,10 +51,8 @@ export function AppLogo({ size = 28, showText = false, className = "" }: Props) 
           flex-shrink: 0;
           filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.35));
         }
-        .app-logo-text {
+        .app-logo-text .app-brand-title {
           font-size: 1.2rem;
-          font-weight: 700;
-          letter-spacing: -0.03em;
           color: var(--text);
         }
       `}</style>

@@ -1,3 +1,4 @@
+import { AppBrandName } from "./AppBrandName";
 import { AppLogo } from "./AppLogo";
 
 export type AppMainPage = "tasks" | "feed" | "settings";
@@ -37,7 +38,7 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onWelcome, onLogou
     <header className="app-top-bar">
       <button type="button" className="app-title" onClick={onHome} title="На главную">
         <AppLogo size={30} />
-        <span>TaskExtraction</span>
+        <AppBrandName />
       </button>
       <nav aria-label="Основная навигация">
         <button

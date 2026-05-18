@@ -9,6 +9,7 @@ import {
   TimeseriesPoint,
 } from "../api/admin";
 import "../styles/admin.css";
+import { AppBrandName } from "../components/AppBrandName";
 import { SeoHead } from "../components/SeoHead";
 import {
   Bar,
@@ -142,7 +143,9 @@ export function AdminApp() {
       {adminSeo}
     <div className="admin-root">
       <header className="admin-header">
-        <h1>TaskExtraction — аналитика</h1>
+        <h1>
+          <AppBrandName /> — аналитика
+        </h1>
         <button type="button" onClick={onLogout}>
           Выйти
         </button>
