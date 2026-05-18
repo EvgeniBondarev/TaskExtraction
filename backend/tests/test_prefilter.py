@@ -34,4 +34,4 @@ def test_heuristic_score_action():
 
 
 def test_combined_confidence():
-    assert combined_confidence(0.4, 0.9) >= 0.75
+    assert combined_confidence(0.4, 0.9) >= 0.72

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from app.bootstrap import ensure_encryption_key
@@ -56,13 +57,16 @@ async def lifespan(app: FastAPI):
         logger.info("Legacy data migrated to tenant api_id=%s", migrated)
     migrate_all_tenant_databases()
     set_ws_broadcast(_broadcast_ws)
-    ingest_task = asyncio.create_task(run_ingest_loop())
+    ingest_task = None
+    if os.environ.get("TE_DISABLE_INGEST") != "1":
+        ingest_task = asyncio.create_task(run_ingest_loop())
     yield
-    ingest_task.cancel()
-    try:
-        await ingest_task
-    except asyncio.CancelledError:
-        pass
+    if ingest_task is not None:
+        ingest_task.cancel()
+        try:
+            await ingest_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="TaskExtraction", version="0.2.0", lifespan=lifespan)
