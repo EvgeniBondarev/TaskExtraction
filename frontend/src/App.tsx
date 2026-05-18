@@ -46,6 +46,7 @@ import { getTaskSlackLink } from "./utils/slackIntegration";
 import { getTaskTrelloLink } from "./utils/trelloIntegration";
 import { trackVisit } from "./api/analytics";
 import { captureUtmFromUrl } from "./utils/utm";
+import { SeoHead } from "./components/SeoHead";
 
 type MainPage = "tasks" | "feed" | "settings";
 type Gate = "loading" | "setup" | "chats" | "ready";
@@ -521,27 +522,42 @@ export default function App() {
     );
   }
 
+  const panelSeo = <SeoHead noindex path={window.location.pathname || "/"} />;
+
   if (gate === "loading") {
-    return <AppBootSkeleton />;
+    return (
+      <>
+        {panelSeo}
+        <AppBootSkeleton />
+      </>
+    );
   }
 
   if (gate === "setup") {
     return (
-      <div className="center-page">
-        <TelegramAuth embedded onComplete={onSetupComplete} />
-      </div>
+      <>
+        {panelSeo}
+        <div className="center-page">
+          <TelegramAuth embedded onComplete={onSetupComplete} />
+        </div>
+      </>
     );
   }
 
   if (gate === "chats") {
     return (
-      <div className="app app--chats">
-        <ChatSelection onComplete={onChatsSelected} />
-      </div>
+      <>
+        {panelSeo}
+        <div className="app app--chats">
+          <ChatSelection onComplete={onChatsSelected} />
+        </div>
+      </>
     );
   }
 
   return (
+    <>
+      {panelSeo}
     <div
       className={`app${page === "settings" ? " app--settings" : ""}${page === "feed" ? " app--feed" : ""}`}
     >
@@ -619,5 +635,6 @@ export default function App() {
       )}
 
     </div>
+    </>
   );
 }

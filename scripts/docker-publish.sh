@@ -7,7 +7,7 @@ cd "$ROOT"
 
 docker buildx create --name taskextraction-builder --use 2>/dev/null || docker buildx use taskextraction-builder 2>/dev/null || true
 
-VITE_SITE_URL="${VITE_SITE_URL:-https://task-extraction.gazonyh.ru}"
+VITE_SITE_URL="${VITE_SITE_URL:-https://task-extraction.ru}"
 
 docker buildx build \
   --platform linux/amd64 \

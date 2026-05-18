@@ -1,5 +1,17 @@
+# https://task-extraction.ru/robots.txt
 User-agent: *
 Allow: /
 Allow: /welcome
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /ws/
+Disallow: /settings
+Disallow: /feed
+Disallow: /logs
+Disallow: /telegram
+
+# Яндекс: предпочтительное зеркало (без https://)
+Host: __SITE_HOST__
 
 Sitemap: __SITE_URL__/sitemap.xml

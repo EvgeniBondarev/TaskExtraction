@@ -214,9 +214,23 @@ docker buildx build --platform linux/amd64 \
   --push .
 ```
 
-`VITE_SITE_URL` — публичный URL панели для **Open Graph** (превью ссылки в Telegram), `sitemap.xml` и `robots.txt`. Укажите тот же адрес, по которому открываете сайт (с портом, если он не 80).
+`VITE_SITE_URL` — публичный URL панели для **Open Graph**, `sitemap.xml`, `robots.txt` и canonical. Пример: `https://task-extraction.ru`.
 
-После деплоя проверьте превью: вставьте `http://IP:8089/welcome` в чат Telegram — должны появиться заголовок, описание и картинка.
+Опционально при сборке:
+
+- `VITE_YANDEX_VERIFICATION` — код из [Яндекс.Вебмастер](https://webmaster.yandex.ru)
+- `VITE_GOOGLE_SITE_VERIFICATION` — код из [Google Search Console](https://search.google.com/search-console)
+
+После деплоя:
+
+1. Откройте `https://ваш-домен/robots.txt` и `https://ваш-домен/sitemap.xml`
+2. Добавьте сайт в Вебмастер и Search Console, подтвердите права (meta-теги или файл в `frontend/public/seo/`)
+3. Загрузите sitemap в обе панели
+4. Запросите индексирование страницы `/welcome`
+
+Индексируется лендинг (`/welcome`). Панель (`/settings`, `/feed`, `/admin`) закрыта `noindex` в robots.txt и meta.
+
+После деплоя проверьте превью: вставьте `https://ваш-домен/welcome` в чат Telegram — должны появиться заголовок, описание и картинка.
 
 ---
 

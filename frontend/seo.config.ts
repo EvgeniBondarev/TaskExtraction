@@ -33,3 +33,47 @@ export const SEO = {
 
   twitterCard: "summary_large_image" as const,
 } as const;
+
+/** Публичные URL для sitemap (личный кабинет и админка — только noindex). */
+export const SITEMAP_PATHS: ReadonlyArray<{
+  path: string;
+  changefreq: "weekly" | "monthly";
+  priority: number;
+}> = [
+  { path: "/welcome", changefreq: "weekly", priority: 1.0 },
+  { path: "/", changefreq: "weekly", priority: 0.9 },
+];
+
+/** FAQ для лендинга и JSON-LD (FAQPage). */
+export const FAQ_ITEMS: ReadonlyArray<{ question: string; answer: string }> = [
+  {
+    question: "Что такое TaskExtraction?",
+    answer:
+      "Это веб-панель, которая подключается к рабочим чатам Telegram, находит поручения в обычных сообщениях с помощью LLM и ведёт их в канбане. Задачи можно выгружать в Jira, Trello, GitHub Issues и Slack.",
+  },
+  {
+    question: "Нужны ли хештеги или специальные команды в чате?",
+    answer:
+      "Нет. Система анализирует обычный текст: «сделайте до пятницы», «не работает оплата», «добавьте кнопку» — без #task и без ботов в чате.",
+  },
+  {
+    question: "Какие интеграции поддерживаются?",
+    answer:
+      "Jira, Trello, GitHub Issues и Slack. После создания задачи в панели её можно отправить во внешнюю систему или включить автоматическую выгрузку.",
+  },
+  {
+    question: "Где хранятся данные?",
+    answer:
+      "При развёртывании через Docker данные (БД, медиа, сессия Telegram) остаются на вашем сервере в подключённом volume. Ключи API и токены шифруются.",
+  },
+  {
+    question: "Сколько времени занимает запуск?",
+    answer:
+      "Около 5–15 минут: ключи my.telegram.org, вход в Telegram, выбор чатов и настройка LLM. Подробный гайд есть на странице «Гайд для новичков».",
+  },
+  {
+    question: "Подходит ли сервис для команды поддержки?",
+    answer:
+      "Да. Несколько операторов могут работать с одной панелью; каждый пользователь входит со своими ключами Telegram API. Сообщения из выбранных чатов попадают в ленту и Inbox.",
+  },
+];

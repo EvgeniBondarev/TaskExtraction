@@ -9,6 +9,7 @@ import {
   TimeseriesPoint,
 } from "../api/admin";
 import "../styles/admin.css";
+import { SeoHead } from "../components/SeoHead";
 import {
   Bar,
   BarChart,
@@ -87,12 +88,21 @@ export function AdminApp() {
     setStats(null);
   };
 
+  const adminSeo = <SeoHead noindex path="/admin" />;
+
   if (authed === null) {
-    return <div className="admin-root admin-loading">Загрузка…</div>;
+    return (
+      <>
+        {adminSeo}
+        <div className="admin-root admin-loading">Загрузка…</div>
+      </>
+    );
   }
 
   if (!authed) {
     return (
+      <>
+        {adminSeo}
       <div className="admin-root">
         <div className="admin-login">
           <h1>Админ-панель</h1>
@@ -116,6 +126,7 @@ export function AdminApp() {
           </form>
         </div>
       </div>
+      </>
     );
   }
 
@@ -127,6 +138,8 @@ export function AdminApp() {
   }));
 
   return (
+    <>
+      {adminSeo}
     <div className="admin-root">
       <header className="admin-header">
         <h1>TaskExtraction — аналитика</h1>
@@ -277,5 +290,6 @@ export function AdminApp() {
         ) : null}
       </main>
     </div>
+    </>
   );
 }

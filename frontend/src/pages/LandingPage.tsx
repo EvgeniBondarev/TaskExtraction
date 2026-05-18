@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { AppLogo } from "../components/AppLogo";
 import { SeoHead } from "../components/SeoHead";
 import { BeginnerGuide } from "../components/landing/BeginnerGuide";
+import { LandingFaq } from "../components/landing/LandingFaq";
+import { JsonLdFaq } from "../components/seo/JsonLdFaq";
 import { FlowDiagram } from "../components/landing/FlowDiagram";
 import { HeroIllustration } from "../components/landing/LandingIllustrations";
 import { LandingProductCase } from "../components/landing/LandingProductCase";
@@ -54,6 +56,7 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
   return (
     <div className="lp-page">
       <SeoHead path={SITE.welcomePath} />
+      <JsonLdFaq />
 
       <header className="lp-nav">
         <a
@@ -77,6 +80,9 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
           </a>
           <a href="#guide" onClick={(e) => { e.preventDefault(); scrollTo("guide"); }}>
             Гайд
+          </a>
+          <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
+            FAQ
           </a>
           <a
             href="https://t.me/Burn1ngSnow"
@@ -150,6 +156,8 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
 
       <BeginnerGuide onTry={handleTry} />
 
+      <LandingFaq />
+
       <ScrollReveal as="section" className="lp-contact" id="contact" direction="up">
         <div className="lp-contact-inner">
           <div className="lp-contact-text">
@@ -177,6 +185,20 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
         <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={handleTry}>
           Попробовать
         </button>
+        <nav className="lp-footer-links" aria-label="Разделы страницы">
+          <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo("features"); }}>
+            Возможности
+          </a>
+          <a href="#how" onClick={(e) => { e.preventDefault(); scrollTo("how"); }}>
+            Как работает
+          </a>
+          <a href="#guide" onClick={(e) => { e.preventDefault(); scrollTo("guide"); }}>
+            Гайд
+          </a>
+          <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
+            FAQ
+          </a>
+        </nav>
         <p className="lp-footer-note">Развёртывание через Docker · данные хранятся локально</p>
       </ScrollReveal>
     </div>
