@@ -22,8 +22,8 @@ docker run -d \
   -p "${PORT}:80" \
   -v "${DATA_DIR}:/app/data" \
   -e "ENCRYPTION_KEY=$(cat "$DATA_DIR/.encryption_key")" \
-  -e "PUBLIC_API_URL=${PUBLIC_API_URL:-https://task-extraction.gazonyh.ru}" \
-  -e "CORS_ORIGINS=${CORS_ORIGINS:-https://task-extraction.gazonyh.ru}" \
+  -e "PUBLIC_API_URL=${PUBLIC_API_URL:-https://task-extraction.ru}" \
+  -e "CORS_ORIGINS=${CORS_ORIGINS:-https://task-extraction.ru}" \
   "$IMAGE"
 
 echo "Waiting for health..."
