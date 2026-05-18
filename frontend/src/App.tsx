@@ -32,7 +32,7 @@ import { AppBootSkeleton, FeedPageSkeleton, KanbanBoardSkeleton } from "./compon
 import { MessageToasts, ToastItem } from "./components/MessageToasts";
 import { TaskModal } from "./components/TaskModal";
 import { ChatSelection } from "./pages/ChatSelection";
-import { hasSeenWelcome, LandingPage, markWelcomeSeen } from "./pages/LandingPage";
+import { LandingPage, markWelcomeSeen } from "./pages/LandingPage";
 import { TelegramAuth } from "./pages/TelegramAuth";
 import { TelegramSettings } from "./pages/TelegramSettings";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
@@ -73,13 +73,17 @@ function isWelcomePath(path: string): boolean {
   return path === "/welcome" || path === "/guide";
 }
 
-function shouldOpenWelcome(path: string): boolean {
-  if (isWelcomePath(path)) return true;
-  if (path !== "/") return false;
-  try {
-    return localStorage.getItem("te_seen_welcome") !== "1";
-  } catch {
-    return false;
+function isPanelAuthed(status: { has_credentials: boolean; is_authorized: boolean }): boolean {
+  return status.has_credentials || status.is_authorized;
+}
+
+function goToWelcomeUrl(replace = false): void {
+  if (isWelcomePath(window.location.pathname)) return;
+  const state = {};
+  if (replace) {
+    window.history.replaceState(state, "", "/welcome");
+  } else {
+    window.history.pushState(state, "", "/welcome");
   }
 }
 
@@ -89,9 +93,8 @@ export default function App() {
     void trackVisit();
   }, []);
 
-  const [view, setView] = useState<"welcome" | "app">(() =>
-    shouldOpenWelcome(window.location.pathname) ? "welcome" : "app"
-  );
+  const [view, setView] = useState<"welcome" | "app">("welcome");
+  const [panelAuthed, setPanelAuthed] = useState(false);
   const [gate, setGate] = useState<Gate>("loading");
   const [page, setPage] = useState<MainPage>(() => pathToPage(window.location.pathname));
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -117,6 +120,17 @@ export default function App() {
 
   const checkSetup = useCallback(async () => {
     const s = await fetchTelegramStatus();
+    const authed = isPanelAuthed(s);
+    setPanelAuthed(authed);
+
+    if (!authed) {
+      setView("welcome");
+      setGate("loading");
+      goToWelcomeUrl(true);
+      return s;
+    }
+
+    setView("app");
     if (!s.setup_complete) {
       setGate("setup");
       return s;
@@ -260,20 +274,16 @@ export default function App() {
     if (window.location.pathname === "/guide") {
       window.history.replaceState({}, "", "/welcome#guide");
       setView("welcome");
-    } else if (window.location.pathname === "/" && shouldOpenWelcome("/")) {
-      window.history.replaceState({}, "", "/welcome");
-      setView("welcome");
     }
   }, []);
 
   const enterApp = useCallback(() => {
     markWelcomeSeen();
     setView("app");
-    const path = pageToPath(page);
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, "", path);
-    }
-  }, [page]);
+    setGate("setup");
+    setPage("settings");
+    window.history.pushState({}, "", "/settings");
+  }, []);
 
   const goToWelcome = useCallback(() => {
     setView("welcome");
@@ -298,24 +308,26 @@ export default function App() {
     feedBadgeIds.current.clear();
     taskBadgeIds.current.clear();
     seenMessages.current.clear();
-    setView("app");
-    setGate("setup");
-    setPage("settings");
-    window.history.pushState({}, "", "/settings");
+    setPanelAuthed(false);
+    setView("welcome");
+    setGate("loading");
+    setPage("tasks");
+    goToWelcomeUrl();
   }, []);
 
   const goHome = useCallback(() => {
-    if (hasSeenWelcome()) {
+    if (panelAuthed) {
       setView("app");
       setPage("tasks");
+      if (window.location.pathname !== "/") {
+        window.history.pushState({}, "", "/");
+      }
     } else {
       setView("welcome");
+      goToWelcomeUrl();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    if (window.location.pathname !== "/") {
-      window.history.pushState({}, "", "/");
-    }
-  }, []);
+  }, [panelAuthed]);
 
   useEffect(() => {
     const onPop = () => {
@@ -324,12 +336,17 @@ export default function App() {
         setView("welcome");
         return;
       }
+      if (!panelAuthed) {
+        setView("welcome");
+        goToWelcomeUrl(true);
+        return;
+      }
       setView("app");
       setPage(pathToPage(path));
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, []);
+  }, [panelAuthed]);
 
   const handleWsEvent = useCallback(
     (payload: WsMessagePayload) => {
