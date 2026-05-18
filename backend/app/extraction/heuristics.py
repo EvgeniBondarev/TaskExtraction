@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from app.extraction.prefilter import (
     contains_task_keywords,
+    is_incident_report,
     is_status_or_completion_report,
     normalize_text,
 )
@@ -40,6 +41,7 @@ class HeuristicScore:
     has_deadline: bool
     has_assignee_hint: bool
     likely_task: bool
+    incident_report: bool = False
 
 
 def score_message(text: str | None) -> HeuristicScore:
@@ -50,7 +52,8 @@ def score_message(text: str | None) -> HeuristicScore:
     if is_status_or_completion_report(normalized):
         return HeuristicScore(0.05, False, False, False, False)
 
-    has_action = contains_task_keywords(normalized)
+    incident = is_incident_report(normalized)
+    has_action = contains_task_keywords(normalized) or incident
     has_deadline = any(h in normalized for h in DEADLINE_HINTS)
     has_assignee = any(h in normalized for h in ASSIGNEE_HINTS) or bool(
         re.search(r"@\w+", normalized)
@@ -59,6 +62,8 @@ def score_message(text: str | None) -> HeuristicScore:
     score = 0.0
     if has_action:
         score += 0.4
+    if incident:
+        score += 0.25
     if has_deadline:
         score += 0.2
     if has_assignee:
@@ -69,7 +74,9 @@ def score_message(text: str | None) -> HeuristicScore:
         score += 0.1
 
     score = max(0.0, min(1.0, score))
-    likely = score >= 0.35 or (has_action and len(normalized) >= 12)
+    if incident:
+        score = max(score, 0.55)
+    likely = score >= 0.35 or (has_action and len(normalized) >= 12) or incident
 
     return HeuristicScore(
         score=score,
@@ -77,6 +84,7 @@ def score_message(text: str | None) -> HeuristicScore:
         has_deadline=has_deadline,
         has_assignee_hint=has_assignee,
         likely_task=likely,
+        incident_report=incident,
     )
 
 

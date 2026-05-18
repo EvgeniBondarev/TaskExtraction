@@ -1,7 +1,12 @@
 import pytest
 
 from app.extraction.heuristics import combined_confidence, score_message
-from app.extraction.prefilter import analyze_prefilter, is_status_or_completion_report, should_skip_llm
+from app.extraction.prefilter import (
+    analyze_prefilter,
+    is_incident_report,
+    is_status_or_completion_report,
+    should_skip_llm,
+)
 
 
 @pytest.mark.parametrize(
@@ -67,3 +72,26 @@ def test_imperative_still_calls_llm(text):
     assert is_status_or_completion_report(text) is False
     skip, _ = should_skip_llm(text)
     assert skip is False
+
+
+def test_incident_report_with_greeting_and_question():
+    text = "Добрый день, студия не работает?"
+    assert is_incident_report(text) is True
+    assert is_status_or_completion_report(text) is False
+    skip, _ = should_skip_llm(text)
+    assert skip is False
+    h = score_message(text)
+    assert h.incident_report is True
+    assert h.has_action_verb is True
+    assert h.score >= 0.55
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Уже работает?",
+        "Теперь всё готово?",
+    ],
+)
+def test_status_check_not_incident(text):
+    assert is_incident_report(text) is False

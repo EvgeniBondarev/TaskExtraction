@@ -115,6 +115,48 @@ def is_status_or_completion_report(text: str) -> bool:
     return any(p.search(normalized) for p in STATUS_REPORT_PATTERNS)
 
 
+# Сообщение о поломке / сбое — задача, даже если оформлено вопросом («студия не работает?»)
+INCIDENT_PHRASES = (
+    "не работает",
+    "не работают",
+    "перестал работать",
+    "перестала работать",
+    "перестали работать",
+    "не открыва",
+    "не грузит",
+    "не загружа",
+    "не приходит",
+    "не отправля",
+    "выдает ошибк",
+    "выдаёт ошибк",
+    "ошибка при",
+    "сломал",
+    "упал",
+    "упала",
+    "упало",
+    "глючит",
+    "зависает",
+    "не отображ",
+    "пропал",
+    "пропали",
+)
+
+INCIDENT_STATUS_QUESTION = re.compile(
+    r"\b(?:уже|теперь|всё|все)\s+(?:работает|готово|исправлено)\b",
+    re.IGNORECASE,
+)
+
+
+def is_incident_report(text: str) -> bool:
+    """Нерешённая проблема / сбой — нужна работа команды (не отчёт о выполненном)."""
+    normalized = normalize_text(text)
+    if not normalized or is_status_or_completion_report(normalized):
+        return False
+    if INCIDENT_STATUS_QUESTION.search(normalized):
+        return False
+    return any(phrase in normalized for phrase in INCIDENT_PHRASES)
+
+
 @dataclass
 class PrefilterResult:
     skip: bool

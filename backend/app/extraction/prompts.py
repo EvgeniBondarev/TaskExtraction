@@ -8,10 +8,13 @@ Return JSON only:
 {"is_task": true|false, "confidence": 0.0-1.0, "reason": "brief"}
 
 Rules:
-- Ignore greetings, thanks, jokes, small talk
+- Ignore greetings, thanks, jokes, small talk (greeting + problem below IS a task)
 - Questions alone ("как дела?") are NOT tasks
 - Implicit issues ("нет логирования", "снова упало") CAN be tasks
 - User tips without a problem ("нажмите ctrl+r") are NOT tasks
+- Incident reports ARE tasks even as questions: "студия не работает?", "сайт не открывается?", "API упало?"
+  (someone reports broken behavior — team must fix; NOT the same as asking "is it fixed yet?")
+- Status check questions without a new problem are NOT tasks: "уже работает?", "готово?", "исправили?"
 
 NOT a task — status update / answer / work already done (reply to a previous request):
 - Past tense report: "Добавил …", "Сделал …", "Исправил …", "Реализовал …", "Настроил …", "Готово", "Сделано"

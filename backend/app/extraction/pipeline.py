@@ -8,7 +8,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.extraction.heuristics import combined_confidence, score_message
 from app.extraction.llm import classify_message, extract_task_fields
-from app.extraction.prefilter import analyze_prefilter
+from app.extraction.prefilter import analyze_prefilter, is_incident_report
 from app.models.entities import Message, Task, TaskComment, TaskStatus
 from app.services.message_attachments import message_has_attachments
 from app.services.prompt_settings import get_prompt_config
@@ -81,14 +81,23 @@ async def process_message(session: AsyncSession, message_id: UUID) -> Task | Tas
 
     classification = await classify_message(message.text or "", context)
     final_confidence = combined_confidence(heuristic.score, classification.confidence)
-    # Create card when classifier says task and AI confidence meets threshold.
-    # Combined score is for display/sorting only — low heuristics must not block LLM positives.
-    passes_gate = classification.is_task and classification.confidence >= threshold
+    incident = heuristic.incident_report or is_incident_report(message.text or "")
+    # Classifier positive, or clear incident report (e.g. «студия не работает?») with decent AI score.
+    passes_gate = (
+        classification.is_task and classification.confidence >= threshold
+    ) or (
+        incident
+        and heuristic.has_action_verb
+        and classification.confidence >= min(0.50, threshold - 0.15)
+    )
+    effective_is_task = classification.is_task or (
+        incident and heuristic.has_action_verb and passes_gate
+    )
 
     if not passes_gate:
         skip_reason = (
             "not_task"
-            if not classification.is_task
+            if not effective_is_task
             else "ai_below_threshold"
         )
         logger.debug(
@@ -104,13 +113,14 @@ async def process_message(session: AsyncSession, message_id: UUID) -> Task | Tas
             message.raw = {}
         message.raw["classification"] = {
             "status": "classified",
-            "is_task": classification.is_task,
+            "is_task": effective_is_task,
             "confidence": final_confidence,
             "ai_confidence": classification.confidence,
             "reason": classification.reason,
             "heuristic": heuristic.score,
             "threshold": threshold,
             "skip_reason": skip_reason,
+            "incident_report": incident,
         }
         flag_modified(message, "raw")
         return None
