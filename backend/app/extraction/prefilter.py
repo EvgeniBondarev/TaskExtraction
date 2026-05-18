@@ -72,6 +72,27 @@ GREETING_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
+# Отчёт о выполненной работе / ответ на запрос — не новая задача
+STATUS_REPORT_PATTERNS = (
+    re.compile(
+        r"^(?:я\s+)?(?:уже\s+|только\s+что\s+)?"
+        r"(?:добавил[аио]?|добавили|добавлено|сделал[аио]?|сделали|сделано|"
+        r"исправил[аио]?|исправили|исправлено|реализовал[аио]?|реализовано|"
+        r"внедрил[аио]?|настроил[аио]?|обновил[аио]?|починил[аио]?|вернул[аио]?|"
+        r"убрал[аио]?|удалил[аио]?|отправил[аио]?|закоммитил[аио]?|запушил[аио]?|"
+        r"выложил[аио]?|задеплоил[аио]?|внёс[аио]?|внес[аио]?)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"^(?:готово|сделано|исправлено|добавлено|реализовано)[\s!.,:—-]", re.IGNORECASE),
+    re.compile(r"^теперь\s+(?:можно|есть|работает|доступн)", re.IGNORECASE),
+    re.compile(r"\bуже\s+(?:добавил|сделал|исправил|готово|работает)\b", re.IGNORECASE),
+    re.compile(
+        r"(?:добавил|сделал|исправил|реализовал|настроил|обновил|внедрил)"
+        r".{0,120}\bиз\s+(?:документа|тз|задачи|тикета)\b",
+        re.IGNORECASE,
+    ),
+)
+
 MIN_TEXT_LEN = 8
 MIN_TEXT_LEN_WITH_MEDIA = 3
 MAX_SINGLE_WORD_LEN = 24
@@ -84,6 +105,14 @@ def normalize_text(text: str | None) -> str:
 
 def contains_task_keywords(text: str) -> bool:
     return any(word in text for word in TASK_VERBS)
+
+
+def is_status_or_completion_report(text: str) -> bool:
+    """Сообщение об уже сделанном (ответ), а не просьба что-то сделать."""
+    normalized = normalize_text(text)
+    if not normalized:
+        return False
+    return any(p.search(normalized) for p in STATUS_REPORT_PATTERNS)
 
 
 @dataclass
@@ -112,6 +141,9 @@ def analyze_prefilter(text: str | None, has_media: bool = False) -> PrefilterRes
 
     if normalized in STOP_PHRASES:
         return PrefilterResult(True, "stop_phrase", False)
+
+    if is_status_or_completion_report(normalized):
+        return PrefilterResult(True, "status_report", False)
 
     for phrase in STOP_PHRASES:
         if len(normalized) <= 20 and phrase in normalized and len(normalized) - len(phrase) < 5:

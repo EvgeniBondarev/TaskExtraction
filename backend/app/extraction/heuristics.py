@@ -6,9 +6,8 @@ import re
 from dataclasses import dataclass
 
 from app.extraction.prefilter import (
-    GREETING_PATTERNS,
-    TASK_VERBS,
     contains_task_keywords,
+    is_status_or_completion_report,
     normalize_text,
 )
 
@@ -47,6 +46,9 @@ def score_message(text: str | None) -> HeuristicScore:
     normalized = normalize_text(text)
     if not normalized:
         return HeuristicScore(0.0, False, False, False, False)
+
+    if is_status_or_completion_report(normalized):
+        return HeuristicScore(0.05, False, False, False, False)
 
     has_action = contains_task_keywords(normalized)
     has_deadline = any(h in normalized for h in DEADLINE_HINTS)

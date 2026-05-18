@@ -1,7 +1,7 @@
 import pytest
 
 from app.extraction.heuristics import combined_confidence, score_message
-from app.extraction.prefilter import analyze_prefilter, should_skip_llm
+from app.extraction.prefilter import analyze_prefilter, is_status_or_completion_report, should_skip_llm
 
 
 @pytest.mark.parametrize(
@@ -35,3 +35,35 @@ def test_heuristic_score_action():
 
 def test_combined_confidence():
     assert combined_confidence(0.4, 0.9) >= 0.72
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Добавил возможность отмены на озон из документа",
+        "Сделал как просили",
+        "Исправил баг на проде",
+        "Готово, можно проверять",
+        "Теперь можно отменять заказ на озон",
+        "Уже добавил в релиз",
+    ],
+)
+def test_status_report_skipped(text):
+    assert is_status_or_completion_report(text) is True
+    skip, reason = should_skip_llm(text)
+    assert skip is True
+    assert reason == "status_report"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Добавь возможность отмены на озон",
+        "Нужно сделать отмену на озон",
+        "Пожалуйста исправь отмену заказа",
+    ],
+)
+def test_imperative_still_calls_llm(text):
+    assert is_status_or_completion_report(text) is False
+    skip, _ = should_skip_llm(text)
+    assert skip is False

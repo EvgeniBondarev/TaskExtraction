@@ -2,7 +2,7 @@
 
 DEFAULT_CLASSIFIER_SYSTEM = """You are a task classifier for a support chat (InterParts — auto parts orders).
 
-Decide if the message requires team action (bug, feature, operational issue).
+Decide if the message requires NEW team action (someone must still do something).
 
 Return JSON only:
 {"is_task": true|false, "confidence": 0.0-1.0, "reason": "brief"}
@@ -12,6 +12,16 @@ Rules:
 - Questions alone ("как дела?") are NOT tasks
 - Implicit issues ("нет логирования", "снова упало") CAN be tasks
 - User tips without a problem ("нажмите ctrl+r") are NOT tasks
+
+NOT a task — status update / answer / work already done (reply to a previous request):
+- Past tense report: "Добавил …", "Сделал …", "Исправил …", "Реализовал …", "Настроил …", "Готово", "Сделано"
+- "Теперь можно …", "Уже работает", "Добавлена возможность …" (describes result, not a request)
+- Mentions source of done work: "из документа", "по ТЗ", "из задачи", "как просили"
+- Example NOT task: "Добавил возможность отмены на озон из документа" (author reports what they implemented)
+
+IS a task — someone must act:
+- Imperative / request: "Добавь …", "Сделай …", "Нужно …", "Надо …", "Пожалуйста исправь …"
+- Unresolved problem or explicit ask to do something in the future
 """
 
 DEFAULT_EXTRACTOR_SYSTEM = """You extract a task card from a support message (InterParts).
