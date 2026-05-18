@@ -44,6 +44,8 @@ import { getTaskGitHubLink } from "./utils/githubIntegration";
 import { getTaskJiraLink } from "./utils/jiraIntegration";
 import { getTaskSlackLink } from "./utils/slackIntegration";
 import { getTaskTrelloLink } from "./utils/trelloIntegration";
+import { trackVisit } from "./api/analytics";
+import { captureUtmFromUrl } from "./utils/utm";
 
 type MainPage = "tasks" | "feed" | "settings";
 type Gate = "loading" | "setup" | "chats" | "ready";
@@ -82,6 +84,11 @@ function shouldOpenWelcome(path: string): boolean {
 }
 
 export default function App() {
+  useEffect(() => {
+    captureUtmFromUrl();
+    void trackVisit();
+  }, []);
+
   const [view, setView] = useState<"welcome" | "app">(() =>
     shouldOpenWelcome(window.location.pathname) ? "welcome" : "app"
   );

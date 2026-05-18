@@ -21,6 +21,11 @@ _PUBLIC_EXACT = (
     "/api/telegram/setup-required",
 )
 
+_PUBLIC_PREFIXES_EXTRA = (
+    "/api/analytics/",
+    "/api/admin/",
+)
+
 
 def session_secret() -> str:
     raw = os.environ.get("SESSION_SECRET") or os.environ.get("ENCRYPTION_KEY") or ""
@@ -35,6 +40,8 @@ def is_public_path(path: str, method: str = "GET") -> bool:
     if path == "/api/telegram/credentials" and method.upper() == "POST":
         return True
     if path == "/api/session/logout" and method.upper() == "POST":
+        return True
+    if any(path == p.rstrip("/") or path.startswith(p) for p in _PUBLIC_PREFIXES_EXTRA):
         return True
     return any(path == p or path.startswith(p + "/") for p in _PUBLIC_PREFIXES)
 

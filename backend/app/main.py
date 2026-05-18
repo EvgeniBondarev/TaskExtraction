@@ -56,6 +56,9 @@ async def lifespan(app: FastAPI):
     if migrated:
         logger.info("Legacy data migrated to tenant api_id=%s", migrated)
     migrate_all_tenant_databases()
+    from app.analytics.db import init_analytics_db
+
+    await init_analytics_db()
     set_ws_broadcast(_broadcast_ws)
     ingest_task = None
     if os.environ.get("TE_DISABLE_INGEST") != "1":

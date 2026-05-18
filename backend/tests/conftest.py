@@ -19,6 +19,8 @@ os.environ["ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 os.environ["TE_DISABLE_INGEST"] = "1"
 os.environ["CORS_ORIGINS"] = "http://testserver"
 os.environ["PUBLIC_API_URL"] = "http://testserver"
+os.environ["ADMIN_USERNAME"] = "root"
+os.environ["ADMIN_PASSWORD"] = "pytest-admin-password"
 
 TEST_API_ID = 12345678
 TEST_API_HASH = "a" * 32
@@ -63,6 +65,9 @@ def app():
 
 @pytest.fixture
 async def client(app) -> AsyncGenerator[AsyncClient, None]:
+    from app.analytics.db import init_analytics_db
+
+    await init_analytics_db()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
         yield ac

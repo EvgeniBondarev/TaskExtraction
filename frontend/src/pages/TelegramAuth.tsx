@@ -11,6 +11,7 @@ import {
   verifyPhoneCode,
 } from "../api/telegram";
 import { SetupStepper, SetupStepItem } from "../components/SetupStepper";
+import { trackAnalyticsEvent } from "../api/analytics";
 
 type Step = "credentials" | "auth" | "done";
 type AuthMethod = "phone" | "qr";
@@ -55,13 +56,23 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
   const [loading, setLoading] = useState(false);
   const stopPollRef = useRef<(() => void) | null>(null);
   const wasCompleteRef = useRef(false);
+  const trackedLoginRef = useRef(false);
+  const trackedSetupRef = useRef(false);
   const qrAutoStarted = useRef(false);
 
   const refresh = useCallback(async () => {
     const s = await fetchTelegramStatus();
     setStatus(s);
+    if (s.is_authorized && !trackedLoginRef.current) {
+      trackedLoginRef.current = true;
+      void trackAnalyticsEvent("login", s.api_id);
+    }
     if (s.setup_complete) {
       setStep("done");
+      if (!trackedSetupRef.current) {
+        trackedSetupRef.current = true;
+        void trackAnalyticsEvent("setup_complete", s.api_id);
+      }
       if (!wasCompleteRef.current) {
         wasCompleteRef.current = true;
         onComplete?.();
@@ -155,11 +166,13 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
     }
     setLoading(true);
     try {
+      const savedApiId = Number(apiId);
       await saveTelegramCredentials({
-        api_id: Number(apiId),
+        api_id: savedApiId,
         api_hash: apiHash.trim(),
         app_title: appTitle || undefined,
       });
+      void trackAnalyticsEvent("registration", savedApiId);
       await refresh();
       setStep("auth");
     } catch (err) {

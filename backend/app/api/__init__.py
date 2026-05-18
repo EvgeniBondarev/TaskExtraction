@@ -1,8 +1,26 @@
 from fastapi import APIRouter
 
-from app.api import attachments, chats, github, health, jira, llm, messages, profiles, session, slack, tasks, telegram, trello
+from app.api import (
+    admin,
+    analytics,
+    attachments,
+    chats,
+    github,
+    health,
+    jira,
+    llm,
+    messages,
+    profiles,
+    session,
+    slack,
+    tasks,
+    telegram,
+    trello,
+)
 
 api_router = APIRouter(prefix="/api")
+api_router.include_router(analytics.router)
+api_router.include_router(admin.router)
 api_router.include_router(health.router)
 api_router.include_router(session.router)
 api_router.include_router(telegram.router)
