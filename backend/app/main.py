@@ -29,7 +29,6 @@ from app.tenancy import (
     set_current_tenant,
 )
 from app.tenancy.http import tenant_from_session_cookie
-from app.tenancy.registry import list_tenant_keys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -137,9 +136,6 @@ async def root_health():
 @app.websocket("/ws/messages")
 async def ws_messages(websocket: WebSocket):
     tenant = tenant_from_session_cookie(websocket.cookies.get("te_session"))
-    keys = list_tenant_keys()
-    if not tenant and len(keys) == 1:
-        tenant = keys[0]
     if not tenant:
         await websocket.close(code=4401)
         return

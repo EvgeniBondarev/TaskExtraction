@@ -64,35 +64,22 @@ def clear_session_tenant(request: Request) -> None:
 
 
 def resolve_request_tenant(request: Request) -> str | None:
-    """Cookie-сессия или единственный tenant на инстансе (типичный VPS)."""
-    tenant = get_session_tenant(request)
-    if tenant:
-        return tenant
-    from app.tenancy.registry import list_tenant_keys
-
-    keys = list_tenant_keys()
-    if len(keys) == 1:
-        return keys[0]
-    return None
+    """Tenant только из cookie-сессии браузера (te_session). Без автоподбора чужого аккаунта."""
+    return get_session_tenant(request)
 
 
 def bind_request_tenant(request: Request) -> str | None:
-    """Установить tenant в контекст и cookie (если один tenant и сессии ещё нет)."""
-    tenant = resolve_request_tenant(request)
-    if tenant and not get_session_tenant(request):
-        set_session_tenant(request, tenant)
-    return tenant
+    """Текущий tenant из cookie; cookie выставляется только при явном входе (credentials)."""
+    return get_session_tenant(request)
 
 
 def require_session_tenant(request: Request) -> str:
-    tenant = resolve_request_tenant(request)
+    tenant = get_session_tenant(request)
     if not tenant:
         raise HTTPException(
             status_code=401,
             detail="Сессия не найдена. Укажите свои ключи Telegram API (my.telegram.org).",
         )
-    if not get_session_tenant(request):
-        set_session_tenant(request, tenant)
     return tenant
 
 

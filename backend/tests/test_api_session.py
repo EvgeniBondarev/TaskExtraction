@@ -21,9 +21,28 @@ async def test_credentials_sets_session(authed_client: AsyncClient):
 async def test_logout_clears_session(authed_client: AsyncClient):
     r = await authed_client.post("/api/session/logout")
     assert r.status_code == 200
-  # single tenant may still auto-bind; re-login flow
+    r_tasks = await authed_client.get("/api/tasks")
+    assert r_tasks.status_code == 401
     r2 = await authed_client.post(
         "/api/telegram/credentials",
         json={"api_id": TEST_API_ID, "api_hash": TEST_API_HASH},
     )
     assert r2.status_code == 200
+    r3 = await authed_client.get("/api/tasks")
+    assert r3.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_single_tenant_on_disk_does_not_auto_bind(app, authed_client: AsyncClient):
+    """Один tenant в data/ не должен открывать чужую панель без cookie."""
+    from httpx import ASGITransport, AsyncClient
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as anon:
+        r = await anon.get("/api/telegram/status")
+        assert r.status_code == 200
+        assert r.json()["setup_complete"] is False
+        assert r.json()["has_credentials"] is False
+
+        r_tasks = await anon.get("/api/tasks")
+        assert r_tasks.status_code == 401
