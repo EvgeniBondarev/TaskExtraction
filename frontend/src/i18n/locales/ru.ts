@@ -83,6 +83,34 @@ const messages: Messages = {
     footerNote: "Развёртывание через Docker · данные хранятся локально",
     footerNav: "Разделы страницы",
   },
+  heroDiagram: {
+    aria: "Схема: сообщения из Telegram обрабатываются сервисом и уходят в интеграции",
+    telegram: {
+      title: "Telegram",
+      user: "Пользователь",
+      messages: [
+        { text: "Отчёт по продажам к пятнице", time: "09:41" },
+        { text: "Созвон с клиентом завтра 14:00", time: "09:42" },
+        { text: "Проверить статус оплаты", time: "09:43" },
+      ],
+    },
+    service: {
+      title: "TaskExtraction",
+      sub: "ИИ и канбан",
+      step1Title: "Обработка",
+      step2Title: "Канбан",
+      step3Title: "Интеграции",
+      step3Text: "→ Jira, Trello, GitHub, Slack",
+      tags: ["Задачи", "Встречи", "Напоминания", "Проекты"],
+      kanbanCols: ["Бэклог", "В работе", "Готово"],
+    },
+    integrations: {
+      jira: { name: "Jira", sub: "Проекты" },
+      trello: { name: "Trello", sub: "Доски" },
+      github: { name: "GitHub", sub: "Issues" },
+      slack: { name: "Slack", sub: "Уведомления" },
+    },
+  },
   guide: {
     steps: [
       {
@@ -143,6 +171,19 @@ const messages: Messages = {
     ],
   },
   case: {
+    flow: {
+      aria: "Анимация сценария: сообщение, обработка ИИ, задача, интеграции",
+      panelCaption: "Как это выглядит при прокрутке",
+      aiLabel: "ИИ-классификация",
+      taskBadge: "Inbox",
+      steps: [
+        "Сообщение в чате",
+        "Передача в сервис",
+        "Обработка LLM",
+        "Задача на доске",
+        "Распределение по сервисам",
+      ],
+    },
     steps: [
       {
         num: "1",

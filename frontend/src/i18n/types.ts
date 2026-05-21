@@ -29,6 +29,16 @@ export type FaqItem = {
   answer: string;
 };
 
+export type HeroDiagramMessage = {
+  text: string;
+  time: string;
+};
+
+export type HeroDiagramIntegration = {
+  name: string;
+  sub: string;
+};
+
 export type Messages = {
   meta: {
     title: string;
@@ -108,9 +118,36 @@ export type Messages = {
     footerNote: string;
     footerNav: string;
   };
+  heroDiagram: {
+    aria: string;
+    telegram: {
+      title: string;
+      user: string;
+      messages: HeroDiagramMessage[];
+    };
+    service: {
+      title: string;
+      sub: string;
+      step1Title: string;
+      step2Title: string;
+      step3Title: string;
+      step3Text: string;
+      tags: string[];
+      kanbanCols: string[];
+    };
+    integrations: {
+      jira: HeroDiagramIntegration;
+      trello: HeroDiagramIntegration;
+      github: HeroDiagramIntegration;
+      slack: HeroDiagramIntegration;
+    };
+  };
   guide: { steps: GuideStep[] };
   flow: { steps: FlowStep[]; aria: string; stepLabel: string; integrations: string };
-  case: { steps: CaseStep[] };
+  case: {
+    steps: CaseStep[];
+    flow: { aria: string; panelCaption: string; aiLabel: string; taskBadge: string; steps: string[] };
+  };
   faq: { items: FaqItem[] };
   app: {
     chatsTitle: string;

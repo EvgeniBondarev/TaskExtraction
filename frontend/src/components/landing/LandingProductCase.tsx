@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { useRef } from "react";
 import { IntegrationBrandIcon } from "../IntegrationBrandIcon";
 import { useI18n } from "../../i18n";
+import { CaseFlowPanel, useCaseScrollPhase } from "./CaseScrollFlow";
 import { FeedIllustration, KanbanIllustration, ShopChatIllustration } from "./LandingIllustrations";
 import { ScrollReveal } from "./ScrollReveal";
 
@@ -18,10 +20,20 @@ const CASE_VISUALS: (ReactNode | undefined)[] = [
   ),
 ];
 
+/** Индекс шага таймлайна, подсвеченного при данной фазе анимации */
+function timelinePhaseIndex(phase: number, stepCount: number) {
+  if (phase <= 0) return 0;
+  if (phase >= 4) return stepCount - 1;
+  return Math.min(phase - 1, stepCount - 1);
+}
+
 export function LandingProductCase() {
   const { messages: t } = useI18n();
   const lp = t.landing;
   const steps = t.case.steps;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const phase = useCaseScrollPhase(scrollRef);
+  const activeStep = timelinePhaseIndex(phase, steps.length);
 
   return (
     <div className="lp-case">
@@ -31,55 +43,58 @@ export function LandingProductCase() {
         <p className="lp-section-lead">{lp.caseLead}</p>
       </ScrollReveal>
 
-      <ol className="lp-case-timeline">
-        {steps.map((step, index) => (
-          <ScrollReveal
-            key={step.num}
-            as="li"
-            className="lp-case-timeline-item"
-            delay={index * 60}
-            direction="up"
-          >
-            <div className="lp-case-timeline-rail" aria-hidden>
-              <span className="lp-case-timeline-dot">{step.num}</span>
-              {index < steps.length - 1 && <span className="lp-case-timeline-line" />}
-            </div>
+      <div ref={scrollRef} className="lp-case-scroll">
+        <div className="lp-case-layout">
+          <ol className="lp-case-timeline">
+            {steps.map((step, index) => (
+              <li
+                key={step.num}
+                className={`lp-case-timeline-item${index === activeStep ? " lp-case-timeline-item--active" : ""}${index < activeStep ? " lp-case-timeline-item--done" : ""}`}
+              >
+                <div className="lp-case-timeline-rail" aria-hidden>
+                  <span className="lp-case-timeline-dot">{step.num}</span>
+                  {index < steps.length - 1 && <span className="lp-case-timeline-line" />}
+                </div>
 
-            <div className="lp-case-timeline-body">
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
+                <div className="lp-case-timeline-body">
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
 
-              {step.quote && (
-                <blockquote className="lp-case-quote">
-                  <span className="lp-case-quote-label">{lp.caseQuoteLabel}</span>
-                  «{step.quote}»
-                </blockquote>
-              )}
+                  {step.quote && (
+                    <blockquote className="lp-case-quote">
+                      <span className="lp-case-quote-label">{lp.caseQuoteLabel}</span>
+                      «{step.quote}»
+                    </blockquote>
+                  )}
 
-              {step.outcome && (
-                <p className="lp-case-outcome">
-                  <span className="lp-case-outcome-icon" aria-hidden>
-                    ✓
-                  </span>
-                  {step.outcome}
-                </p>
-              )}
+                  {step.outcome && (
+                    <p className="lp-case-outcome">
+                      <span className="lp-case-outcome-icon" aria-hidden>
+                        ✓
+                      </span>
+                      {step.outcome}
+                    </p>
+                  )}
 
-              {step.bullets && (
-                <ul className="lp-case-bullets">
-                  {step.bullets.map((b) => (
-                    <li key={b}>{b}</li>
-                  ))}
-                </ul>
-              )}
+                  {step.bullets && (
+                    <ul className="lp-case-bullets">
+                      {step.bullets.map((b) => (
+                        <li key={b}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
 
-              {CASE_VISUALS[index] && (
-                <div className="lp-case-visual">{CASE_VISUALS[index]}</div>
-              )}
-            </div>
-          </ScrollReveal>
-        ))}
-      </ol>
+                  {CASE_VISUALS[index] && (
+                    <div className="lp-case-visual">{CASE_VISUALS[index]}</div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <CaseFlowPanel phase={phase} />
+        </div>
+      </div>
     </div>
   );
 }

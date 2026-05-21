@@ -83,6 +83,34 @@ const messages: Messages = {
     footerNote: "Deploy with Docker · data stays on your server",
     footerNav: "Page sections",
   },
+  heroDiagram: {
+    aria: "Flow: Telegram messages are processed by the service and sent to integrations",
+    telegram: {
+      title: "Telegram",
+      user: "User",
+      messages: [
+        { text: "Sales report due Friday", time: "09:41" },
+        { text: "Client call tomorrow 2 PM", time: "09:42" },
+        { text: "Check payment status", time: "09:43" },
+      ],
+    },
+    service: {
+      title: "TaskExtraction",
+      sub: "AI & Kanban",
+      step1Title: "Processing",
+      step2Title: "Kanban",
+      step3Title: "Integrations",
+      step3Text: "→ Jira, Trello, GitHub, Slack",
+      tags: ["Tasks", "Meetings", "Reminders", "Projects"],
+      kanbanCols: ["Backlog", "In progress", "Done"],
+    },
+    integrations: {
+      jira: { name: "Jira", sub: "Projects" },
+      trello: { name: "Trello", sub: "Boards" },
+      github: { name: "GitHub", sub: "Issues" },
+      slack: { name: "Slack", sub: "Alerts" },
+    },
+  },
   guide: {
     steps: [
       {
@@ -143,6 +171,19 @@ const messages: Messages = {
     ],
   },
   case: {
+    flow: {
+      aria: "Scenario animation: message, AI processing, task, integrations",
+      panelCaption: "What happens as you scroll",
+      aiLabel: "AI classification",
+      taskBadge: "Inbox",
+      steps: [
+        "Message in chat",
+        "Sent to service",
+        "LLM processing",
+        "Task on board",
+        "Push to services",
+      ],
+    },
     steps: [
       {
         num: "1",
