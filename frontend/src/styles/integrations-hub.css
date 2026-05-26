@@ -6,11 +6,11 @@
 }
 
 .integrations-hub-intro {
-  background: linear-gradient(160deg, rgba(99, 102, 241, 0.1) 0%, var(--surface) 70%);
+  background: linear-gradient(160deg, rgba(99, 102, 241, 0.1) 0%, rgba(0, 0, 0, 0.12) 70%);
   border: 1px solid rgba(99, 102, 241, 0.25);
-  border-radius: 14px;
-  padding: 1.1rem 1.2rem;
-  margin-bottom: 1rem;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.85rem;
 }
 
 .integrations-hub-intro h3 {

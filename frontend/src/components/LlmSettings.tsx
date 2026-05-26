@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchLlmStatus, LlmStatus, LlmTestResult, saveLlmSettings, testLlmSettings } from "../api/llm";
 import { SettingsFormSkeleton } from "./PageSkeletons";
+import { useI18n } from "../i18n";
 
 export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
+  const { messages: t } = useI18n();
+  const l = t.settings.llm;
+  const c = t.settings.common;
   const [status, setStatus] = useState<LlmStatus | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
@@ -19,7 +23,7 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
   }, []);
 
   useEffect(() => {
-    reload().catch(() => setError("Не удалось загрузить настройки OpenRouter"));
+    reload().catch(() => setError(l.loadFailed));
   }, [reload]);
 
   const canEditModel = status?.has_user_key || apiKey.trim().length > 0;
@@ -36,9 +40,9 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
       const s = await saveLlmSettings(body);
       setStatus(s);
       setApiKey("");
-      setInfo("Настройки OpenRouter сохранены");
+      setInfo(l.saved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
+      setError(err instanceof Error ? err.message : c.error);
     } finally {
       setLoading(false);
     }
@@ -57,14 +61,14 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
       setTestResult(result);
       if (!result.success) setError(result.message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка теста");
+      setError(err instanceof Error ? err.message : l.testFailed);
     } finally {
       setTesting(false);
     }
   };
 
   const handleClearKey = async () => {
-    if (!confirm("Удалить ваш API-ключ и вернуться к встроенной модели?")) return;
+    if (!confirm(l.clearKeyConfirm)) return;
     setLoading(true);
     setError("");
     try {
@@ -73,9 +77,9 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
       setApiKey("");
       setModel("");
       setTestResult(null);
-      setInfo("Используется встроенный ключ OpenRouter");
+      setInfo(l.usingBuiltinKey);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
+      setError(err instanceof Error ? err.message : c.error);
     } finally {
       setLoading(false);
     }
@@ -93,9 +97,9 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
     <section className={`llm-settings${embedded ? " embedded" : ""}`}>
       {!embedded && (
         <>
-          <h3>OpenRouter (LLM)</h3>
+          <h3>{l.title}</h3>
           <p className="hint">
-            Извлечение задач через{" "}
+            {l.hintBefore}{" "}
             <a href="https://openrouter.ai" target="_blank" rel="noreferrer">
               openrouter.ai
             </a>
@@ -105,17 +109,17 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
 
       <div className="status-grid">
         <div className="status-card">
-          <span className="stat-label">Провайдер</span>
+          <span className="stat-label">{l.provider}</span>
           <span className="stat-value">{status.provider}</span>
         </div>
         <div className="status-card">
-          <span className="stat-label">Ключ</span>
+          <span className="stat-label">{l.key}</span>
           <span className={`stat-value ${status.key_source === "user" ? "ok" : ""}`}>
-            {status.key_source === "user" ? `Ваш · ${status.user_key_masked}` : "Встроенный"}
+            {status.key_source === "user" ? `${l.keyUser} · ${status.user_key_masked}` : l.keyBuiltin}
           </span>
         </div>
         <div className="status-card wide">
-          <span className="stat-label">Активная модель</span>
+          <span className="stat-label">{l.activeModel}</span>
           <code className="stat-code">{status.active_model}</code>
         </div>
       </div>
@@ -125,7 +129,7 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
 
       <form className="llm-form" onSubmit={handleSave}>
         <label>
-          OpenRouter API key <span className="opt">(опционально)</span>
+          {l.apiKeyLabel} <span className="opt">{c.optional}</span>
           <input
             type="password"
             value={apiKey}
@@ -135,7 +139,7 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
           />
         </label>
         <label className={!canEditModel ? "disabled" : ""}>
-          Своя модель
+          {l.customModel}
           <input
             type="text"
             value={model}
@@ -144,31 +148,31 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
             disabled={!canEditModel}
           />
           {!canEditModel && (
-            <span className="field-hint">Укажите свой API-ключ, чтобы выбрать модель</span>
+            <span className="field-hint">{l.customModelHint}</span>
           )}
         </label>
 
         <div className="form-actions">
           <button type="submit" className="btn-primary" disabled={loading || testing}>
-            {loading ? "Сохранение…" : "Сохранить"}
+            {loading ? c.saving : c.save}
           </button>
           <button type="button" className="btn-secondary" onClick={handleTest} disabled={loading || testing}>
-            {testing ? "Тест…" : "Проверить"}
+            {testing ? c.testing : c.test}
           </button>
           {status.has_user_key && (
             <button type="button" className="btn-ghost" onClick={handleClearKey} disabled={loading || testing}>
-              Сбросить ключ
+              {l.clearKey}
             </button>
           )}
         </div>
 
         {testResult && (
           <div className={`test-result ${testResult.success ? "ok" : "fail"}`}>
-            <p className="test-title">{testResult.success ? "Тест пройден" : "Тест не пройден"}</p>
+            <p className="test-title">{testResult.success ? l.testPassed : l.testFailedTitle}</p>
             <p>{testResult.message}</p>
             <p className="test-meta">
               <code>{testResult.model}</code>
-              {testResult.latency_ms != null && ` · ${testResult.latency_ms} мс`}
+              {testResult.latency_ms != null && ` · ${testResult.latency_ms} ${l.ms}`}
             </p>
             {testResult.reply_preview && <pre className="test-preview">{testResult.reply_preview}</pre>}
           </div>
@@ -176,51 +180,14 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
       </form>
 
       <style>{`
-        .llm-settings {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 1.25rem 1.35rem;
-        }
-        .llm-settings.embedded {
-          padding: 0;
-          border: none;
-          background: transparent;
-          border-radius: 0;
-        }
         .llm-settings h3 { margin: 0 0 0.35rem; font-size: 1rem; }
-        .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 1rem; line-height: 1.45; }
-        .status-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
-          margin-bottom: 1.15rem;
-        }
-        .status-card {
-          padding: 0.65rem 0.75rem;
-          border-radius: 10px;
-          background: var(--bg);
-          border: 1px solid var(--border);
-        }
-        .status-card.wide { grid-column: 1 / -1; }
-        .stat-label {
-          display: block;
-          font-size: 0.68rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--muted);
-          margin-bottom: 0.2rem;
-        }
-        .stat-value { font-size: 0.88rem; font-weight: 500; }
-        .stat-value.ok { color: #4ade80; }
-        .stat-code {
+        .llm-settings .stat-code {
           display: block;
           font-size: 0.8rem;
           color: #c4b5fd;
           word-break: break-all;
         }
-        .llm-error {
+        .llm-settings .llm-error {
           color: #f87171;
           font-size: 0.85rem;
           padding: 0.55rem 0.75rem;
@@ -228,45 +195,27 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
           border-radius: 8px;
           margin-bottom: 0.75rem;
         }
-        .llm-info {
+        .llm-settings .llm-info {
           color: #60a5fa;
           font-size: 0.85rem;
           margin-bottom: 0.75rem;
         }
-        .llm-form label {
-          display: block;
-          margin-bottom: 0.85rem;
-          font-size: 0.78rem;
-          color: var(--muted);
-        }
-        .llm-form label.disabled { opacity: 0.65; }
-        .llm-form input {
-          display: block;
-          width: 100%;
-          margin-top: 0.3rem;
-          background: var(--bg);
-          border: 1px solid var(--border);
-          color: var(--text);
-          border-radius: 10px;
-          padding: 0.6rem 0.7rem;
-          font: inherit;
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .llm-form input:focus {
+        .llm-settings .llm-form label.disabled { opacity: 0.65; }
+        .llm-settings .llm-form input:focus {
           outline: none;
           border-color: #a855f7;
           box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
         }
-        .llm-form input:disabled { opacity: 0.5; cursor: not-allowed; }
-        .opt { font-weight: 400; opacity: 0.75; }
-        .field-hint { display: block; margin-top: 0.25rem; font-size: 0.72rem; }
-        .form-actions {
+        .llm-settings .llm-form input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .llm-settings .opt { font-weight: 400; opacity: 0.75; }
+        .llm-settings .field-hint { display: block; margin-top: 0.25rem; font-size: 0.72rem; }
+        .llm-settings .form-actions {
           display: flex;
           flex-wrap: wrap;
           gap: 0.5rem;
           margin-top: 0.25rem;
         }
-        .btn-primary {
+        .llm-settings .btn-primary {
           background: linear-gradient(135deg, #a855f7, #7c3aed);
           border: none;
           color: #fff;
@@ -276,7 +225,7 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
           cursor: pointer;
           font: inherit;
         }
-        .btn-secondary {
+        .llm-settings .btn-secondary {
           background: var(--bg);
           border: 1px solid var(--border);
           color: var(--text);
@@ -285,7 +234,7 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
           cursor: pointer;
           font: inherit;
         }
-        .btn-ghost {
+        .llm-settings .btn-ghost {
           background: transparent;
           border: none;
           color: var(--muted);
@@ -294,27 +243,27 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
           font: inherit;
           font-size: 0.85rem;
         }
-        .btn-ghost:hover { color: #f87171; }
-        button:disabled { opacity: 0.55; cursor: not-allowed; }
-        .test-result {
+        .llm-settings .btn-ghost:hover { color: #f87171; }
+        .llm-settings button:disabled { opacity: 0.55; cursor: not-allowed; }
+        .llm-settings .test-result {
           margin-top: 1rem;
           padding: 0.85rem 1rem;
           border-radius: 12px;
           font-size: 0.88rem;
           line-height: 1.45;
         }
-        .test-result.ok {
+        .llm-settings .test-result.ok {
           background: rgba(34, 197, 94, 0.1);
           border: 1px solid rgba(34, 197, 94, 0.35);
         }
-        .test-result.fail {
+        .llm-settings .test-result.fail {
           background: rgba(248, 113, 113, 0.08);
           border: 1px solid rgba(248, 113, 113, 0.35);
         }
-        .test-title { font-weight: 600; margin: 0 0 0.25rem; }
-        .test-result p { margin: 0.15rem 0; }
-        .test-meta { color: var(--muted); font-size: 0.8rem; }
-        .test-preview {
+        .llm-settings .test-title { font-weight: 600; margin: 0 0 0.25rem; }
+        .llm-settings .test-result p { margin: 0.15rem 0; }
+        .llm-settings .test-meta { color: var(--muted); font-size: 0.8rem; }
+        .llm-settings .test-preview {
           margin: 0.5rem 0 0;
           padding: 0.55rem;
           border-radius: 8px;

@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchChatsStatus } from "../api/chats";
 import { fetchTelegramStatus, TelegramStatus } from "../api/telegram";
 import { SetupStepper } from "../components/SetupStepper";
-import { getTelegramWizardStep, TELEGRAM_WIZARD_STEPS } from "../utils/telegramWizardSteps";
+import { getTelegramWizardStep, getTelegramWizardSteps } from "../utils/telegramWizardSteps";
 import { ChatPicker } from "../components/ChatPicker";
 import { IntegrationsSettingsHub } from "../components/integrations/IntegrationsSettingsHub";
 import { LlmSettings } from "../components/LlmSettings";
 import { PromptSettings } from "../components/PromptSettings";
-import { SettingsPanel } from "../components/SettingsPanel";
 import { TelegramSetupWizard } from "../components/TelegramSetupWizard";
+import { useI18n } from "../i18n";
+import "../styles/settings-page.css";
 
 type SettingsTab = "telegram" | "llm" | "prompts" | "chats" | "integrations";
 
@@ -23,15 +24,9 @@ function tabFromHash(): SettingsTab {
   return "telegram";
 }
 
-const TAB_META: Record<SettingsTab, { label: string; icon: string }> = {
-  telegram: { label: "Telegram", icon: "✈" },
-  llm: { label: "OpenRouter", icon: "◇" },
-  prompts: { label: "Промпты", icon: "✎" },
-  chats: { label: "Чаты", icon: "💬" },
-  integrations: { label: "Интеграции", icon: "⬡" },
-};
-
 export function TelegramSettings({ onStatusChange }: Props) {
+  const { messages: t } = useI18n();
+  const s = t.settings;
   const [tab, setTab] = useState<SettingsTab>(tabFromHash);
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [hasMonitored, setHasMonitored] = useState(false);
@@ -39,6 +34,7 @@ export function TelegramSettings({ onStatusChange }: Props) {
 
   const selectTab = (next: SettingsTab) => {
     setTab(next);
+    setInfo("");
     const path = window.location.pathname;
     const newHash = next === "telegram" ? "" : `#${next}`;
     if (window.location.hash !== newHash) {
@@ -53,9 +49,9 @@ export function TelegramSettings({ onStatusChange }: Props) {
   }, []);
 
   const reload = useCallback(async () => {
-    const s = await fetchTelegramStatus();
-    setStatus(s);
-    if (s.is_authorized) {
+    const st = await fetchTelegramStatus();
+    setStatus(st);
+    if (st.is_authorized) {
       const cs = await fetchChatsStatus().catch(() => null);
       setHasMonitored(Boolean(cs?.has_monitored));
     } else {
@@ -64,7 +60,8 @@ export function TelegramSettings({ onStatusChange }: Props) {
     onStatusChange?.();
   }, [onStatusChange]);
 
-  const wizardStep = getTelegramWizardStep(status, hasMonitored);
+  const wizardStep = getTelegramWizardStep(status, hasMonitored, status?.hosted_app !== false);
+  const wizardSteps = getTelegramWizardSteps(s);
 
   useEffect(() => {
     reload().catch(() => {});
@@ -74,208 +71,93 @@ export function TelegramSettings({ onStatusChange }: Props) {
   if (status?.is_authorized) tabs.push("chats");
   tabs.push("integrations");
 
-  return (
-    <div className={`settings-page${tab === "integrations" ? " settings-page--integrations" : ""}`}>
-      {tab === "telegram" && (
-        <section className="settings-steps-top" aria-label="Этапы настройки Telegram">
-          <SetupStepper
-            steps={TELEGRAM_WIZARD_STEPS}
-            currentIndex={wizardStep.current}
-            completedThrough={wizardStep.completed}
-          />
-        </section>
-      )}
+  const meta = { label: s.tabs[tab], lead: s.tabLeads[tab] };
+  const bodyClass =
+    tab === "integrations"
+      ? "settings-body settings-body--integrations"
+      : tab === "telegram"
+        ? "settings-body settings-body--flat"
+        : "settings-body";
 
-      <header className="settings-header">
-        <div>
-          <h2>Настройки</h2>
-          <p className="settings-lead">Подключение Telegram, AI и интеграции с трекерами</p>
-        </div>
+  return (
+    <div className="settings-page">
+      <header className="settings-page__header">
+        <h2>{s.pageTitle}</h2>
+        <p className="settings-page__lead">{s.pageLead}</p>
       </header>
 
-      <nav className="settings-tabs" aria-label="Разделы настроек">
-        {tabs.map((id) => {
-          const meta = TAB_META[id];
-          return (
+      <div className="settings-layout">
+        <nav className="settings-nav" aria-label={s.navAria}>
+          {tabs.map((id) => (
             <button
               key={id}
               type="button"
               className={tab === id ? "active" : ""}
               onClick={() => selectTab(id)}
+              aria-current={tab === id ? "page" : undefined}
             >
               <span className="tab-icon" aria-hidden>
-                {meta.icon}
+                {id === "telegram" && "✈"}
+                {id === "llm" && "◇"}
+                {id === "prompts" && "✎"}
+                {id === "chats" && "💬"}
+                {id === "integrations" && "⬡"}
               </span>
-              {meta.label}
+              {s.tabs[id]}
             </button>
-          );
-        })}
-      </nav>
+          ))}
+        </nav>
 
-      {info && <p className="settings-info">{info}</p>}
-
-      {tab === "telegram" && (
-        <TelegramSetupWizard
-          hideStepper
-          onStatusChange={reload}
-          onGoToChatsTab={() => selectTab("chats")}
-        />
-      )}
-
-      {tab === "integrations" && (
-        <SettingsPanel
-          className="settings-panel--integrations settings-panel--wide"
-          icon="⬡"
-          title="Интеграции"
-          lead="Подключите сервисы по шагам — откройте карточку и следуйте инструкции."
-        >
-          <IntegrationsSettingsHub />
-        </SettingsPanel>
-      )}
-
-      {tab === "llm" && (
-        <SettingsPanel
-          className="settings-panel--llm"
-          icon="◇"
-          title="OpenRouter (LLM)"
-          lead="Модель извлекает задачи из сообщений. Можно использовать встроенный ключ или свой."
-        >
-          <LlmSettings embedded />
-        </SettingsPanel>
-      )}
-
-      {tab === "prompts" && (
-        <div className="settings-section">
-          <PromptSettings embedded />
-        </div>
-      )}
-
-      {tab === "chats" && status?.is_authorized && (
-        <section className="settings-card chats-card">
-          <header className="chats-card-head">
-            <div>
-              <h3>Чаты для мониторинга</h3>
-              <p className="card-hint">
-                Сообщения из отмеченных чатов превращаются в задачи. Активные чаты показываются первыми.
-              </p>
-            </div>
+        <div className="settings-main">
+          <header className="settings-main__head">
+            <h3>{meta.label}</h3>
+            <p>{meta.lead}</p>
           </header>
-          <ChatPicker
-            onSaved={() => {
-              setInfo("Список чатов обновлён");
-              reload();
-            }}
-            submitLabel="Сохранить чаты"
-          />
-        </section>
-      )}
 
-      <style>{`
-        .settings-page {
-          max-width: 720px;
-          margin: 0 auto;
-          padding-top: 1.25rem;
-        }
-        .settings-page--integrations {
-          max-width: 880px;
-        }
-        .settings-steps-top {
-          margin-bottom: 1.5rem;
-          padding: 1rem 1.1rem 1.15rem;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-        }
-        .settings-steps-top .setup-stepper {
-          margin-bottom: 0;
-        }
-        .settings-header {
-          margin-bottom: 1.35rem;
-        }
-        .settings-header h2 {
-          margin: 0 0 0.35rem;
-          font-size: 1.45rem;
-          font-weight: 700;
-          letter-spacing: -0.02em;
-        }
-        .settings-lead {
-          margin: 0;
-          font-size: 0.9rem;
-          color: var(--muted);
-          line-height: 1.45;
-        }
-        .settings-tabs {
-          display: flex;
-          gap: 0.4rem;
-          flex-wrap: wrap;
-          margin-bottom: 1.5rem;
-          padding: 0.35rem;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-        }
-        .settings-tabs button {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
-          background: transparent;
-          border: none;
-          color: var(--muted);
-          padding: 0.5rem 0.85rem;
-          border-radius: 9px;
-          cursor: pointer;
-          font: inherit;
-          font-size: 0.85rem;
-          font-weight: 500;
-          transition: background 0.15s, color 0.15s;
-        }
-        .settings-tabs button:hover {
-          color: var(--text);
-          background: rgba(255, 255, 255, 0.04);
-        }
-        .settings-tabs button.active {
-          color: var(--text);
-          background: var(--bg);
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-        }
-        .tab-icon {
-          font-size: 0.95rem;
-          opacity: 0.85;
-        }
-        .settings-info {
-          color: #60a5fa;
-          font-size: 0.88rem;
-          margin: -0.5rem 0 1rem;
-        }
-        .settings-panel--integrations .panel-body > section,
-        .settings-panel--integrations .panel-body > div {
-          margin: 0;
-        }
-        .settings-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 1.35rem 1.4rem;
-        }
-        .chats-card {
-          padding: 1.25rem 1.35rem 1.4rem;
-          border-color: rgba(59, 130, 246, 0.2);
-          background: linear-gradient(180deg, rgba(59, 130, 246, 0.04) 0%, var(--surface) 120px);
-        }
-        .chats-card-head { margin-bottom: 0.25rem; }
-        .chats-card-head h3 { margin: 0 0 0.35rem; font-size: 1.05rem; }
-        .chats-card .card-hint { margin: 0; }
-        .settings-card h3 {
-          margin: 0 0 0.4rem;
-          font-size: 1rem;
-        }
-        .card-hint {
-          margin: 0 0 1rem;
-          font-size: 0.88rem;
-          color: var(--muted);
-          line-height: 1.45;
-        }
-      `}</style>
+          {info && (
+            <p className="settings-toast" role="status">
+              {info}
+            </p>
+          )}
+
+          <div className={bodyClass}>
+            {tab === "telegram" && (
+              <>
+                <div className="settings-steps-inline" aria-label={s.telegramStepsAria}>
+                  <SetupStepper
+                    steps={wizardSteps}
+                    currentIndex={wizardStep.current}
+                    completedThrough={wizardStep.completed}
+                  />
+                </div>
+                <TelegramSetupWizard
+                  hideStepper
+                  onStatusChange={reload}
+                  onGoToChatsTab={() => selectTab("chats")}
+                />
+              </>
+            )}
+
+            {tab === "integrations" && <IntegrationsSettingsHub />}
+
+            {tab === "llm" && <LlmSettings embedded />}
+
+            {tab === "prompts" && <PromptSettings embedded />}
+
+            {tab === "chats" && status?.is_authorized && (
+              <div className="settings-chats">
+                <ChatPicker
+                  onSaved={() => {
+                    setInfo(s.chatsUpdated);
+                    reload();
+                  }}
+                  submitLabel={s.saveChats}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

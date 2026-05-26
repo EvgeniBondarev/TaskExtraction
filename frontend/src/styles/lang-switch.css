@@ -48,6 +48,24 @@
   margin-right: 0.1rem;
 }
 
-.app-top-bar .lang-switch {
-  align-self: center;
+/* Компактный переключатель в шапке приложения (как на welcome) */
+.lang-switch--compact {
+  padding: 1px;
+  gap: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.lang-switch--compact .lang-switch-btn {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.18rem 0.38rem;
+  border-radius: 5px;
+  min-width: 1.65rem;
+  letter-spacing: 0.04em;
+}
+
+.lang-switch--compact .lang-switch-btn.is-active {
+  background: rgba(59, 130, 246, 0.22);
+  color: #e7ecf3;
 }

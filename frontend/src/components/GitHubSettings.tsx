@@ -11,8 +11,13 @@ import {
 import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
 import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
+import { useI18n } from "../i18n";
 
 export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const { messages: t } = useI18n();
+  const g = t.settings.integrations.github;
+  const c = t.settings.common;
+  const intl = t.settings.integrations;
   const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<GitHubStatus | null>(null);
   const [owner, setOwner] = useState("");
@@ -50,7 +55,7 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
   }, []);
 
   useEffect(() => {
-    reload().catch(() => setError("Не удалось загрузить настройки GitHub"));
+    reload().catch(() => setError(g.loadFailed));
   }, [reload]);
 
   const loadLabels = async () => {
@@ -59,9 +64,9 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
     try {
       const list = await fetchGitHubLabels(creds());
       setLabels(list);
-      setInfo(`Меток в репозитории: ${list.length}`);
+      setInfo(`${g.labelsFound} ${list.length}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки labels");
+      setError(e instanceof Error ? e.message : g.labelsError);
     } finally {
       setLoading(false);
     }
@@ -85,7 +90,7 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
         setError(r.message);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setTesting(false);
     }
@@ -111,10 +116,10 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       const s = await saveGitHubSettings(body);
       setStatus(s);
       setToken("");
-      setInfo("Настройки GitHub сохранены");
+      setInfo(g.saved);
       onSaved?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сохранения");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setLoading(false);
     }
@@ -138,7 +143,7 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          placeholder={status?.has_token ? "Новый token (оставьте пустым)" : "github_pat_…"}
+          placeholder={status?.has_token ? g.tokenPlaceholderKeep : g.tokenPlaceholderNew}
         />
       </label>
       {status?.has_token && status.token_masked && (
@@ -146,11 +151,11 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       )}
       <div className="row-btns">
         <button type="button" onClick={handleTest} disabled={testing || loading}>
-          {testing ? "Проверка…" : "Проверить подключение"}
+          {testing ? c.testing : intl.testConnection}
         </button>
         {!hub && (
           <button type="button" onClick={loadLabels} disabled={loading}>
-            Загрузить labels
+            {g.loadLabels}
           </button>
         )}
       </div>
@@ -162,7 +167,7 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       {hub && (
         <div className="row-btns">
           <button type="button" onClick={loadLabels} disabled={loading}>
-            {loading ? "Загрузка…" : "Загрузить labels"}
+            {loading ? c.loading : g.loadLabels}
           </button>
         </div>
       )}
@@ -191,11 +196,11 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
     <div className="toggles">
       <label className="check">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>{hub ? "Включить интеграцию GitHub" : "Интеграция включена"}</span>
+        <span>{hub ? g.enableHub : intl.enableFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
-        <span>{hub ? "Автоматически создавать Issue при новой задаче" : "Создавать GitHub Issue при новой задаче"}</span>
+        <span>{hub ? g.autoCreateHub : g.autoCreateFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={useTypeLabels} onChange={(e) => setUseTypeLabels(e.target.checked)} />
@@ -203,7 +208,7 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       </label>
       <label className="check">
         <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
-        <span>{hub ? "Вставлять медиа в описание" : "Вставлять медиа в описание (ссылки и превью)"}</span>
+        <span>{hub ? g.embedMediaHub : g.embedMediaFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
@@ -272,10 +277,10 @@ export function GitHubSettings({ embedded, hideHeader, onSaved }: IntegrationSet
         <form onSubmit={handleSave}>
           {hub ? (
             <>
-              <IntegrationFormStep step={1} title="Репозиторий и токен" hint="Укажите owner, repo и проверьте подключение">
+              <IntegrationFormStep step={1} title={g.step1Title} hint={g.step1Hint}>
                 {credentialsFields}
               </IntegrationFormStep>
-              <IntegrationFormStep step={2} title="Метки (необязательно)" hint="Дополнительные labels для новых issues">
+              <IntegrationFormStep step={2} title={g.step2Title} hint={g.step2Hint}>
                 {destinationFields}
               </IntegrationFormStep>
               <IntegrationFormStep step={3} title="Включение и автоматизация">

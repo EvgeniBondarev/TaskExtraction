@@ -11,15 +11,32 @@ from sqlalchemy import select
 from telethon import TelegramClient
 from telethon.errors import (
     AuthTokenExpiredError,
+    FloodWaitError,
     PhoneCodeExpiredError,
     PhoneCodeInvalidError,
+    PhoneNumberBannedError,
+    PhoneNumberFloodError,
+    PhoneNumberInvalidError,
+    SendCodeUnavailableError,
     SessionPasswordNeededError,
 )
 from telethon.sessions import StringSession
 from telethon.tl.types import User
 
-from app.tenancy.context import get_current_tenant, require_current_tenant
-from app.tenancy.registry import tenant_session
+from app.services.hosted_telegram import (
+    credentials_configured,
+    ensure_hosted_credentials_for_tenant,
+    is_hosted_mode,
+    resolve_app_credentials,
+    shared_credentials,
+)
+from app.tenancy.context import (
+    get_current_tenant,
+    require_current_tenant,
+    reset_current_tenant,
+    set_current_tenant,
+)
+from app.tenancy.registry import ensure_tenant, tenant_session
 from app.models.entities import TelegramConfig
 from app.utils.crypto import decrypt_str, encrypt_str
 
@@ -32,18 +49,27 @@ QR_LIFETIME_SEC = 25
 _pending_qr: dict[str, dict[str, Any]] = {}
 _pending_phone: dict[str, dict[str, Any]] = {}
 _clients: dict[str, TelegramClient] = {}
+_completed_logins: dict[str, dict[str, Any]] = {}
 
 
 def _tenant_key() -> str:
     return require_current_tenant()
 
 
+def _auth_scope() -> str:
+    return get_current_tenant() or "hosted"
+
+
 def _qr_key(login_id: str) -> str:
-    return f"{_tenant_key()}:{login_id}"
+    return f"{_auth_scope()}:{login_id}"
 
 
 def _phone_key(login_id: str) -> str:
-    return f"{_tenant_key()}:{login_id}"
+    return f"{_auth_scope()}:{login_id}"
+
+
+def pop_completed_login(login_id: str) -> dict[str, Any] | None:
+    return _completed_logins.pop(login_id, None)
 
 
 @dataclass
@@ -70,10 +96,16 @@ class TelegramStatus:
 
 
 def _normalize_phone(phone: str) -> str:
-    phone = phone.strip().replace(" ", "").replace("-", "")
-    if phone and not phone.startswith("+"):
-        phone = "+" + phone
-    return phone
+    phone = phone.strip()
+    for ch in (" ", "-", "(", ")", "\u00a0"):
+        phone = phone.replace(ch, "")
+    digits = re.sub(r"\D", "", phone.lstrip("+"))
+    if not digits:
+        return ""
+    # Локальный российский формат 8XXXXXXXXXX
+    if digits.startswith("8") and len(digits) == 11:
+        digits = "7" + digits[1:]
+    return "+" + digits[:15]
 
 
 def _user_to_dict(me: User) -> dict:
@@ -99,13 +131,11 @@ async def get_config_row() -> TelegramConfig | None:
 
 
 async def get_credentials() -> TelegramCredentials | None:
-    row = await get_config_row()
-    if not row or not row.api_id_encrypted or not row.api_hash_encrypted:
+    row = await get_config_row() if get_current_tenant() else None
+    creds = resolve_app_credentials(row)
+    if not creds:
         return None
-    return TelegramCredentials(
-        api_id=int(decrypt_str(row.api_id_encrypted)),
-        api_hash=decrypt_str(row.api_hash_encrypted),
-    )
+    return TelegramCredentials(api_id=creds.api_id, api_hash=creds.api_hash)
 
 
 async def save_credentials(
@@ -116,7 +146,7 @@ async def save_credentials(
     app_short_name: Optional[str] = None,
 ) -> None:
     _drop_client()
-    _cancel_all_pending()
+    await _cancel_all_pending()
 
     app_meta = {
         "api_id": api_id,
@@ -166,7 +196,7 @@ def _persist_user_session(row: TelegramConfig, session_string: str, me: User) ->
     row.updated_at = datetime.now(timezone.utc)
 
 
-async def save_session_from_client(client: TelegramClient) -> None:
+async def save_session_from_client(client: TelegramClient) -> int:
     from app.telegram.listener import on_telegram_client_reset, wake_ingest
 
     _drop_client()
@@ -176,29 +206,62 @@ async def save_session_from_client(client: TelegramClient) -> None:
         raise ValueError("Could not load Telegram user profile")
     session_string = client.session.save()
 
-    async with tenant_session() as session:
-        result = await session.execute(
-            select(TelegramConfig).where(TelegramConfig.id == CONFIG_ID)
-        )
-        row = result.scalar_one_or_none()
-        if not row:
-            raise ValueError("Save API credentials first")
-        _persist_user_session(row, session_string, me)
-        await session.commit()
+    tenant_key = str(me.id)
+    ensure_tenant(tenant_key)
+    await ensure_hosted_credentials_for_tenant(tenant_key)
+
+    token = set_current_tenant(tenant_key)
+    try:
+        async with tenant_session(tenant_key) as session:
+            result = await session.execute(
+                select(TelegramConfig).where(TelegramConfig.id == CONFIG_ID)
+            )
+            row = result.scalar_one_or_none()
+            if not row:
+                row = TelegramConfig(id=CONFIG_ID)
+                session.add(row)
+            if not credentials_configured(row):
+                raise ValueError("Telegram API credentials not configured")
+            _persist_user_session(row, session_string, me)
+            await session.commit()
+    finally:
+        reset_current_tenant(token)
+
     wake_ingest()
+    return me.id
 
 
-def _cancel_all_pending() -> None:
-    tenant = get_current_tenant()
-    if not tenant:
+async def _disconnect_auth_client(client: TelegramClient | None) -> None:
+    if not client:
         return
-    prefix = f"{tenant}:"
+    try:
+        await client.disconnect()
+    except Exception:
+        pass
+
+
+async def _cancel_all_pending() -> None:
+    prefix = f"{_auth_scope()}:"
+    disconnects: list[Any] = []
     for key in list(_pending_qr.keys()):
         if key.startswith(prefix):
-            _cleanup_qr(key.split(":", 1)[-1])
+            login_id = key.split(":", 1)[-1]
+            entry = _pending_qr.pop(key, None)
+            if not entry:
+                continue
+            task = entry.get("task")
+            if task and not task.done():
+                task.cancel()
+            disconnects.append(_disconnect_auth_client(entry.get("client")))
     for key in list(_pending_phone.keys()):
         if key.startswith(prefix):
-            _cleanup_phone(key.split(":", 1)[-1])
+            login_id = key.split(":", 1)[-1]
+            entry = _pending_phone.pop(key, None)
+            if not entry:
+                continue
+            disconnects.append(_disconnect_auth_client(entry.get("client")))
+    if disconnects:
+        await asyncio.gather(*disconnects, return_exceptions=True)
 
 
 def _drop_client() -> None:
@@ -213,7 +276,7 @@ def _drop_client() -> None:
 async def clear_session() -> None:
     """Logout from Telegram — keep api_id/api_hash in DB."""
     _drop_client()
-    _cancel_all_pending()
+    await _cancel_all_pending()
 
     async with tenant_session() as session:
         result = await session.execute(
@@ -236,7 +299,7 @@ async def clear_session() -> None:
 async def clear_all() -> None:
     """Remove credentials, session, and app metadata."""
     _drop_client()
-    _cancel_all_pending()
+    await _cancel_all_pending()
 
     async with tenant_session() as session:
         result = await session.execute(
@@ -272,6 +335,23 @@ def _setup_step(has_credentials: bool, is_authorized: bool) -> str:
 
 async def get_status() -> TelegramStatus:
     if not get_current_tenant():
+        if is_hosted_mode():
+            shared = shared_credentials()
+            return TelegramStatus(
+                has_credentials=True,
+                is_authorized=False,
+                setup_complete=False,
+                setup_step="auth",
+                api_id=shared.api_id if shared else None,
+                username=None,
+                user_id=None,
+                first_name=None,
+                last_name=None,
+                monitor_chat_id=None,
+                app_title=None,
+                qr_pending=False,
+                phone_pending=False,
+            )
         return TelegramStatus(
             has_credentials=False,
             is_authorized=False,
@@ -319,7 +399,7 @@ async def get_status() -> TelegramStatus:
         except ValueError:
             pass
 
-    has_credentials = bool(row.api_id_encrypted and row.api_hash_encrypted)
+    has_credentials = credentials_configured(row)
     is_authorized = bool(row.is_authorized and row.session_encrypted)
 
     return TelegramStatus(
@@ -369,7 +449,10 @@ async def get_client() -> TelegramClient:
 async def _new_auth_client() -> TelegramClient:
     creds = await get_credentials()
     if not creds:
-        raise ValueError("Save API credentials first")
+        shared = shared_credentials()
+        if not shared:
+            raise ValueError("Telegram API credentials not configured")
+        creds = TelegramCredentials(api_id=shared.api_id, api_hash=shared.api_hash)
     client = TelegramClient(StringSession(), creds.api_id, creds.api_hash)
     await client.connect()
     return client
@@ -414,19 +497,27 @@ def _cleanup_phone(login_id: str) -> None:
 
 
 async def start_qr_login() -> dict:
-    _cancel_all_pending()
+    await _cancel_all_pending()
     login_id = str(uuid.uuid4())
     client = await _new_auth_client()
 
     if await client.is_user_authorized():
         me = await client.get_me()
-        await save_session_from_client(client)
+        user_id = await save_session_from_client(client)
         await client.disconnect()
+        if isinstance(me, User):
+            _completed_logins[login_id] = {
+                "user_id": user_id,
+                "username": me.username,
+                "first_name": me.first_name,
+                "last_name": me.last_name,
+            }
         return {
             "login_id": login_id,
             "url": None,
             "already_authorized": True,
             "username": me.username if me else None,
+            "user_id": user_id,
         }
 
     qr = await client.qr_login()
@@ -481,9 +572,16 @@ async def _wait_qr_login(login_id: str) -> None:
         await qr.wait(timeout=QR_LIFETIME_SEC + 5)
         if _qr_key(login_id) not in _pending_qr:
             return
-        await save_session_from_client(client)
+        user_id = await save_session_from_client(client)
         me = await client.get_me()
-        logger.info("Telegram QR login success: %s", me.username)
+        logger.info("Telegram QR login success: %s", me.username if me else user_id)
+        if isinstance(me, User):
+            _completed_logins[login_id] = {
+                "user_id": user_id,
+                "username": me.username,
+                "first_name": me.first_name,
+                "last_name": me.last_name,
+            }
         entry["error"] = None
     except AuthTokenExpiredError:
         logger.info("QR token expired for %s", login_id)
@@ -504,6 +602,10 @@ async def _wait_qr_login(login_id: str) -> None:
 
 
 async def get_qr_login_status(login_id: str) -> dict:
+    completed = pop_completed_login(login_id)
+    if completed:
+        return {"status": "authorized", "login_id": login_id, **completed}
+
     entry = _pending_qr.get(_qr_key(login_id))
     if entry:
         if entry.get("error") == "token_expired":
@@ -529,8 +631,52 @@ async def get_qr_login_status(login_id: str) -> dict:
 # --- Phone login (как client.start() в Telethon) ---
 
 
+def _sent_code_delivery(sent: Any) -> tuple[str, str]:
+    """Куда Telegram реально отправил код (SMS почти не используется с 2023+)."""
+    type_name = type(sent.type).__name__
+    if "Sms" in type_name:
+        return (
+            "sms",
+            "Код придёт в SMS на этот номер. Если не пришёл — подождите минуту и нажмите «Отправить снова».",
+        )
+    if "Call" in type_name or "Flash" in type_name:
+        return (
+            "call",
+            "Сейчас поступит звонок — введите последние цифры номера звонящего.",
+        )
+    if "Email" in type_name:
+        return (
+            "email",
+            "Код отправлен на привязанную почту Telegram.",
+        )
+    return (
+        "app",
+        "Код приходит только в приложение Telegram (не SMS). "
+        "На телефоне с этим номером откройте Telegram → чат «Telegram» вверху списка. "
+        "Если чата нет — обновите Telegram и войдите в аккаунт с этим номером.",
+    )
+
+
+async def _request_phone_code(client: TelegramClient, phone: str) -> Any:
+    try:
+        return await client.send_code_request(phone)
+    except PhoneNumberInvalidError as e:
+        raise ValueError("Неверный номер телефона. Проверьте код страны и количество цифр.") from e
+    except PhoneNumberBannedError as e:
+        raise ValueError("Этот номер заблокирован в Telegram.") from e
+    except PhoneNumberFloodError as e:
+        raise ValueError("Слишком много запросов для этого номера. Подождите несколько часов.") from e
+    except FloodWaitError as e:
+        raise ValueError(f"Слишком много попыток. Подождите {e.seconds} сек.") from e
+    except SendCodeUnavailableError as e:
+        raise ValueError(
+            "Telegram сейчас не может отправить код на этот номер. "
+            "Попробуйте вход по QR-коду или позже."
+        ) from e
+
+
 async def send_phone_code(phone: str) -> dict:
-    _cancel_all_pending()
+    await _cancel_all_pending()
     phone = _normalize_phone(phone)
     if not re.match(r"^\+\d{10,15}$", phone):
         raise ValueError("Номер в формате +79991234567")
@@ -539,17 +685,32 @@ async def send_phone_code(phone: str) -> dict:
     client = await _new_auth_client()
 
     if await client.is_user_authorized():
-        await save_session_from_client(client)
+        user_id = await save_session_from_client(client)
         await client.disconnect()
         st = await get_status()
+        _completed_logins[login_id] = {
+            "user_id": user_id,
+            "username": st.username,
+            "first_name": st.first_name,
+            "last_name": st.last_name,
+        }
         return {
             "login_id": login_id,
             "code_sent": False,
             "already_authorized": True,
             "username": st.username,
+            "user_id": user_id,
         }
 
-    sent = await client.send_code_request(phone)
+    try:
+        sent = await _request_phone_code(client, phone)
+    except ValueError:
+        await _disconnect_auth_client(client)
+        raise
+
+    delivery, delivery_hint = _sent_code_delivery(sent)
+    logger.info("Telegram login code for %s → delivery=%s", phone[:4] + "***", delivery)
+
     _pending_phone[_phone_key(login_id)] = {
         "client": client,
         "phone": phone,
@@ -560,7 +721,38 @@ async def send_phone_code(phone: str) -> dict:
         "login_id": login_id,
         "code_sent": True,
         "phone_masked": phone[:4] + "***" + phone[-2:],
-        "message": "Код отправлен в Telegram (чат «Telegram» или SMS)",
+        "code_delivery": delivery,
+        "delivery_hint": delivery_hint,
+        "message": delivery_hint,
+    }
+
+
+async def resend_phone_code(login_id: str) -> dict:
+    entry = _pending_phone.get(_phone_key(login_id))
+    if not entry or not entry.get("client"):
+        raise ValueError("Сессия входа истекла. Запросите код снова с начала.")
+
+    client: TelegramClient = entry["client"]
+    phone = entry["phone"]
+    if not client.is_connected():
+        await client.connect()
+
+    try:
+        sent = await _request_phone_code(client, phone)
+    except ValueError:
+        raise
+
+    entry["phone_code_hash"] = sent.phone_code_hash
+    delivery, delivery_hint = _sent_code_delivery(sent)
+    logger.info("Telegram login code resent for %s → delivery=%s", phone[:4] + "***", delivery)
+
+    return {
+        "login_id": login_id,
+        "code_sent": True,
+        "phone_masked": phone[:4] + "***" + phone[-2:],
+        "code_delivery": delivery,
+        "delivery_hint": delivery_hint,
+        "message": delivery_hint,
     }
 
 
@@ -578,6 +770,9 @@ async def verify_phone_code(
     phone_code_hash = entry["phone_code_hash"]
     code = code.strip().replace(" ", "")
 
+    if not client.is_connected():
+        await client.connect()
+
     try:
         await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
     except SessionPasswordNeededError:
@@ -594,13 +789,19 @@ async def verify_phone_code(
         _cleanup_phone(login_id)
         raise ValueError("Код истёк. Запросите новый код.")
 
-    await save_session_from_client(client)
+    user_id = await save_session_from_client(client)
     _cleanup_phone(login_id)
-    st = await get_status()
+    me = await client.get_me()
+    _completed_logins[login_id] = {
+        "user_id": user_id,
+        "username": me.username if isinstance(me, User) else None,
+        "first_name": me.first_name if isinstance(me, User) else None,
+        "last_name": me.last_name if isinstance(me, User) else None,
+    }
     return {
         "status": "authorized",
-        "username": st.username,
-        "user_id": st.user_id,
-        "first_name": st.first_name,
-        "last_name": st.last_name,
+        "username": _completed_logins[login_id].get("username"),
+        "user_id": user_id,
+        "first_name": _completed_logins[login_id].get("first_name"),
+        "last_name": _completed_logins[login_id].get("last_name"),
     }

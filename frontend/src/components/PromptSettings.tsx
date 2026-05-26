@@ -6,8 +6,12 @@ import {
   savePromptSettings,
 } from "../api/llm";
 import { SettingsFormSkeleton } from "./PageSkeletons";
+import { useI18n } from "../i18n";
 
 export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
+  const { messages: t } = useI18n();
+  const p = t.settings.prompts;
+  const c = t.settings.common;
   const [cfg, setCfg] = useState<PromptConfig | null>(null);
   const [classifier, setClassifier] = useState("");
   const [extractor, setExtractor] = useState("");
@@ -32,7 +36,7 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
   useEffect(() => {
     setInitialLoading(true);
     reload()
-      .catch(() => setError("Не удалось загрузить промпты"))
+      .catch(() => setError(p.loadFailed))
       .finally(() => setInitialLoading(false));
   }, [reload]);
 
@@ -49,16 +53,16 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
         review_threshold: review,
       });
       setCfg(s);
-      setInfo("Промпты сохранены");
+      setInfo(p.saved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
+      setError(err instanceof Error ? err.message : c.error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = async () => {
-    if (!confirm("Сбросить промпты к значениям по умолчанию?")) return;
+    if (!confirm(p.resetConfirm)) return;
     setLoading(true);
     try {
       const s = await resetPromptSettings();
@@ -68,9 +72,9 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
       setConfidence(s.confidence_threshold);
       setReview(s.review_threshold);
       setCfg(s);
-      setInfo("Промпты сброшены");
+      setInfo(p.resetDone);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
+      setError(err instanceof Error ? err.message : c.error);
     } finally {
       setLoading(false);
     }
@@ -86,21 +90,28 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
 
   return (
     <section className={embedded ? "card prompts-card embedded" : "card prompts-card"}>
-      <h3>
-        Промпты и пороги
-        {cfg?.using_defaults && <span className="badge">по умолчанию</span>}
-      </h3>
-      <p className="hint">
-        Двухэтапный пайплайн: сначала классификатор (мало токенов), затем извлечение карточки задачи.
-        Порог confidence — минимальный итоговый score для создания задачи в Inbox.
-      </p>
+      {!embedded ? (
+        <>
+          <h3>
+            {p.title}
+            {cfg?.using_defaults && <span className="badge">{p.defaultsBadge}</span>}
+          </h3>
+          <p className="hint">{p.hint}</p>
+        </>
+      ) : (
+        cfg?.using_defaults && (
+          <p className="prompts-defaults-note">
+            <span className="badge">{p.defaultsBadge}</span>
+          </p>
+        )
+      )}
 
       {error && <p className="error">{error}</p>}
       {info && <p className="info">{info}</p>}
 
       <form onSubmit={handleSave}>
         <label>
-          Порог auto-create (confidence)
+          {p.confidenceLabel}
           <input
             type="number"
             min={0}
@@ -111,7 +122,7 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
           />
         </label>
         <label>
-          Порог review (зарезервировано)
+          {p.reviewLabel}
           <input
             type="number"
             min={0}
@@ -122,7 +133,7 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
           />
         </label>
         <label>
-          Классификатор (system)
+          {p.classifierLabel}
           <textarea
             value={classifier}
             onChange={(e) => setClassifier(e.target.value)}
@@ -131,11 +142,11 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
           />
         </label>
         <label>
-          Извлечение задачи (system)
+          {p.extractorLabel}
           <textarea value={extractor} onChange={(e) => setExtractor(e.target.value)} rows={6} spellCheck={false} />
         </label>
         <label>
-          Шаблон user (плейсхолдеры: {"{context}"}, {"{message_id}"}, {"{text}"})
+          {p.userTemplateLabel}
           <textarea
             value={userTemplate}
             onChange={(e) => setUserTemplate(e.target.value)}
@@ -145,42 +156,14 @@ export function PromptSettings({ embedded }: { embedded?: boolean } = {}) {
         </label>
         <div className="actions">
           <button type="submit" disabled={loading}>
-            {loading ? "Сохранение…" : "Сохранить промпты"}
+            {loading ? c.saving : p.savePrompts}
           </button>
           <button type="button" className="secondary" onClick={handleReset} disabled={loading}>
-            Сбросить
+            {c.reset}
           </button>
         </div>
       </form>
 
-      <style>{`
-        .prompts-card { margin-bottom: 1rem; }
-        .prompts-card h3 { margin: 0 0 0.75rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; }
-        .badge { font-size: 0.7rem; font-weight: normal; color: var(--muted); border: 1px solid var(--border); padding: 0.1rem 0.4rem; border-radius: 4px; }
-        .prompts-card .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 0.75rem; }
-        .prompts-card label { display: block; margin-bottom: 0.75rem; font-size: 0.8rem; color: var(--muted); }
-        .prompts-card .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.35rem; }
-        .prompts-card button {
-          background: var(--accent); border: none; color: #fff;
-          padding: 0.55rem 1rem; border-radius: 8px; cursor: pointer; font: inherit;
-        }
-        .prompts-card button.secondary {
-          background: transparent; border: 1px solid var(--border); color: var(--text);
-        }
-        .prompts-card .error { color: #f87171; }
-        .prompts-card .info { color: #60a5fa; font-size: 0.9rem; }
-        .prompts-card textarea {
-          display: block; width: 100%; margin-top: 0.25rem;
-          background: var(--bg); border: 1px solid var(--border);
-          color: var(--text); border-radius: 8px; padding: 0.5rem;
-          font-family: ui-monospace, monospace; font-size: 0.78rem; line-height: 1.4;
-        }
-        .prompts-card input[type="number"] {
-          display: block; width: 120px; margin-top: 0.25rem;
-          background: var(--bg); border: 1px solid var(--border);
-          color: var(--text); border-radius: 8px; padding: 0.45rem;
-        }
-      `}</style>
     </section>
   );
 }

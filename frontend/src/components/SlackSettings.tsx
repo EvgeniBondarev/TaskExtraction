@@ -11,8 +11,13 @@ import {
 import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
 import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
+import { useI18n } from "../i18n";
 
 export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const { messages: t } = useI18n();
+  const sl = t.settings.integrations.slack;
+  const c = t.settings.common;
+  const intl = t.settings.integrations;
   const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<SlackStatus | null>(null);
   const [botToken, setBotToken] = useState("");
@@ -48,7 +53,7 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
   }, []);
 
   useEffect(() => {
-    reload().catch(() => setError("Не удалось загрузить настройки Slack"));
+    reload().catch(() => setError(sl.loadFailed));
   }, [reload]);
 
   const loadChannels = async () => {
@@ -58,9 +63,9 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
       const list = await fetchSlackChannels(creds());
       setChannels(list);
       if (list.length && !channelId) setChannelId(list[0].id);
-      setInfo(`Каналов доступно боту: ${list.length}`);
+      setInfo(`${sl.channelsFound} ${list.length}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки каналов");
+      setError(e instanceof Error ? e.message : sl.channelsError);
     } finally {
       setLoading(false);
     }
@@ -77,14 +82,14 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
         if (r.workspace_url) setWorkspaceUrl(r.workspace_url);
         setInfo(
           r.bot_name
-            ? `Подключено: ${r.workspace_name || "workspace"} · бот @${r.bot_name}`
+            ? `${intl.connected} ${r.workspace_name || sl.workspaceFallback} · ${sl.botPrefix}${r.bot_name}`
             : r.message
         );
       } else {
         setError(r.message);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setTesting(false);
     }
@@ -112,10 +117,10 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
       const s = await saveSlackSettings(body);
       setStatus(s);
       setBotToken("");
-      setInfo("Настройки Slack сохранены");
+      setInfo(sl.saved);
       onSaved?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сохранения");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setLoading(false);
     }
@@ -129,7 +134,7 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
           type="password"
           value={botToken}
           onChange={(e) => setBotToken(e.target.value)}
-          placeholder={status?.has_token ? "Новый xoxb-… (оставьте пустым)" : "xoxb-…"}
+          placeholder={status?.has_token ? sl.tokenPlaceholderKeep : sl.tokenPlaceholderNew}
         />
       </label>
       {status?.has_token && status.token_masked && (
@@ -137,11 +142,11 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
       )}
       <div className="row-btns">
         <button type="button" onClick={handleTest} disabled={testing || loading}>
-          {testing ? "Проверка…" : "Проверить подключение"}
+          {testing ? c.testing : intl.testConnection}
         </button>
         {!hub && (
           <button type="button" onClick={loadChannels} disabled={loading}>
-            Загрузить каналы
+            {sl.loadChannels}
           </button>
         )}
       </div>
@@ -153,7 +158,7 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
       {hub && (
         <div className="row-btns">
           <button type="button" onClick={loadChannels} disabled={loading}>
-            {loading ? "Загрузка…" : "Загрузить каналы"}
+            {loading ? c.loading : sl.loadChannels}
           </button>
         </div>
       )}
@@ -178,11 +183,11 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
     <div className="toggles">
       <label className="check">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>{hub ? "Включить интеграцию Slack" : "Интеграция включена"}</span>
+        <span>{hub ? sl.enableHub : intl.enableFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
-        <span>{hub ? "Автоматически отправлять сообщение при новой задаче" : "Отправлять сообщение в Slack при новой задаче"}</span>
+        <span>{hub ? sl.autoSendHub : sl.autoSendFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={mentionChannel} onChange={(e) => setMentionChannel(e.target.checked)} />
@@ -190,7 +195,7 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
       </label>
       <label className="check">
         <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
-        <span>{hub ? "Добавлять ссылки на медиа" : "Добавлять ссылки на медиафайлы в сообщение"}</span>
+        <span>{hub ? sl.mediaLinksHub : sl.mediaLinksFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
@@ -255,10 +260,10 @@ export function SlackSettings({ embedded, hideHeader, onSaved }: IntegrationSett
         <form onSubmit={handleSave}>
           {hub ? (
             <>
-              <IntegrationFormStep step={1} title="Токен бота" hint="Проверьте подключение перед выбором канала">
+              <IntegrationFormStep step={1} title={sl.step1Title} hint={sl.step1Hint}>
                 {credentialsFields}
               </IntegrationFormStep>
-              <IntegrationFormStep step={2} title="Канал" hint="Куда отправлять уведомления о задачах">
+              <IntegrationFormStep step={2} title={sl.step2Title} hint={sl.step2Hint}>
                 {destinationFields}
               </IntegrationFormStep>
               <IntegrationFormStep step={3} title="Включение и автоматизация">

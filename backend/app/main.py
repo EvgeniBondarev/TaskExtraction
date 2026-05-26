@@ -60,8 +60,16 @@ async def lifespan(app: FastAPI):
     await init_analytics_db()
     set_ws_broadcast(_broadcast_ws)
     ingest_task = None
-    if os.environ.get("TE_DISABLE_INGEST") != "1":
+    if os.environ.get("TE_DISABLE_INGEST") == "1":
+        logger.warning(
+            "TE_DISABLE_INGEST=1 — фоновый приём сообщений из Telegram ВЫКЛЮЧЕН. "
+            "Уберите переменную и перезапустите API."
+        )
+    else:
         ingest_task = asyncio.create_task(run_ingest_loop())
+        from app.telegram.listener import wake_ingest
+
+        wake_ingest()
     yield
     if ingest_task is not None:
         ingest_task.cancel()

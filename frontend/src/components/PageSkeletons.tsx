@@ -1,5 +1,6 @@
 import { AppLogo } from "./AppLogo";
 import { Skeleton, SkeletonGroup } from "./Skeleton";
+import "../styles/feed-page.css";
 
 export function AppBootSkeleton() {
   return (
@@ -132,7 +133,7 @@ function FeedMessageSkeleton() {
     <div className="sk-feed-msg">
       <Skeleton width={48} height={48} circle style={{ flexShrink: 0 }} />
       <div className="sk-feed-body">
-        <div className="sk-row">
+        <div className="sk-feed-row">
           <Skeleton width={120} height={14} radius={5} />
           <Skeleton width={72} height={22} radius={6} style={{ marginLeft: "auto" }} />
         </div>
@@ -147,16 +148,18 @@ function FeedMessageSkeleton() {
 export function FeedPageSkeleton() {
   return (
     <SkeletonGroup className="sk-feed-wrap" label="Загрузка ленты">
-      <div className="sk-feed-hero">
-        <Skeleton width={44} height={44} radius={12} />
-        <div style={{ flex: 1 }}>
-          <Skeleton width={180} height={20} radius={6} />
-          <Skeleton width={240} height={12} radius={4} style={{ marginTop: "0.4rem" }} />
+      <div className="sk-feed-header">
+        <div className="sk-feed-header-main">
+          <Skeleton width={40} height={40} radius={10} />
+          <div style={{ flex: 1 }}>
+            <Skeleton width={160} height={18} radius={6} />
+            <Skeleton width={220} height={12} radius={4} style={{ marginTop: "0.4rem" }} />
+          </div>
         </div>
-      </div>
-      <div className="sk-feed-stats">
-        <Skeleton width={100} height={52} radius={10} />
-        <Skeleton width={100} height={52} radius={10} />
+        <div className="sk-feed-stats">
+          <Skeleton width={84} height={52} radius={10} />
+          <Skeleton width={84} height={52} radius={10} />
+        </div>
       </div>
       <Skeleton height={44} radius={12} style={{ marginBottom: "1rem" }} />
       <div className="sk-feed-list">
@@ -164,43 +167,6 @@ export function FeedPageSkeleton() {
           <FeedMessageSkeleton key={i} />
         ))}
       </div>
-      <style>{`
-        .sk-feed-wrap {
-          max-width: 880px;
-          margin: 0 auto;
-          width: 100%;
-        }
-        .sk-feed-hero {
-          display: flex;
-          gap: 0.85rem;
-          align-items: center;
-          padding: 1.1rem;
-          border-radius: 16px;
-          border: 1px solid var(--border);
-          background: var(--surface);
-          margin-bottom: 1rem;
-        }
-        .sk-feed-stats {
-          display: flex;
-          gap: 0.65rem;
-          margin-bottom: 1rem;
-        }
-        .sk-feed-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .sk-feed-msg {
-          display: flex;
-          gap: 0.85rem;
-          padding: 1rem;
-          border-radius: 14px;
-          border: 1px solid var(--border);
-          background: var(--surface);
-        }
-        .sk-feed-body { flex: 1; min-width: 0; }
-        .sk-row { display: flex; align-items: center; width: 100%; }
-      `}</style>
     </SkeletonGroup>
   );
 }

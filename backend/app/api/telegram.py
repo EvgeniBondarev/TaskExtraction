@@ -14,13 +14,23 @@ from app.schemas.telegram import (
     TelegramStatusOut,
 )
 from app.services import telegram_auth
-from app.tenancy import ensure_tenant, set_current_tenant, set_session_tenant
-from app.tenancy.context import reset_current_tenant
+from app.services.hosted_telegram import is_hosted_mode
+from app.telegram.listener import wake_ingest
+from app.tenancy import ensure_tenant, set_session_tenant
+from app.tenancy.context import reset_current_tenant, set_current_tenant
 from app.utils.crypto import encryption_configured
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
+
+
+def _bind_tenant_session(request: Request, user_id: int | None) -> None:
+    if user_id is None:
+        return
+    tenant_key = str(user_id)
+    ensure_tenant(tenant_key)
+    set_session_tenant(request, tenant_key)
 
 
 def _encryption_http_error(exc: ValueError) -> HTTPException:
@@ -47,6 +57,7 @@ async def telegram_status():
         is_authorized=s.is_authorized,
         setup_complete=s.setup_complete,
         setup_step=s.setup_step,
+        hosted_app=is_hosted_mode(),
         api_id=s.api_id,
         username=s.username,
         user_id=s.user_id,
@@ -64,6 +75,7 @@ async def setup_required():
     return {
         "required": not s.setup_complete,
         "step": s.setup_step,
+        "hosted_app": is_hosted_mode(),
         "my_telegram_apps_url": telegram_auth.MY_TELEGRAM_APPS_URL,
         "encryption_configured": encryption_configured(),
     }
@@ -122,7 +134,7 @@ async def get_credentials_masked():
 
 
 @router.post("/auth/qr/start", response_model=QrStartOut)
-async def qr_start():
+async def qr_start(request: Request):
     try:
         result = await telegram_auth.start_qr_login()
     except ValueError as e:
@@ -130,12 +142,16 @@ async def qr_start():
     except Exception as e:
         logger.exception("qr_start failed")
         raise HTTPException(500, "Не удалось начать вход по QR") from e
+    _bind_tenant_session(request, result.get("user_id"))
     return QrStartOut(**result)
 
 
 @router.get("/auth/qr/status/{login_id}", response_model=QrStatusOut)
-async def qr_status(login_id: str):
+async def qr_status(login_id: str, request: Request):
     result = await telegram_auth.get_qr_login_status(login_id)
+    if result.get("status") == "authorized":
+        _bind_tenant_session(request, result.get("user_id"))
+        wake_ingest()
     return QrStatusOut(**result)
 
 
@@ -163,8 +179,20 @@ async def phone_send(body: PhoneSendIn):
     return PhoneSendOut(**result)
 
 
+@router.post("/auth/phone/resend/{login_id}", response_model=PhoneSendOut)
+async def phone_resend(login_id: str):
+    try:
+        result = await telegram_auth.resend_phone_code(login_id)
+    except ValueError as e:
+        raise _encryption_http_error(e) from e
+    except Exception as e:
+        logger.exception("phone_resend failed")
+        raise HTTPException(500, "Не удалось отправить код повторно") from e
+    return PhoneSendOut(**result)
+
+
 @router.post("/auth/phone/verify", response_model=PhoneVerifyOut)
-async def phone_verify(body: PhoneVerifyIn):
+async def phone_verify(body: PhoneVerifyIn, request: Request):
     try:
         result = await telegram_auth.verify_phone_code(
             body.login_id, body.code, body.password
@@ -174,6 +202,9 @@ async def phone_verify(body: PhoneVerifyIn):
     except Exception as e:
         logger.exception("phone_verify failed")
         raise HTTPException(500, "Ошибка проверки кода") from e
+    if result.get("status") == "authorized":
+        _bind_tenant_session(request, result.get("user_id"))
+        wake_ingest()
     return PhoneVerifyOut(**result)
 
 

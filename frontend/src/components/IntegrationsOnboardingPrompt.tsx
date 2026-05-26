@@ -1,5 +1,5 @@
 import { IntegrationBrandIcon } from "./IntegrationBrandIcon";
-import { INTEGRATIONS } from "../hooks/useIntegrationsStatus";
+import { getIntegrationsList } from "../hooks/useIntegrationsStatus";
 import { useI18n } from "../i18n";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
 
 export function IntegrationsOnboardingPrompt({ onSetup, onSkip }: Props) {
   const { messages: t } = useI18n();
+  const integrations = getIntegrationsList(t.settings.integrations);
 
   return (
     <div
@@ -23,7 +24,7 @@ export function IntegrationsOnboardingPrompt({ onSetup, onSkip }: Props) {
         <p className="int-onboarding-lead">{t.app.intLead}</p>
 
         <ul className="int-onboarding-list">
-          {INTEGRATIONS.map((item) => (
+          {integrations.map((item) => (
             <li key={item.id} className={`int-onboarding-item provider-${item.id}`}>
               <span className="int-onboarding-icon">
                 <IntegrationBrandIcon provider={item.id} size={26} />

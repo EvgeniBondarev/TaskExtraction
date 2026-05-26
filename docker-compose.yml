@@ -8,6 +8,8 @@ services:
       DATABASE_URL: sqlite+aiosqlite:////app/data/taskextraction.db
       MEDIA_DIR: /app/data/media
       PUBLIC_API_URL: http://localhost:8000
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-root}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
     volumes:

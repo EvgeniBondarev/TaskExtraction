@@ -8,34 +8,27 @@ import { TrelloSettings } from "../TrelloSettings";
 import {
   getIntegrationState,
   getIntegrationSummary,
-  INTEGRATIONS,
+  getIntegrationsList,
   IntegrationId,
   useIntegrationsStatus,
 } from "../../hooks/useIntegrationsStatus";
+import { useI18n } from "../../i18n";
 import "../../styles/integrations-hub.css";
 
-const STATE_LABELS: Record<string, string> = {
-  idle: "Не настроено",
-  ready: "Выключено",
-  active: "Работает",
-};
-
-function badgeLabel(state: string, auto?: boolean) {
-  if (state === "active" && auto) return "Работает · авто";
-  return STATE_LABELS[state] || state;
-}
-
 export function IntegrationsSettingsHub() {
+  const { messages: t } = useI18n();
+  const intl = t.settings.integrations;
+  const integrations = getIntegrationsList(intl);
   const { jira, trello, github, slack, loading, reload, activeCount } = useIntegrationsStatus();
   const [openId, setOpenId] = useState<IntegrationId | null>(null);
 
   useEffect(() => {
     if (loading) return;
-    const firstIdle = INTEGRATIONS.find(
+    const firstIdle = integrations.find(
       (i) => getIntegrationState(i.id, jira, trello, github, slack) !== "active"
     );
     setOpenId((prev) => prev ?? firstIdle?.id ?? "jira");
-  }, [loading, jira, trello, github, slack]);
+  }, [loading, jira, trello, github, slack, integrations]);
 
   if (loading) {
     return (
@@ -49,43 +42,43 @@ export function IntegrationsSettingsHub() {
     setOpenId((prev) => (prev === id ? null : id));
   };
 
+  const badgeLabel = (state: string, auto?: boolean) => {
+    if (state === "active" && auto) return intl.states.activeAuto;
+    return intl.states[state as keyof typeof intl.states] || state;
+  };
+
   return (
     <div className="integrations-hub">
       <section className="integrations-hub-intro">
-        <h3>Как это работает</h3>
-        <p>
-          Когда в Telegram появляется новая задача, она может автоматически уйти в выбранный сервис.
-          Настройте каждый сервис по шагам — откройте карточку ниже.
-        </p>
+        <h3>{intl.hubTitle}</h3>
+        <p>{intl.hubLead}</p>
         <ol className="integrations-hub-steps">
           <li>
             <strong>1</strong>
-            <span>Введите ключи и нажмите «Проверить подключение»</span>
+            <span>{intl.hubStep1}</span>
           </li>
           <li>
             <strong>2</strong>
-            <span>Выберите проект, доску или канал — куда попадут задачи</span>
+            <span>{intl.hubStep2}</span>
           </li>
           <li>
             <strong>3</strong>
-            <span>Включите интеграцию и при необходимости «Автоматически при новой задаче»</span>
+            <span>{intl.hubStep3}</span>
           </li>
         </ol>
       </section>
 
       <div className="integrations-hub-summary">
         <span className="integrations-hub-pill">
-          Активно: <strong>{activeCount}</strong> из {INTEGRATIONS.length}
+          {intl.activeCount} <strong>{activeCount}</strong> {intl.activeOf} {integrations.length}
         </span>
-        <span className="integrations-hub-pill">
-          Ручная отправка: из карточки задачи в канбане
-        </span>
+        <span className="integrations-hub-pill">{intl.manualSend}</span>
       </div>
 
       <div className="integrations-accordion" role="list">
-        {INTEGRATIONS.map((meta) => {
+        {integrations.map((meta) => {
           const state = getIntegrationState(meta.id, jira, trello, github, slack);
-          const summary = getIntegrationSummary(meta.id, jira, trello, github, slack);
+          const summary = getIntegrationSummary(meta.id, jira, trello, github, slack, intl);
           const isOpen = openId === meta.id;
           const auto =
             (meta.id === "jira" && jira?.auto_push) ||

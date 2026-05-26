@@ -21,6 +21,7 @@ class TelegramStatusOut(BaseModel):
     is_authorized: bool
     setup_complete: bool
     setup_step: str
+    hosted_app: bool = False
     api_id: int | None
     username: str | None
     user_id: int | None
@@ -60,6 +61,11 @@ class PhoneSendOut(BaseModel):
     code_sent: bool
     phone_masked: str | None = None
     message: str | None = None
+    code_delivery: str | None = Field(
+        None,
+        description="app | sms | call | email — куда Telegram отправил код",
+    )
+    delivery_hint: str | None = None
     already_authorized: bool = False
     username: str | None = None
 

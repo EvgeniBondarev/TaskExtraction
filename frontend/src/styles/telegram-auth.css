@@ -1,0 +1,580 @@
+/* Telegram login — hosted QR flow */
+
+.tg-auth {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.tg-auth.wizard-mode,
+.tg-auth.embedded {
+  max-width: 420px;
+}
+
+.tg-auth-hosted-wrap {
+  width: 100%;
+}
+
+.tg-auth-card {
+  background: linear-gradient(165deg, #1a2838 0%, #141c28 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.tg-auth-card__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.tg-auth-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+  filter: drop-shadow(0 8px 20px rgba(34, 158, 217, 0.35));
+}
+
+.tg-auth-card__title {
+  margin: 0 0 0.4rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.tg-auth-card__lead {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 320px;
+}
+
+.tg-auth-consent {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  background: rgba(15, 20, 25, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #b8c5d6;
+  cursor: pointer;
+}
+
+.tg-auth-consent input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  accent-color: #229ed9;
+  cursor: pointer;
+}
+
+.tg-auth-consent a {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tg-auth-consent--error {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.tg-auth-method-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem;
+  background: rgba(15, 20, 25, 0.55);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.tg-auth-method-tabs button {
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tg-auth-method-tabs button.active {
+  background: rgba(34, 158, 217, 0.2);
+  color: #e7ecf3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tg-auth-phone-panel {
+  width: 100%;
+}
+
+.tg-auth-phone-panel .phone-substeps {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.tg-auth-phone-panel .phone-sub {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.tg-auth-phone-panel .phone-sub.done {
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.tg-auth-phone-panel .phone-sub.current {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--text);
+}
+
+.tg-auth-phone-hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.tg-auth-phone-panel label {
+  display: block;
+  margin-bottom: 0.85rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tg-auth-phone-panel input {
+  display: block;
+  width: 100%;
+  margin-top: 0.3rem;
+  background: rgba(15, 20, 25, 0.6);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.tg-auth-phone-panel input:focus {
+  outline: none;
+  border-color: #229ed9;
+  box-shadow: 0 0 0 3px rgba(34, 158, 217, 0.2);
+}
+
+.tg-auth-phone-panel form .tg-auth-btn {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.tg-auth-btn--text {
+  margin-top: 0.5rem;
+  background: transparent !important;
+  border: none !important;
+  color: var(--muted) !important;
+  font-size: 0.82rem;
+}
+
+.tg-auth-method-tabs--legacy {
+  margin-bottom: 1.15rem;
+}
+
+.tg-auth-qr-stage {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tg-auth-qr-stage--waiting-consent {
+  min-height: 120px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.tg-auth-qr-frame {
+  position: relative;
+  padding: 12px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  margin-bottom: 1rem;
+}
+
+.tg-auth-qr-frame img {
+  display: block;
+  width: 220px;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.tg-auth-qr-frame--expired {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tg-auth-qr-img--faded {
+  opacity: 0.2;
+  filter: grayscale(0.4);
+}
+
+.tg-auth-qr-expired {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 1rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 12px;
+}
+
+.tg-auth-qr-expired-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f1419;
+}
+
+.tg-auth-qr-scan-note {
+  margin: -0.5rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.4;
+  max-width: 300px;
+}
+
+.tg-auth-qr-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 20, 25, 0.85);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.tg-auth-qr-hint {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.45;
+  max-width: 280px;
+}
+
+.tg-auth-qr-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 280px;
+}
+
+.tg-auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.tg-auth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tg-auth-btn--primary {
+  background: linear-gradient(135deg, #2aabee 0%, #229ed9 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(34, 158, 217, 0.35);
+}
+
+.tg-auth-btn--primary:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+
+.tg-auth-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.tg-auth-btn--link {
+  background: transparent;
+  color: #7dd3fc;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+.tg-auth-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 2rem 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.tg-auth-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid var(--border);
+  border-top-color: #229ed9;
+  border-radius: 50%;
+  animation: tg-auth-spin 0.75s linear infinite;
+}
+
+@keyframes tg-auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tg-auth-error {
+  color: #fca5a5;
+  font-size: 0.85rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.tg-auth-info {
+  color: #93c5fd;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Legacy self-hosted flow */
+.tg-auth-legacy .auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.35rem;
+}
+
+.tg-auth-legacy .auth-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.tg-auth-legacy form label {
+  display: block;
+  margin-bottom: 0.85rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tg-auth-legacy form input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+}
+
+.tg-auth-legacy form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.tg-auth-legacy .method-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1.15rem;
+  padding: 0.25rem;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.tg-auth-legacy .method-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.88rem;
+}
+
+.tg-auth-legacy .method-tabs button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.tg-auth-legacy .qr-panel {
+  text-align: center;
+}
+
+.tg-auth-legacy .qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tg-auth-legacy .qr-img {
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.5rem;
+  max-width: 100%;
+  height: auto;
+}
+
+.tg-auth-legacy .hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.85rem;
+  line-height: 1.4;
+}
+
+.tg-auth-legacy .hint.center {
+  text-align: center;
+}
+
+.tg-auth-legacy .btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #229ed9, #0088cc);
+  border: none;
+  color: #fff;
+  padding: 0.7rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tg-auth-legacy .btn-secondary {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.55rem;
+  border-radius: 10px;
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+
+.tg-auth-legacy .btn-text {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.wizard-panel--auth {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.center-page {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(59, 130, 246, 0.15) 0%, transparent 55%),
+    var(--bg);
+}
+
+.tg-auth-legacy .done-card {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.tg-auth-legacy .done-title {
+  color: #4ade80;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.tg-auth-legacy .opt {
+  opacity: 0.65;
+  font-weight: 400;
+}
+
+.tg-auth-legacy .mini-steps {
+  margin: 0 0 1rem;
+  padding-left: 1.15rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.tg-auth-legacy .tg-deeplink {
+  display: inline-block;
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.tg-auth-legacy h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.4rem;
+  text-align: center;
+}

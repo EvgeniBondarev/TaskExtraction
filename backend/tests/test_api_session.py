@@ -33,16 +33,25 @@ async def test_logout_clears_session(authed_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_single_tenant_on_disk_does_not_auto_bind(app, authed_client: AsyncClient):
+async def test_single_tenant_on_disk_does_not_auto_bind(
+    app, authed_client: AsyncClient, monkeypatch
+):
     """Один tenant в data/ не должен открывать чужую панель без cookie."""
     from httpx import ASGITransport, AsyncClient
+
+    from app.config import get_settings
+
+    monkeypatch.delenv("TELEGRAM_API_ID", raising=False)
+    monkeypatch.delenv("TELEGRAM_API_HASH", raising=False)
+    get_settings.cache_clear()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as anon:
         r = await anon.get("/api/telegram/status")
         assert r.status_code == 200
-        assert r.json()["setup_complete"] is False
-        assert r.json()["has_credentials"] is False
+        data = r.json()
+        assert data["setup_complete"] is False
+        assert data["has_credentials"] is False
 
         r_tasks = await anon.get("/api/tasks")
         assert r_tasks.status_code == 401

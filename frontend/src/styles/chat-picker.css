@@ -1,0 +1,325 @@
+/* Страница выбора чатов — без прокрутки документа, скролл только в списке */
+.app.app--chats {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(0.65rem, 1.5vh, 1rem) 1.25rem;
+  box-sizing: border-box;
+}
+
+.app.app--chats .chats-setup-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app.app--chats .chats-setup-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+.app.app--chats .chats-setup-panel h1 {
+  flex-shrink: 0;
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.05rem, 2.4vh, 1.3rem);
+}
+
+.app.app--chats .chats-setup-panel .lead {
+  flex-shrink: 0;
+  margin: 0 0 0.65rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.app.app--chats .chat-picker {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+.app.app--chats .chat-picker > .picker-stats,
+.app.app--chats .chat-picker > .empty-active-banner,
+.app.app--chats .chat-picker > .search-bar,
+.app.app--chats .chat-picker > .search-hint,
+.app.app--chats .chat-picker > .picker-error {
+  flex-shrink: 0;
+}
+
+.app.app--chats .chat-picker > .save-btn {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+/* Chat list — без видимого скроллбара */
+.chat-picker > .chat-list-shell {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  margin-bottom: 0.65rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: min(58vh, 520px);
+}
+
+.app.app--chats .chat-picker > .chat-list-shell {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+.chat-list-shell {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chat-list-shell::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.chat-list-shell--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Интерактивная загрузка — компактно, анимация внутри блока */
+.chat-sync-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 100%;
+  padding: 0.5rem 1rem 0.65rem;
+  text-align: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.chat-sync-loader__hero {
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+}
+
+.chat-sync-loader__logo-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 0.5rem;
+}
+
+.chat-sync-loader__pulse {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 158, 217, 0.45);
+  animation: chat-sync-pulse 1.8s ease-out infinite;
+}
+
+@keyframes chat-sync-pulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.chat-sync-loader__title {
+  margin: 0 0 0.25rem;
+  font-size: clamp(0.95rem, 2vh, 1.05rem);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.chat-sync-loader__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.35;
+  max-width: 300px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.chat-sync-loader__progress-wrap {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+}
+
+.chat-sync-loader__progress-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-bottom: 0.45rem;
+}
+
+.chat-sync-loader__progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #229ed9, #3b82f6, #229ed9);
+  background-size: 200% 100%;
+  animation: chat-sync-shimmer 1.2s linear infinite;
+  transition: width 0.35s ease-out;
+}
+
+@keyframes chat-sync-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.chat-sync-loader__step {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #93c5fd;
+  min-height: 1.1rem;
+  animation: chat-sync-fade 0.4s ease;
+}
+
+@keyframes chat-sync-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Бегущая лента превью чатов — без прокрутки страницы */
+.chat-sync-loader__previews-viewport {
+  width: 100%;
+  max-width: 300px;
+  height: 4.5rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+.chat-sync-loader__previews-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  animation: chat-sync-marquee 14s linear infinite;
+}
+
+@keyframes chat-sync-marquee {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.chat-sync-loader__preview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.4rem 0;
+  opacity: 0.6;
+}
+
+.chat-sync-loader__preview-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #334155, #1e293b);
+}
+
+.chat-sync-loader__preview-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.chat-sync-loader__preview-title {
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-sync-loader__preview-sub {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.chat-sync-loader__footnote {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+@media (max-height: 640px) {
+  .app.app--chats .chats-setup-panel .lead {
+    display: none;
+  }
+
+  .chat-sync-loader__previews-viewport {
+    height: 3.5rem;
+  }
+
+  .chat-sync-loader__hint {
+    -webkit-line-clamp: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-sync-loader__pulse,
+  .chat-sync-loader__progress-bar,
+  .chat-sync-loader__previews-track {
+    animation: none;
+  }
+}

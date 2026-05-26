@@ -1,4 +1,5 @@
 import type { Messages } from "../types";
+import { settingsEn } from "./settings.en";
 
 const messages: Messages = {
   meta: {
@@ -126,7 +127,7 @@ const messages: Messages = {
         step: 2,
         title: "Account login",
         time: "2 min",
-        body: "Scan the QR code in Telegram or sign in with your phone number — like the regular client.",
+        body: "Scan the QR code in Telegram — like linking a device in the regular client.",
         tip: "Session is saved: no need to log in again.",
       },
       {
@@ -251,6 +252,19 @@ const messages: Messages = {
     chatsTitle: "Chats to monitor",
     chatsLead: "Select chats TaskExtraction will receive messages from in real time.",
     chatsSubmit: "Start monitoring",
+    chatLoadTitle: "Loading chats from Telegram",
+    chatLoadTitleSync: "Refreshing chat list",
+    chatLoadHint:
+      "If you have many groups and channels, this can take up to a minute — that's normal.",
+    chatLoadFootnote: "Don't close this page — syncing with Telegram",
+    chatLoadPreviewSub: "Loading…",
+    chatLoadSteps: [
+      "Connecting to Telegram…",
+      "Fetching groups and channels…",
+      "Loading titles and avatars…",
+      "Processing remaining chats…",
+      "Almost done…",
+    ],
     intEyebrow: "Done — Telegram connected",
     intTitle: "Where should tasks go?",
     intLead:
@@ -264,6 +278,90 @@ const messages: Messages = {
     done: "Done",
     archive: "Archive",
   },
+  auth: {
+    title: "Sign in with Telegram",
+    lead: "Scan the QR code in Telegram — we only process messages in chats you select.",
+    consentLabel:
+      "I connect my Telegram account and agree to processing messages in selected support chats according to the",
+    consentRequired: "Please confirm consent to continue",
+    privacyLink: "Privacy Policy",
+    qrHint: "Telegram → Settings → Devices → Link Desktop Device",
+    qrScanNote:
+      "Scan the QR code with the Telegram app camera. Do not open the link — some app versions do not support it.",
+    qrExpired: "QR code expired",
+    showQr: "Show QR code",
+    refreshQr: "Refresh QR",
+    consentHint: "Check the consent box above to get the QR code",
+    phoneTab: "Phone",
+    phoneHint:
+      "The code is delivered in the Telegram app (chat «Telegram»), not SMS. Telegram must be installed and logged in with this number.",
+    phoneCodeHint: "Code from the «Telegram» chat in the app",
+    phone2faHint: "Enter your two-factor authentication password",
+    phoneSendCode: "Get code",
+    phoneResendCode: "Resend code",
+    phoneInvalid: "Enter a complete international number (e.g. +375299785592)",
+    phoneOtherNumber: "← Different number",
+    qrTab: "QR code",
+  },
+  privacy: {
+    metaTitle: "Privacy Policy — TaskExtraction",
+    metaDescription:
+      "How TaskExtraction processes Telegram support chat messages: purposes, retention, and your rights.",
+    title: "Privacy Policy",
+    back: "Home",
+    updated: "Effective May 26, 2026",
+    sections: [
+      {
+        title: "1. Operator and service",
+        paragraphs: [
+          "TaskExtraction (task-extraction.ru) extracts tasks from Telegram support chats using automated classification (LLM) and a management panel.",
+          "The operator processes data to provide the service to users who connect their Telegram account.",
+        ],
+      },
+      {
+        title: "2. Data we process",
+        paragraphs: [
+          "After sign-in via Telegram (QR or phone), the service accesses messages only in chats and groups you explicitly enable for monitoring.",
+          "This may include: message text, metadata (time, author, chat id), attachments, Telegram profile data (name, username, id), integration settings (Jira, Trello, GitHub, Slack), technical logs, and panel session cookies.",
+        ],
+      },
+      {
+        title: "3. Purposes",
+        paragraphs: [
+          "Message classification and task cards; feed and kanban; sync to connected trackers; replies to source chats from the panel; security and reliability of the service.",
+        ],
+      },
+      {
+        title: "4. Legal basis and consent",
+        paragraphs: [
+          "By connecting Telegram you confirm you may grant access to selected chats (e.g. as a support team member) and agree to processing messages in those chats for the service.",
+          "Do not connect personal chats if you do not want their content processed on the operator's servers.",
+        ],
+      },
+      {
+        title: "5. Storage and security",
+        paragraphs: [
+          "Data is stored on the operator's servers with encryption for API keys, integration tokens, and Telegram sessions. Retention lasts while you use the service or until deletion on request.",
+          "You can stop processing by disabling chats, signing out of Telegram in settings, or ending the panel session.",
+        ],
+      },
+      {
+        title: "6. Third parties",
+        paragraphs: [
+          "Messages and tasks may be sent to integrations you enable (Jira, Trello, GitHub, Slack) and to the LLM provider for classification — only as needed for those features.",
+          "Data is not sold or shared with ad networks.",
+        ],
+      },
+      {
+        title: "7. Your rights and contact",
+        paragraphs: [
+          "You may request access, correction, or deletion, or withdraw consent by contacting the operator on Telegram: @Burn1ngSnow.",
+          "Material policy changes will be reflected by the date on this page.",
+        ],
+      },
+    ],
+  },
+  settings: settingsEn,
 };
 
 export default messages;

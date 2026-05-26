@@ -8,6 +8,7 @@ export interface TelegramStatus {
   is_authorized: boolean;
   setup_complete: boolean;
   setup_step: "credentials" | "auth" | "complete";
+  hosted_app?: boolean;
   api_id: number | null;
   username: string | null;
   user_id: number | null;
@@ -22,6 +23,20 @@ export interface TelegramStatus {
 export async function fetchTelegramStatus(): Promise<TelegramStatus> {
   const r = await apiFetch(`${API}/api/telegram/status`);
   if (!r.ok) throw new Error("Failed to load status");
+  return r.json();
+}
+
+export interface TelegramSetupRequired {
+  required: boolean;
+  step: string;
+  hosted_app: boolean;
+  my_telegram_apps_url: string;
+  encryption_configured: boolean;
+}
+
+export async function fetchTelegramSetupRequired(): Promise<TelegramSetupRequired> {
+  const r = await apiFetch(`${API}/api/telegram/setup-required`);
+  if (!r.ok) throw new Error("Failed to load setup");
   return r.json();
 }
 
@@ -111,6 +126,13 @@ export function pollQrStatus(
   return () => clearInterval(id);
 }
 
+function apiErrorMessage(err: unknown, fallback: string): string {
+  const detail = (err as { detail?: string | { msg?: string }[] }).detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg;
+  return fallback;
+}
+
 export async function sendPhoneCode(phone: string) {
   const r = await apiFetch(`${API}/api/telegram/auth/phone/send`, {
     method: "POST",
@@ -119,15 +141,30 @@ export async function sendPhoneCode(phone: string) {
   });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail || "Send code failed");
+    throw new Error(apiErrorMessage(err, "Не удалось отправить код"));
   }
-  return r.json() as Promise<{
-    login_id: string;
-    code_sent: boolean;
-    phone_masked?: string;
-    message?: string;
-    already_authorized?: boolean;
-  }>;
+  return r.json() as Promise<PhoneSendResult>;
+}
+
+export type PhoneSendResult = {
+  login_id: string;
+  code_sent: boolean;
+  phone_masked?: string;
+  message?: string;
+  code_delivery?: string;
+  delivery_hint?: string;
+  already_authorized?: boolean;
+};
+
+export async function resendPhoneCode(loginId: string) {
+  const r = await apiFetch(`${API}/api/telegram/auth/phone/resend/${loginId}`, {
+    method: "POST",
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(apiErrorMessage(err, "Не удалось отправить код повторно"));
+  }
+  return r.json() as Promise<PhoneSendResult>;
 }
 
 export async function verifyPhoneCode(
@@ -142,7 +179,7 @@ export async function verifyPhoneCode(
   });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail || "Verify failed");
+    throw new Error(apiErrorMessage(err, "Не удалось проверить код"));
   }
   return r.json() as Promise<{
     status: string;

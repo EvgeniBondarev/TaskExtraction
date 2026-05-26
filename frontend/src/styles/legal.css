@@ -1,0 +1,70 @@
+.legal-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}
+
+.legal-header h1 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+.legal-back {
+  color: #818cf8;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.legal-updated {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.legal-body h2 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem;
+  color: #cbd5e1;
+}
+
+.legal-body p {
+  margin: 0 0 0.75rem;
+  color: #94a3b8;
+}
+
+.legal-consent {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin: 1rem 0 1.25rem;
+  padding: 0.85rem 1rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+}
+
+.legal-consent input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.legal-consent a {
+  color: #818cf8;
+}
+
+.legal-consent--error {
+  border-color: #f87171;
+}
+
+.auth-hosted-lead {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+  max-width: 420px;
+}

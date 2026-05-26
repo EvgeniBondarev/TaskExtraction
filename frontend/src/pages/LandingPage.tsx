@@ -138,7 +138,7 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
 
       <LandingStats />
 
-      <section className="lp-section" id="how">
+      <section className="lp-section lp-section--how" id="how">
         <ScrollReveal className="lp-section-head lp-section-head--center">
           <span className="lp-badge">{lp.howBadge}</span>
           <h2>{lp.howTitle}</h2>
@@ -149,13 +149,13 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
         </ScrollReveal>
       </section>
 
+      <BeginnerGuide onTry={handleTry} />
+
       <LandingScrollVideo />
 
-      <section className="lp-section" id="features">
+      <section className="lp-section lp-section--case" id="features">
         <LandingProductCase />
       </section>
-
-      <BeginnerGuide onTry={handleTry} />
 
       <LandingFaq />
 
@@ -199,6 +199,7 @@ export function LandingPage({ onTry, onSkip, onHome }: Props) {
           <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
             {nav.faq}
           </a>
+          <a href="/privacy">Политика конфиденциальности</a>
         </nav>
         <p className="lp-footer-note">{lp.footerNote}</p>
       </ScrollReveal>

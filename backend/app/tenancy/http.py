@@ -21,6 +21,10 @@ _PUBLIC_EXACT = (
     "/api/telegram/setup-required",
 )
 
+_PUBLIC_TELEGRAM_AUTH_PREFIX = "/api/telegram/auth/"
+
+_PUBLIC_TELEGRAM_AUTH_PREFIX = "/api/telegram/auth/"
+
 _PUBLIC_PREFIXES_EXTRA = (
     "/api/analytics/",
     "/api/admin/",
@@ -36,6 +40,8 @@ def session_secret() -> str:
 
 def is_public_path(path: str, method: str = "GET") -> bool:
     if path in _PUBLIC_EXACT:
+        return True
+    if path.startswith(_PUBLIC_TELEGRAM_AUTH_PREFIX):
         return True
     if path == "/api/telegram/credentials" and method.upper() == "POST":
         return True
@@ -78,7 +84,7 @@ def require_session_tenant(request: Request) -> str:
     if not tenant:
         raise HTTPException(
             status_code=401,
-            detail="Сессия не найдена. Укажите свои ключи Telegram API (my.telegram.org).",
+            detail="Сессия не найдена. Войдите через Telegram (QR-код).",
         )
     return tenant
 

@@ -7,7 +7,9 @@ import {
   saveChatSelection,
   syncTelegramChats,
 } from "../api/chats";
-import { ChatListSkeleton } from "./PageSkeletons";
+import { ChatSyncLoader } from "./ChatSyncLoader";
+import { useI18n } from "../i18n";
+import "../styles/chat-picker.css";
 
 interface Props {
   onSaved?: () => void;
@@ -40,10 +42,12 @@ function ChatRow({
   chat,
   checked,
   onToggle,
+  activeLabel,
 }: {
   chat: ChatItem;
   checked: boolean;
   onToggle: () => void;
+  activeLabel: string;
 }) {
   return (
     <li>
@@ -74,13 +78,17 @@ function ChatRow({
             )}
           </span>
         </span>
-        {checked && <span className="active-badge">Активен</span>}
+        {checked && <span className="active-badge">{activeLabel}</span>}
       </label>
     </li>
   );
 }
 
-export function ChatPicker({ onSaved, submitLabel = "Сохранить выбор", showSyncButton = true }: Props) {
+export function ChatPicker({ onSaved, submitLabel, showSyncButton = true }: Props) {
+  const { messages: t } = useI18n();
+  const cp = t.settings.chatPicker;
+  const c = t.settings.common;
+  const resolvedSubmit = submitLabel ?? cp.defaultSubmit;
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [filter, setFilter] = useState("");
@@ -108,7 +116,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
         return next;
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка синхронизации");
+      setError(e instanceof Error ? e.message : cp.syncError);
     } finally {
       setSyncing(false);
     }
@@ -123,6 +131,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
         const data = await fetchChats();
         if (cancelled) return;
         if (data.total === 0) {
+          setSyncing(true);
           const synced = await syncTelegramChats();
           if (cancelled) return;
           setChats(synced.items);
@@ -133,9 +142,12 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
           await load();
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Ошибка загрузки");
+        if (!cancelled) setError(e instanceof Error ? e.message : cp.loadError);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setSyncing(false);
+        }
       }
     })();
     return () => {
@@ -182,7 +194,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
 
   const handleSave = async () => {
     if (selected.size === 0) {
-      setError("Выберите хотя бы один чат");
+      setError(cp.selectAtLeastOne);
       return;
     }
     setLoading(true);
@@ -192,7 +204,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
       await load();
       onSaved?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сохранения");
+      setError(e instanceof Error ? e.message : cp.saveError);
     } finally {
       setLoading(false);
     }
@@ -206,9 +218,11 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
       <div className="picker-stats">
         <span className="stat-pill active-stat">
           <span className="stat-dot" />
-          Отслеживается: <strong>{selected.size}</strong>
+          {cp.monitoredCount} <strong>{selected.size}</strong>
         </span>
-        <span className="stat-pill muted-stat">Всего в Telegram: {chats.length}</span>
+        <span className="stat-pill muted-stat">
+          {cp.totalInTelegram} {chats.length}
+        </span>
       </div>
 
       {hasNoActive && !isSearching && (
@@ -225,8 +239,8 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
             </svg>
           </div>
           <div>
-            <strong>Нет активных чатов</strong>
-            <p>Отметьте чаты ниже — без них приложение не будет получать сообщения и создавать задачи.</p>
+            <strong>{cp.noActiveTitle}</strong>
+            <p>{cp.noActiveLead}</p>
           </div>
         </div>
       )}
@@ -240,18 +254,18 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
         </span>
         <input
           type="search"
-          placeholder="Поиск: название, @username, тип чата…"
+          placeholder={cp.searchPlaceholder}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          aria-label="Поиск чатов"
+          aria-label={cp.searchAria}
         />
         {filter && (
-          <button type="button" className="search-clear" onClick={() => setFilter("")} aria-label="Очистить">
+          <button type="button" className="search-clear" onClick={() => setFilter("")} aria-label={cp.clearSearch}>
             ×
           </button>
         )}
         {showSyncButton && (
-          <button type="button" className="sync-btn" onClick={runSync} disabled={syncing} title="Обновить из Telegram">
+          <button type="button" className="sync-btn" onClick={runSync} disabled={syncing} title={cp.syncTitle}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
                 d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6"
@@ -261,29 +275,27 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
                 strokeLinejoin="round"
               />
             </svg>
-            {syncing ? "…" : "Синхр."}
+            {syncing ? cp.syncing : cp.syncShort}
           </button>
         )}
       </div>
 
       {isSearching && (
         <p className="search-hint">
-          Найдено: {searchResults.length}
-          {searchResults.length === 0 && " — попробуйте другое название или обновите список"}
+          {cp.found} {searchResults.length}
+          {searchResults.length === 0 && cp.foundEmpty}
         </p>
       )}
 
       {error && <p className="picker-error">{error}</p>}
 
-      <div className="chat-list-shell">
+      <div className={`chat-list-shell${listLoading ? " chat-list-shell--loading" : ""}`}>
         {listLoading ? (
-          <div className="list-loading">
-            <ChatListSkeleton rows={7} />
-          </div>
+          <ChatSyncLoader mode={syncing && chats.length > 0 ? "sync" : "initial"} />
         ) : isSearching ? (
           <ul className="chat-list">
             {searchResults.length === 0 ? (
-              <li className="list-empty">Ничего не найдено по запросу «{filter}»</li>
+              <li className="list-empty">{cp.noSearchResults.replace("{query}", filter)}</li>
             ) : (
               searchResults.map((c) => (
                 <ChatRow
@@ -291,6 +303,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
                   chat={c}
                   checked={selected.has(c.telegram_chat_id)}
                   onToggle={() => toggle(c.telegram_chat_id)}
+                  activeLabel={cp.activeBadge}
                 />
               ))
             )}
@@ -300,7 +313,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
             {activeChats.length > 0 && (
               <section className="chat-section">
                 <header className="section-head active-head">
-                  <h4>Отслеживаемые</h4>
+                  <h4>{cp.monitoredSection}</h4>
                   <span className="section-count">{activeChats.length}</span>
                 </header>
                 <ul className="chat-list">
@@ -310,6 +323,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
                       chat={c}
                       checked
                       onToggle={() => toggle(c.telegram_chat_id)}
+                      activeLabel={cp.activeBadge}
                     />
                   ))}
                 </ul>
@@ -319,7 +333,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
             {availableChats.length > 0 && (
               <section className="chat-section">
                 <header className="section-head">
-                  <h4>{activeChats.length > 0 ? "Добавить чаты" : "Все чаты"}</h4>
+                  <h4>{activeChats.length > 0 ? cp.addChatsTitle : cp.allChatsTitle}</h4>
                   <span className="section-count">{availableChats.length}</span>
                 </header>
                 <ul className="chat-list">
@@ -329,6 +343,7 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
                       chat={c}
                       checked={false}
                       onToggle={() => toggle(c.telegram_chat_id)}
+                      activeLabel={cp.activeBadge}
                     />
                   ))}
                 </ul>
@@ -336,18 +351,18 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
             )}
 
             {activeChats.length === 0 && availableChats.length === 0 && (
-              <p className="list-empty">Чаты не найдены. Нажмите «Синхр.» для загрузки из Telegram.</p>
+              <p className="list-empty">{cp.listEmpty}</p>
             )}
           </>
         )}
       </div>
 
       {savedActiveCount !== selected.size && selected.size > 0 && (
-        <p className="unsaved-hint">Есть несохранённые изменения</p>
+        <p className="unsaved-hint">{cp.unsavedHint}</p>
       )}
 
       <button type="button" className="save-btn" onClick={handleSave} disabled={loading || listLoading}>
-        {loading ? "Сохранение…" : submitLabel}
+        {loading ? c.saving : resolvedSubmit}
         {selected.size > 0 && !loading && (
           <span className="save-count">{selected.size}</span>
         )}
@@ -503,20 +518,6 @@ export function ChatPicker({ onSaved, submitLabel = "Сохранить выбо
           margin-bottom: 0.65rem;
         }
 
-        .chat-list-shell {
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          background: var(--surface);
-          overflow: hidden;
-          margin-bottom: 1rem;
-          max-height: min(58vh, 520px);
-          overflow-y: auto;
-        }
-        .list-loading {
-          padding: 2.5rem 1rem;
-          display: flex;
-          justify-content: center;
-        }
         .chat-section + .chat-section {
           border-top: 1px solid var(--border);
         }

@@ -13,8 +13,13 @@ import {
 import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
 import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
+import { useI18n } from "../i18n";
 
 export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const { messages: t } = useI18n();
+  const tr = t.settings.integrations.trello;
+  const c = t.settings.common;
+  const intl = t.settings.integrations;
   const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<TrelloStatus | null>(null);
   const [apiKey, setApiKey] = useState("");
@@ -50,7 +55,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
   }, []);
 
   useEffect(() => {
-    reload().catch(() => setError("Не удалось загрузить настройки Trello"));
+    reload().catch(() => setError(tr.loadFailed));
   }, [reload]);
 
   const authorizeUrl =
@@ -66,9 +71,9 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       const list = await fetchTrelloBoards(creds());
       setBoards(list);
       if (list.length && !boardId) setBoardId(list[0].id);
-      setInfo(`Найдено досок: ${list.length}`);
+      setInfo(`${tr.boardsFound} ${list.length}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки досок");
+      setError(e instanceof Error ? e.message : tr.loadBoardsError);
     } finally {
       setLoading(false);
     }
@@ -83,7 +88,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       setLists(list);
       if (list.length && !listId) setListId(list[0].id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки списков");
+      setError(e instanceof Error ? e.message : tr.listsError);
     } finally {
       setLoading(false);
     }
@@ -108,7 +113,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
         setError(r.message);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setTesting(false);
     }
@@ -137,10 +142,10 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       const s = await saveTrelloSettings(body);
       setStatus(s);
       setToken("");
-      setInfo("Настройки Trello сохранены");
+      setInfo(tr.saved);
       onSaved?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сохранения");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setLoading(false);
     }
@@ -152,7 +157,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
     <>
       <label>
         API Key
-        <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Ключ из Trello Power-Ups" />
+        <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={tr.apiKeyPlaceholder} />
       </label>
       {authorizeUrl && (
         <p className="auth-block">
@@ -167,7 +172,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          placeholder={status?.has_token ? "Новый token (оставьте пустым)" : "Вставьте token после авторизации"}
+          placeholder={status?.has_token ? tr.tokenPlaceholderKeep : tr.tokenPlaceholderNew}
         />
       </label>
       {status?.has_token && status.token_masked && (
@@ -175,11 +180,11 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       )}
       <div className="row-btns">
         <button type="button" onClick={handleTest} disabled={testing || loading}>
-          {testing ? "Проверка…" : "Проверить подключение"}
+          {testing ? c.testing : intl.testConnection}
         </button>
         {!hub && (
           <button type="button" onClick={loadBoards} disabled={loading}>
-            Загрузить доски
+            {tr.loadBoards}
           </button>
         )}
       </div>
@@ -191,7 +196,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
       {hub && (
         <div className="row-btns">
           <button type="button" onClick={loadBoards} disabled={loading}>
-            {loading ? "Загрузка…" : "Загрузить доски"}
+            {loading ? c.loading : tr.loadBoards}
           </button>
         </div>
       )}
@@ -233,19 +238,19 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
     <div className="toggles">
       <label className="check">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>{hub ? "Включить интеграцию Trello" : "Интеграция включена"}</span>
+        <span>{hub ? intl.enableHub : intl.enableFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
-        <span>{hub ? "Автоматически создавать карточку при новой задаче" : "Создавать карточку в Trello при новой задаче"}</span>
+        <span>{hub ? tr.autoCreateHub : tr.autoCreateFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
-        <span>{hub ? "Прикреплять медиафайлы" : "Прикреплять медиафайлы к карточке"}</span>
+        <span>{hub ? tr.attachMediaHub : tr.attachMediaFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
-        <span>{hub ? "Добавлять ссылки на Telegram и URL" : "Добавлять ссылки (Telegram, URL из сообщения)"}</span>
+        <span>{hub ? tr.includeLinksHub : tr.includeLinksFull}</span>
       </label>
     </div>
   );
@@ -260,7 +265,7 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
               title="Trello"
               subtitle={
                 status?.is_configured
-                  ? `${status.board_name || "доска"} → ${status.list_name || "список"}`
+                  ? `${status.board_name || intl.board} → ${status.list_name || intl.list}`
                   : "API Key + Token · список для новых карточек"
               }
               state={integrationState(status || {})}
@@ -306,10 +311,10 @@ export function TrelloSettings({ embedded, hideHeader, onSaved }: IntegrationSet
         <form onSubmit={handleSave}>
           {hub ? (
             <>
-              <IntegrationFormStep step={1} title="Доступ к Trello" hint="Проверьте подключение перед выбором доски">
+              <IntegrationFormStep step={1} title={tr.step1Title} hint={tr.step1Hint}>
                 {credentialsFields}
               </IntegrationFormStep>
-              <IntegrationFormStep step={2} title="Доска и список" hint="Карточки будут создаваться в выбранном списке">
+              <IntegrationFormStep step={2} title={tr.step2Title} hint={tr.step2Hint}>
                 {destinationFields}
               </IntegrationFormStep>
               <IntegrationFormStep step={3} title="Включение и автоматизация">

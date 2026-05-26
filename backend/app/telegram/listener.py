@@ -34,12 +34,17 @@ def on_telegram_client_reset() -> None:
 
 
 def get_ingest_status() -> dict:
+    import os
+
+    disabled = os.environ.get("TE_DISABLE_INGEST") == "1"
     return {
-        "running": _running,
+        "enabled": not disabled,
+        "running": _running and not disabled,
         "tenants": list_tenant_keys(),
         "handler_registered": dict(_handler_registered),
         "monitored_chat_ids": {k: sorted(v) for k, v in _monitored_ids.items()},
         "last_error": _last_error,
+        "disabled": disabled,
     }
 
 
@@ -74,8 +79,10 @@ async def _ingest_tenant_once(tenant_key: str) -> None:
             _last_error = f"{tenant_key}:no_monitored_chats"
             return
 
-        if _handler_registered.get(tenant_key) and _registered_clients.get(tenant_key) is not client:
+        prev_client = _registered_clients.get(tenant_key)
+        if _handler_registered.get(tenant_key) and prev_client is not client:
             _handler_registered[tenant_key] = False
+            logger.info("Re-registering Telegram handler for tenant=%s (client changed)", tenant_key)
 
         if not _handler_registered.get(tenant_key):
 
@@ -107,6 +114,12 @@ async def _ingest_tenant_once(tenant_key: str) -> None:
 
         if not client.is_connected():
             await client.connect()
+
+        # Держим соединение и подтягиваем апдейты (иначе NewMessage не приходят)
+        try:
+            await client.catch_up()
+        except Exception:
+            pass
     finally:
         reset_current_tenant(token)
 

@@ -41,21 +41,6 @@ export function AppLogo({ size = 28, showText = false, className = "" }: Props) 
         <circle cx="23" cy="8" r="1.5" fill="#4ade80" />
       </svg>
       {showText && <AppBrandName className="app-logo-text" />}
-      <style>{`
-        .app-logo {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.55rem;
-        }
-        .app-logo-mark {
-          flex-shrink: 0;
-          filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.35));
-        }
-        .app-logo-text .app-brand-title {
-          font-size: 1.2rem;
-          color: var(--text);
-        }
-      `}</style>
     </span>
   );
 }

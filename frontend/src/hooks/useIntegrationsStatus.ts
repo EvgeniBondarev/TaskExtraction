@@ -3,6 +3,8 @@ import { fetchGitHubStatus, GitHubStatus } from "../api/integrations/github";
 import { fetchJiraStatus, JiraStatus } from "../api/integrations/jira";
 import { fetchSlackStatus, SlackStatus } from "../api/integrations/slack";
 import { fetchTrelloStatus, TrelloStatus } from "../api/integrations/trello";
+import { integrationState, IntegrationConnectionState } from "../components/IntegrationCardHeader";
+import type { SettingsMessages } from "../i18n/types";
 
 export const INTEGRATIONS_PROMPT_PENDING_KEY = "te_integrations_prompt_pending";
 export const INTEGRATIONS_PROMPT_DISMISSED_KEY = "te_integrations_prompt_dismissed";
@@ -51,7 +53,6 @@ export function consumeIntegrationsPromptPending(): boolean {
     return false;
   }
 }
-import { integrationState, IntegrationConnectionState } from "../components/IntegrationCardHeader";
 
 export type IntegrationId = "jira" | "trello" | "github" | "slack";
 
@@ -61,33 +62,39 @@ export type IntegrationMeta = {
   tagline: string;
 };
 
-export const INTEGRATIONS: IntegrationMeta[] = [
-  { id: "jira", name: "Jira", tagline: "Тикеты в проекте Jira" },
-  { id: "trello", name: "Trello", tagline: "Карточки на доске" },
-  { id: "github", name: "GitHub", tagline: "Issues в репозитории" },
-  { id: "slack", name: "Slack", tagline: "Уведомления в канал" },
-];
+export function getIntegrationsList(intl: SettingsMessages["integrations"]): IntegrationMeta[] {
+  return [
+    { id: "jira", name: "Jira", tagline: intl.taglines.jira },
+    { id: "trello", name: "Trello", tagline: intl.taglines.trello },
+    { id: "github", name: "GitHub", tagline: intl.taglines.github },
+    { id: "slack", name: "Slack", tagline: intl.taglines.slack },
+  ];
+}
+
+/** @deprecated use getIntegrationsList */
+export const INTEGRATIONS: IntegrationMeta[] = [];
 
 export function getIntegrationSummary(
   id: IntegrationId,
   jira: JiraStatus | null,
   trello: TrelloStatus | null,
   github: GitHubStatus | null,
-  slack: SlackStatus | null
+  slack: SlackStatus | null,
+  intl: SettingsMessages["integrations"]
 ): string {
   switch (id) {
     case "jira":
-      if (!jira?.is_configured) return "Не подключено";
-      return `${jira.project_key || "проект"}${jira.auto_push && jira.enabled ? " · авто" : ""}`;
+      if (!jira?.is_configured) return intl.notConnected;
+      return `${jira.project_key || intl.project}${jira.auto_push && jira.enabled ? intl.autoSuffix : ""}`;
     case "trello":
-      if (!trello?.is_configured) return "Не подключено";
-      return `${trello.board_name || "доска"} → ${trello.list_name || "список"}`;
+      if (!trello?.is_configured) return intl.notConnected;
+      return `${trello.board_name || intl.board} → ${trello.list_name || intl.list}`;
     case "github":
-      if (!github?.is_configured) return "Не подключено";
+      if (!github?.is_configured) return intl.notConnected;
       return `${github.owner}/${github.repo}`;
     case "slack":
-      if (!slack?.is_configured) return "Не подключено";
-      return slack.channel_name || "канал не выбран";
+      if (!slack?.is_configured) return intl.notConnected;
+      return slack.channel_name || intl.channelNone;
     default:
       return "";
   }
@@ -140,8 +147,8 @@ export function useIntegrationsStatus() {
     reload().catch(() => setLoading(false));
   }, [reload]);
 
-  const activeCount = INTEGRATIONS.filter(
-    (i) => getIntegrationState(i.id, jira, trello, github, slack) === "active"
+  const activeCount = (["jira", "trello", "github", "slack"] as const).filter(
+    (i) => getIntegrationState(i, jira, trello, github, slack) === "active"
   ).length;
 
   return { jira, trello, github, slack, loading, reload, activeCount };

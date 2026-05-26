@@ -15,7 +15,6 @@ interface Props {
   badges?: NavBadges;
   onNavigate: (page: AppMainPage) => void;
   onHome: () => void;
-  onWelcome: () => void;
   onLogout: () => void;
 }
 
@@ -33,7 +32,7 @@ function NavBadge({ count }: { count: number }) {
   );
 }
 
-export function AppTopBar({ page, badges, onNavigate, onHome, onWelcome, onLogout }: Props) {
+export function AppTopBar({ page, badges, onNavigate, onHome, onLogout }: Props) {
   const { messages: t } = useI18n();
   const nav = t.nav;
   const tasksUnread = badges?.tasks ?? 0;
@@ -47,43 +46,59 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onWelcome, onLogou
   return (
     <header className="app-top-bar">
       <button type="button" className="app-title" onClick={onHome} title={nav.homeTitle}>
-        <AppLogo size={30} />
+        <AppLogo size={28} />
         <AppBrandName />
       </button>
-      <nav aria-label={nav.mainNav}>
-        <button
-          type="button"
-          className={page === "tasks" ? "active" : ""}
-          onClick={() => onNavigate("tasks")}
-          aria-label={tasksAria}
-        >
-          {nav.tasks}
-          <NavBadge count={tasksUnread} />
-        </button>
-        <button
-          type="button"
-          className={page === "feed" ? "active" : ""}
-          onClick={() => onNavigate("feed")}
-          aria-label={feedAria}
-        >
-          {nav.feed}
-          <NavBadge count={feedUnread} />
-        </button>
-        <button
-          type="button"
-          className={page === "settings" ? "active" : ""}
-          onClick={() => onNavigate("settings")}
-        >
-          {nav.settings}
-        </button>
-        <button type="button" className="nav-about" onClick={onWelcome}>
-          {nav.aboutProduct}
-        </button>
-        <LanguageSwitcher className="lang-switch--app" />
-        <button type="button" className="nav-about" onClick={onLogout} title={nav.logoutPanelTitle}>
-          {nav.logoutPanel}
-        </button>
-      </nav>
+
+      <div className="app-top-bar__actions">
+        <nav className="app-top-bar__nav" aria-label={nav.mainNav}>
+          <div className="app-top-bar__nav-group app-top-bar__nav-group--primary">
+            <button
+              type="button"
+              className={page === "tasks" ? "active" : ""}
+              onClick={() => onNavigate("tasks")}
+              aria-label={tasksAria}
+              aria-current={page === "tasks" ? "page" : undefined}
+            >
+              {nav.tasks}
+              <NavBadge count={tasksUnread} />
+            </button>
+            <button
+              type="button"
+              className={page === "feed" ? "active" : ""}
+              onClick={() => onNavigate("feed")}
+              aria-label={feedAria}
+              aria-current={page === "feed" ? "page" : undefined}
+            >
+              {nav.feed}
+              <NavBadge count={feedUnread} />
+            </button>
+          </div>
+
+          <span className="app-top-bar__nav-sep" aria-hidden />
+
+          <button
+            type="button"
+            className={`app-top-bar__nav-settings${page === "settings" ? " active" : ""}`}
+            onClick={() => onNavigate("settings")}
+            aria-current={page === "settings" ? "page" : undefined}
+          >
+            {nav.settings}
+          </button>
+        </nav>
+
+        <div className="app-top-bar__tools">
+          <LanguageSwitcher className="lang-switch--compact" />
+          <button
+            type="button"
+            className="app-top-bar__logout"
+            onClick={onLogout}
+            title={nav.logoutPanelTitle}
+          >
+            {nav.logout}
+          </button>
+        </div>
+      </div>
     </header>
   );
 }

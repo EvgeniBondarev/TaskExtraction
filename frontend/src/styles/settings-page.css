@@ -1,0 +1,514 @@
+/* Страница /settings — стабильный макет, без «плывущих» блоков */
+
+.settings-page {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0.5rem 0 2rem;
+  box-sizing: border-box;
+}
+
+.settings-page__header {
+  margin-bottom: 1.25rem;
+}
+
+.settings-page__header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.settings-page__lead {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 40rem;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  position: sticky;
+  top: 0.75rem;
+  padding: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.settings-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.settings-nav button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-nav button.active {
+  color: var(--text);
+  background: rgba(59, 130, 246, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.28);
+}
+
+.settings-nav .tab-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.settings-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.settings-main__head h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.settings-main__head p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.settings-toast {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.86rem;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 10px;
+}
+
+.settings-body {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem 1.35rem;
+  min-height: 12rem;
+  box-sizing: border-box;
+}
+
+.settings-body--flat {
+  padding: 0;
+  background: transparent;
+  border: none;
+  min-height: 0;
+}
+
+.settings-body--integrations {
+  padding: 1.1rem 1.2rem;
+}
+
+.settings-steps-inline {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.settings-steps-inline .setup-stepper {
+  margin-bottom: 0;
+}
+
+/* Общие поля форм на странице настроек */
+.settings-form label,
+.settings-body .llm-form label,
+.settings-body .prompts-card label,
+.settings-body .wizard-form label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.settings-form input,
+.settings-form textarea,
+.settings-form select,
+.settings-body .llm-form input,
+.settings-body .prompts-card input,
+.settings-body .prompts-card textarea,
+.settings-body .wizard-form input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0.28rem;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.settings-body .prompts-card textarea {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.settings-body .prompts-card input[type="number"] {
+  width: 7.5rem;
+}
+
+/* Telegram wizard (вкладка Telegram) */
+.settings-body .tg-wizard {
+  max-width: none;
+}
+
+.settings-body .wizard-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.settings-body .wizard-hero.success {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(0, 0, 0, 0.12) 55%);
+}
+
+.settings-body .hero-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+  flex-shrink: 0;
+}
+
+.settings-body .hero-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-body .hero-body h3 {
+  margin: 0 0 0.15rem;
+  font-size: 0.98rem;
+}
+
+.settings-body .hero-body p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.settings-body .username {
+  color: #60a5fa;
+}
+
+.settings-body .hero-badge {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.settings-body .btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.settings-body .btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.settings-body .wizard-panel {
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.15rem 1.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.settings-body .wizard-panel .panel-head {
+  margin-bottom: 1rem;
+}
+
+.settings-body .panel-step {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #93c5fd;
+  margin-bottom: 0.3rem;
+}
+
+.settings-body .wizard-panel .panel-head h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.settings-body .wizard-panel .panel-head p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.settings-body .wizard-error {
+  color: #f87171;
+  font-size: 0.86rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(248, 113, 113, 0.08);
+  border-radius: 8px;
+  margin-bottom: 0.85rem;
+}
+
+.settings-body .wizard-info {
+  color: #60a5fa;
+  font-size: 0.86rem;
+  margin-bottom: 0.85rem;
+}
+
+.settings-body .wizard-advanced {
+  margin-top: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.settings-body .wizard-advanced summary {
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.84rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.settings-body .wizard-advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-body .advanced-inner {
+  padding: 0 0.9rem 0.9rem;
+}
+
+/* Чаты */
+.settings-chats-head h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.settings-chats-head .card-hint {
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* LLM внутри body */
+.settings-body .llm-settings.embedded {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.settings-body .llm-settings .hint {
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.settings-body .status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.settings-body .status-card {
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.settings-body .status-card.wide {
+  grid-column: 1 / -1;
+}
+
+.settings-body .stat-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.settings-body .stat-value {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.settings-body .stat-value.ok {
+  color: #4ade80;
+}
+
+/* Промпты */
+.settings-body .prompts-card {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.settings-body .prompts-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.settings-body .prompts-defaults-note {
+  margin: 0 0 0.75rem;
+}
+
+.settings-body .prompts-card .badge {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.settings-body .prompts-card .actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.settings-body .prompts-card button {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.settings-body .prompts-card button.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.settings-body .prompts-card .error {
+  color: #f87171;
+  font-size: 0.86rem;
+}
+
+.settings-body .prompts-card .info {
+  color: #60a5fa;
+  font-size: 0.86rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Интеграции — без лишней вложенности */
+.settings-body--integrations .integrations-hub-intro {
+  margin-top: 0;
+}
+
+.settings-body--integrations .panel-body {
+  gap: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .settings-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    gap: 0.15rem;
+  }
+
+  .settings-nav button {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .settings-body {
+    padding: 1rem 1.05rem;
+  }
+
+  .settings-body .status-grid {
+    grid-template-columns: 1fr;
+  }
+}

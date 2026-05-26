@@ -13,8 +13,13 @@ import {
 import { IntegrationFormStep } from "./integrations/IntegrationFormStep";
 import type { IntegrationSettingsProps } from "./integrations/integrationSettingsProps";
 import { IntegrationCardHeader, integrationState } from "./IntegrationCardHeader";
+import { useI18n } from "../i18n";
 
 export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSettingsProps = {}) {
+  const { messages: t } = useI18n();
+  const j = t.settings.integrations.jira;
+  const c = t.settings.common;
+  const intl = t.settings.integrations;
   const hub = Boolean(hideHeader);
   const [status, setStatus] = useState<JiraStatus | null>(null);
   const [baseUrl, setBaseUrl] = useState("");
@@ -53,7 +58,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
   }, []);
 
   useEffect(() => {
-    reload().catch(() => setError("Не удалось загрузить настройки Jira"));
+    reload().catch(() => setError(j.loadFailed));
   }, [reload]);
 
   const loadProjects = async () => {
@@ -63,9 +68,9 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
       const list = await fetchJiraProjects(creds());
       setProjects(list);
       if (list.length && !projectKey) setProjectKey(list[0].key);
-      setInfo(`Найдено проектов: ${list.length}`);
+      setInfo(`${j.projectsFound} ${list.length}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки проектов");
+      setError(e instanceof Error ? e.message : j.loadProjectsError);
     } finally {
       setLoading(false);
     }
@@ -80,7 +85,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
       setIssueTypes(list);
       if (list.length && !issueTypeId) setIssueTypeId(list[0].id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки типов задач");
+      setError(e instanceof Error ? e.message : j.issueTypesError);
     } finally {
       setLoading(false);
     }
@@ -105,7 +110,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
         setError(r.message);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка");
+      setError(e instanceof Error ? e.message : c.error);
     } finally {
       setTesting(false);
     }
@@ -135,10 +140,10 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
       const s = await saveJiraSettings(body);
       setStatus(s);
       setApiToken("");
-      setInfo("Настройки Jira сохранены");
+      setInfo(j.saved);
       onSaved?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сохранения");
+      setError(e instanceof Error ? e.message : j.saveError);
     } finally {
       setLoading(false);
     }
@@ -170,7 +175,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
       )}
       <div className="row-btns">
         <button type="button" onClick={handleTest} disabled={testing || loading}>
-          {testing ? "Проверка…" : "Проверить подключение"}
+          {testing ? c.testing : intl.testConnection}
         </button>
         {!hub && (
           <button type="button" onClick={loadProjects} disabled={loading}>
@@ -186,7 +191,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
       {hub && (
         <div className="row-btns">
           <button type="button" onClick={loadProjects} disabled={loading}>
-            {loading ? "Загрузка…" : "Загрузить проекты"}
+            {loading ? c.loading : j.loadProjects}
           </button>
         </div>
       )}
@@ -211,7 +216,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
       )}
       {selectedProject && issueTypes.length > 0 && (
         <label>
-          Тип задачи
+          {j.issueType}
           <select value={issueTypeId} onChange={(e) => setIssueTypeId(e.target.value)}>
             {issueTypes.map((t) => (
               <option key={t.id} value={t.id}>
@@ -228,21 +233,21 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
     <div className="toggles">
       <label className="check">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>{hub ? "Включить интеграцию Jira" : "Интеграция включена"}</span>
+        <span>{hub ? intl.enableHub : intl.enableFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={autoPush} onChange={(e) => setAutoPush(e.target.checked)} />
         <span>
-          {hub ? "Автоматически создавать задачу при новой карточке" : "Создавать задачу в Jira при новой карточке"}
+          {hub ? j.autoCreateHub : j.autoCreateFull}
         </span>
       </label>
       <label className="check">
         <input type="checkbox" checked={includeMedia} onChange={(e) => setIncludeMedia(e.target.checked)} />
-        <span>{hub ? "Загружать медиафайлы во вложения" : "Загружать медиафайлы во вложения Jira"}</span>
+        <span>{hub ? j.includeMediaHub : j.includeMediaFull}</span>
       </label>
       <label className="check">
         <input type="checkbox" checked={includeLinks} onChange={(e) => setIncludeLinks(e.target.checked)} />
-        <span>{hub ? "Добавлять ссылки на Telegram и URL" : "Добавлять ссылки (Telegram, URL из сообщения)"}</span>
+        <span>{hub ? j.includeLinksHub : j.includeLinksFull}</span>
       </label>
     </div>
   );
@@ -257,7 +262,7 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
               title="Jira Cloud"
               subtitle={
                 status?.is_configured
-                  ? `${status.project_name || status.project_key} · ${status.issue_type_name || "тип задачи"}`
+                  ? `${status.project_name || status.project_key} · ${status.issue_type_name || j.issueType}`
                   : "REST API v3 · проект и тип задачи"
               }
               state={integrationState(status || {})}
@@ -303,16 +308,16 @@ export function JiraSettings({ embedded, hideHeader, onSaved }: IntegrationSetti
         <form onSubmit={handleSave}>
           {hub ? (
             <>
-              <IntegrationFormStep step={1} title="Доступ к Jira" hint="Сначала проверьте подключение">
+              <IntegrationFormStep step={1} title={j.step1Title} hint={j.step1Hint}>
                 {credentialsFields}
               </IntegrationFormStep>
-              <IntegrationFormStep step={2} title="Куда создавать задачи" hint="Загрузите проекты после успешной проверки">
+              <IntegrationFormStep step={2} title={j.step2Title} hint={j.step2Hint}>
                 {destinationFields}
               </IntegrationFormStep>
-              <IntegrationFormStep step={3} title="Включение и автоматизация">
+              <IntegrationFormStep step={3} title={intl.stepEnable}>
                 {toggleFields}
                 <button type="submit" className="primary" disabled={loading} style={{ background: "var(--accent)" }}>
-                  {loading ? "Сохранение…" : "Сохранить"}
+                  {loading ? c.saving : c.save}
                 </button>
               </IntegrationFormStep>
             </>

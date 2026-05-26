@@ -1,0 +1,378 @@
+.te-phone-field {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.te-phone-field__label,
+.te-otp-field__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.te-phone-field__shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 56px;
+  background: linear-gradient(145deg, rgba(22, 32, 48, 0.95), rgba(12, 18, 28, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 28px rgba(0, 0, 0, 0.22);
+  transition:
+    border-color 0.22s,
+    box-shadow 0.22s;
+  position: relative;
+}
+
+.te-phone-field__shell:focus-within {
+  border-color: rgba(34, 158, 217, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(34, 158, 217, 0.18),
+    0 12px 32px rgba(34, 158, 217, 0.12);
+}
+
+.te-phone-field__shell--valid {
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.te-phone-field__shell--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.te-phone-field__country {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.85rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 16px 0 0 16px;
+  flex-shrink: 0;
+}
+
+.te-phone-field__country:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.te-phone-field__flag {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.te-phone-field__dial {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #e7ecf3;
+}
+
+.te-phone-field__chev {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.te-phone-field__sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 10px 0;
+  background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.35), transparent);
+  flex-shrink: 0;
+}
+
+.te-phone-field__national {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 0.9rem 1rem 0.9rem 0.65rem;
+  outline: none;
+}
+
+.te-phone-field__national::placeholder {
+  color: rgba(139, 156, 179, 0.4);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.te-phone-field__hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.te-phone-field__e164 {
+  color: #86efac;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.te-phone-field__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: #1a2332;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: te-phone-drop 0.18s ease;
+}
+
+@keyframes te-phone-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.te-phone-field__search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.85rem;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.te-phone-field__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.te-phone-field__list button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.te-phone-field__list button:hover,
+.te-phone-field__list button.active {
+  background: rgba(34, 158, 217, 0.12);
+}
+
+.te-phone-field__name {
+  flex: 1;
+}
+
+.te-phone-field__code {
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Legacy box styles for 2FA password in same form */
+.te-phone-field__box {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  min-height: 52px;
+  background: rgba(15, 20, 25, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 14px;
+}
+
+.te-phone-field__box:focus-within {
+  border-color: #229ed9;
+  box-shadow: 0 0 0 3px rgba(34, 158, 217, 0.22);
+}
+
+.te-phone-field__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.85rem 0;
+  outline: none;
+}
+
+.te-otp-field {
+  margin-bottom: 1.15rem;
+}
+
+.te-otp-field__cells {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.te-otp-field__cell {
+  width: 2.75rem;
+  height: 3.25rem;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  background: linear-gradient(145deg, rgba(22, 32, 48, 0.95), rgba(12, 18, 28, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.12s;
+  caret-color: #229ed9;
+}
+
+.te-otp-field__cell:focus {
+  border-color: #229ed9;
+  box-shadow: 0 0 0 3px rgba(34, 158, 217, 0.25);
+  transform: translateY(-1px);
+}
+
+.te-otp-field__cell--filled {
+  border-color: rgba(34, 158, 217, 0.45);
+  background: rgba(34, 158, 217, 0.08);
+}
+
+.te-otp-field__cell:disabled {
+  opacity: 0.5;
+}
+
+.tg-auth-phone-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.tg-auth-phone-resend {
+  font-size: 0.82rem;
+  color: #7dd3fc;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tg-auth-phone-resend:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.te-code-delivery {
+  display: flex;
+  gap: 0.85rem;
+  padding: 1rem 1.05rem;
+  margin-bottom: 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(34, 158, 217, 0.35);
+  background: linear-gradient(
+    135deg,
+    rgba(34, 158, 217, 0.14) 0%,
+    rgba(99, 102, 241, 0.08) 100%
+  );
+  text-align: left;
+}
+
+.te-code-delivery__icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7dd3fc;
+  background: rgba(34, 158, 217, 0.15);
+  border-radius: 12px;
+}
+
+.te-code-delivery__title {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+}
+
+.te-code-delivery__hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.te-code-delivery__steps {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #b8c5d6;
+}
+
+.te-code-delivery__steps li + li {
+  margin-top: 0.25rem;
+}
+
+.te-code-delivery__phone {
+  font-weight: 600;
+  color: #93c5fd;
+  font-variant-numeric: tabular-nums;
+}
+
+.te-code-delivery--sms {
+  border-color: rgba(74, 222, 128, 0.35);
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(34, 197, 94, 0.05));
+}
+
+.te-code-delivery--sms .te-code-delivery__icon {
+  color: #86efac;
+  background: rgba(74, 222, 128, 0.12);
+}
+
+@media (max-width: 380px) {
+  .te-otp-field__cell {
+    width: 2.35rem;
+    height: 2.85rem;
+    font-size: 1.2rem;
+  }
+
+  .te-otp-field__cells {
+    gap: 0.35rem;
+  }
+
+  .te-phone-field__national {
+    font-size: 1rem;
+  }
+}

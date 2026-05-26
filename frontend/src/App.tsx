@@ -33,7 +33,9 @@ import { MessageToasts, ToastItem } from "./components/MessageToasts";
 import { TaskModal } from "./components/TaskModal";
 import { ChatSelection } from "./pages/ChatSelection";
 import { LandingPage, markWelcomeSeen } from "./pages/LandingPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { TelegramAuth } from "./pages/TelegramAuth";
+import type { TelegramStatus } from "./api/telegram";
 import { TelegramSettings } from "./pages/TelegramSettings";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
 import { useGitHubIntegration } from "./hooks/useGitHubIntegration";
@@ -81,7 +83,12 @@ function isWelcomePath(path: string): boolean {
   return path === "/welcome" || path === "/guide";
 }
 
-function isPanelAuthed(status: { has_credentials: boolean; is_authorized: boolean }): boolean {
+function isPrivacyPath(path: string): boolean {
+  return path === "/privacy";
+}
+
+function isPanelAuthed(status: TelegramStatus): boolean {
+  if (status.hosted_app) return status.is_authorized;
   return status.has_credentials || status.is_authorized;
 }
 
@@ -286,19 +293,20 @@ export default function App() {
     }
   }, []);
 
+  const goToTasks = useCallback(() => {
+    setPage("tasks");
+    const path = pageToPath("tasks");
+    if (window.location.pathname !== path) {
+      window.history.replaceState({}, "", path);
+    }
+  }, []);
+
   const enterApp = useCallback(() => {
     markWelcomeSeen();
     setView("app");
     setGate("setup");
-    setPage("settings");
-    window.history.pushState({}, "", "/settings");
-  }, []);
-
-  const goToWelcome = useCallback(() => {
-    setView("welcome");
-    if (window.location.pathname !== "/welcome") {
-      window.history.pushState({}, "", "/welcome");
-    }
+    setPage("tasks");
+    window.history.replaceState({}, "", "/");
   }, []);
 
   const handlePanelLogout = useCallback(async () => {
@@ -341,6 +349,9 @@ export default function App() {
   useEffect(() => {
     const onPop = () => {
       const path = window.location.pathname;
+      if (isPrivacyPath(path)) {
+        return;
+      }
       if (isWelcomePath(path)) {
         setView("welcome");
         return;
@@ -513,16 +524,23 @@ export default function App() {
 
   const onSetupComplete = async () => {
     const s = await checkSetup();
-    if (s?.setup_complete) {
-      const cs = await fetchChatsStatus().catch(() => null);
-      if (cs?.has_monitored) markIntegrationsPromptPending();
+    if (!s?.setup_complete) return;
+    const cs = await fetchChatsStatus().catch(() => null);
+    if (cs?.has_monitored) {
+      markIntegrationsPromptPending();
+      goToTasks();
     }
   };
 
   const onChatsSelected = async () => {
     await checkSetup();
     markIntegrationsPromptPending();
+    goToTasks();
   };
+
+  if (isPrivacyPath(window.location.pathname)) {
+    return <PrivacyPage />;
+  }
 
   if (view === "welcome") {
     return (
@@ -548,7 +566,7 @@ export default function App() {
       <>
         {panelSeo}
         <div className="center-page">
-          <TelegramAuth embedded onComplete={onSetupComplete} />
+          <TelegramAuth embedded wizard onComplete={onSetupComplete} />
         </div>
       </>
     );
@@ -578,7 +596,6 @@ export default function App() {
         badges={navBadges}
         onNavigate={navigate}
         onHome={goHome}
-        onWelcome={goToWelcome}
         onLogout={handlePanelLogout}
       />
 

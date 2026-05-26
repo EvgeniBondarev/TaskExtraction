@@ -39,6 +39,18 @@ export type HeroDiagramIntegration = {
   sub: string;
 };
 
+import type { settingsEn } from "./locales/settings.en";
+
+type DeepString<T> = T extends string
+  ? string
+  : T extends readonly (infer U)[]
+    ? readonly DeepString<U>[]
+    : T extends object
+      ? { [K in keyof T]: DeepString<T[K]> }
+      : T;
+
+export type SettingsMessages = DeepString<typeof settingsEn>;
+
 export type Messages = {
   meta: {
     title: string;
@@ -153,6 +165,12 @@ export type Messages = {
     chatsTitle: string;
     chatsLead: string;
     chatsSubmit: string;
+    chatLoadTitle: string;
+    chatLoadTitleSync: string;
+    chatLoadHint: string;
+    chatLoadFootnote: string;
+    chatLoadPreviewSub: string;
+    chatLoadSteps: string[];
     intEyebrow: string;
     intTitle: string;
     intLead: string;
@@ -165,4 +183,35 @@ export type Messages = {
     done: string;
     archive: string;
   };
+  auth: {
+    title: string;
+    lead: string;
+    consentLabel: string;
+    consentRequired: string;
+    privacyLink: string;
+    qrHint: string;
+    qrScanNote: string;
+    qrExpired: string;
+    showQr: string;
+    refreshQr: string;
+    consentHint: string;
+    phoneTab: string;
+    phoneHint: string;
+    phoneCodeHint: string;
+    phone2faHint: string;
+    phoneSendCode: string;
+    phoneResendCode: string;
+    phoneInvalid: string;
+    phoneOtherNumber: string;
+    qrTab: string;
+  };
+  privacy: {
+    metaTitle: string;
+    metaDescription: string;
+    title: string;
+    back: string;
+    updated: string;
+    sections: Array<{ title: string; paragraphs: string[] }>;
+  };
+  settings: SettingsMessages;
 };
