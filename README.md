@@ -57,10 +57,24 @@ chmod 600 /home/taskextraction/taskextraction-data/.encryption_key
 
 > Ключ должен быть валидным Fernet (~44 символа, base64). Примеры вида `xK7vN2mP9qR4sT1uV5wX8yZ0aB3cD6eF9gH2jK5lM8=` **не подходят**.
 
+Ключи приложения Telegram (одно приложение на весь сервис, пользователи входят только по QR):
+
+```bash
+cat > /home/taskextraction/taskextraction-data/telegram.env << 'EOF'
+TELEGRAM_API_ID=12345678
+TELEGRAM_API_HASH=ваш_api_hash_с_my_telegram_org
+EOF
+chmod 600 /home/taskextraction/taskextraction-data/telegram.env
+```
+
+Значения возьмите с [my.telegram.org/apps](https://my.telegram.org/apps). Без них в UI будет ошибка *Telegram API credentials not configured*.
+
 ### 2. Запуск контейнера
 
 ```bash
 docker pull bondarevevgeni/taskextraction:latest
+
+set -a && . /home/taskextraction/taskextraction-data/telegram.env && set +a
 
 docker run -d \
   --name taskextraction \
@@ -68,6 +82,8 @@ docker run -d \
   -p 8089:80 \
   -v /home/taskextraction/taskextraction-data:/app/data \
   -e ENCRYPTION_KEY="$(cat /home/taskextraction/taskextraction-data/.encryption_key)" \
+  -e TELEGRAM_API_ID="$TELEGRAM_API_ID" \
+  -e TELEGRAM_API_HASH="$TELEGRAM_API_HASH" \
   bondarevevgeni/taskextraction:latest
 ```
 
@@ -87,7 +103,7 @@ docker run -d \
 
 ### 3. Первичная настройка в UI
 
-1. **Настройки → Telegram** — `api_id` и `api_hash` с [my.telegram.org/apps](https://my.telegram.org/apps), вход по QR или телефону.
+1. **Настройки → Telegram** — вход по QR (ключи приложения уже заданы на сервере в `telegram.env`; шаг my.telegram.org в UI не показывается).
 2. **Выбор чатов** — отметьте группы/каналы, из которых читать сообщения.
 3. **Настройки → LLM** — URL API, ключ и модель (OpenAI-совместимый endpoint).
 4. По желанию: Jira, Trello, GitHub, Slack.
@@ -148,12 +164,14 @@ docker run -d \
   -p 8089:80 \
   -v /home/taskextraction/taskextraction-data:/app/data \
   -e ENCRYPTION_KEY="$(cat /home/taskextraction/taskextraction-data/.encryption_key)" \
+  -e TELEGRAM_API_ID="$TELEGRAM_API_ID" \
+  -e TELEGRAM_API_HASH="$TELEGRAM_API_HASH" \
   -e PUBLIC_API_URL=https://task-extraction.ru \
   -e CORS_ORIGINS=https://task-extraction.ru \
   bondarevevgeni/taskextraction:latest
 ```
 
-> На VPS с **одним** tenant cookie сессии восстанавливается автоматически — интеграции (Jira/Trello/GitHub/Slack) снова доступны без повторного ввода `api_id`.
+> На VPS с **одним** tenant cookie сессии восстанавливается автоматически — интеграции (Jira/Trello/GitHub/Slack) снова доступны без повторного ввода ключей Telegram.
 
 Данные на volume (`taskextraction.db`, `media/`, сессия Telegram) сохраняются между перезапусками.
 

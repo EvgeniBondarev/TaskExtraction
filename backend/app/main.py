@@ -136,9 +136,14 @@ app.include_router(api_router)
 
 @app.get("/health")
 async def root_health():
+    from app.services.hosted_telegram import is_hosted_mode
     from app.telegram.listener import get_ingest_status
 
-    return {"status": "ok", "ingest": get_ingest_status()}
+    return {
+        "status": "ok",
+        "telegram_hosted": is_hosted_mode(),
+        "ingest": get_ingest_status(),
+    }
 
 
 @app.websocket("/ws/messages")
