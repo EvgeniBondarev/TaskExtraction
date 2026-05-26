@@ -270,6 +270,14 @@ const messages: Messages = {
     intTitle: "Куда отправлять задачи?",
     intLead:
       "Подключите готовые интеграции: новые задачи из чатов можно автоматически создавать в трекерах или дублировать в Slack.",
+    intSteps: [
+      "Jira — задачи и проекты…",
+      "Trello — доски и карточки…",
+      "GitHub — issues в репозитории…",
+      "Slack — уведомления в канал…",
+      "Можно подключить всё или только нужное…",
+    ],
+    intFootnote: "Интеграции всегда доступны в разделе «Настройки»",
     intSetup: "Настроить интеграции",
     intSkip: "Позже",
   },
@@ -279,12 +287,37 @@ const messages: Messages = {
     done: "Готово",
     archive: "Архив",
   },
+  feed: {
+    pageTitle: "Лента сообщений",
+    pageLead: "Live-поток из отслеживаемых чатов Telegram",
+    statsAria: "Статистика ленты",
+    statMessages: "сообщений",
+    statCandidates: "можно в задачи",
+    searchPlaceholder: "Поиск по тексту, автору, чату…",
+    searchAria: "Поиск в ленте",
+    searchClear: "Очистить поиск",
+    searchMeta: "Показано {shown} из {total}",
+    emptyNoMessages: "Пока нет сообщений",
+    emptyNoMessagesHint:
+      "Как только в выбранных чатах появятся новые сообщения, они отобразятся здесь.",
+    emptyNoResults: "Ничего не найдено",
+    emptyNoResultsHint: "Нет совпадений по «{query}»",
+    newPill: "новое",
+    unknownUser: "Пользователь",
+    mediaNoText: "Медиа без текста",
+    openTelegram: "Telegram",
+    creatingTask: "Создаём…",
+    createTask: "Создать задачу",
+    loadingSkeleton: "Загрузка ленты",
+  },
   auth: {
     title: "Вход через Telegram",
     lead: "Отсканируйте QR-код в Telegram — сообщения обрабатываются только в выбранных чатах.",
     consentLabel:
       "Я подключаю свой аккаунт Telegram и соглашаюсь на обработку сообщений в выбранных чатах поддержки в соответствии с",
     consentRequired: "Подтвердите согласие, чтобы продолжить",
+    saveCredentialsFirst:
+      "Сначала сохраните api_id и api_hash с my.telegram.org/apps (или задайте TELEGRAM_API_ID и TELEGRAM_API_HASH в .env бэкенда)",
     privacyLink: "политикой конфиденциальности",
     qrHint: "Telegram → Настройки → Устройства → Подключить устройство",
     qrScanNote:

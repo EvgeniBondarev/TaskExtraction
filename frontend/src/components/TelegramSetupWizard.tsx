@@ -13,7 +13,13 @@ import { SettingsFormSkeleton } from "./PageSkeletons";
 import { SetupStepper } from "./SetupStepper";
 import { TelegramAuth } from "../pages/TelegramAuth";
 import { useI18n } from "../i18n";
-import { getTelegramWizardStep, getTelegramWizardSteps } from "../utils/telegramWizardSteps";
+import {
+  getTelegramWizardStep,
+  getTelegramWizardSteps,
+  getTelegramWizardStepsLegacy,
+} from "../utils/telegramWizardSteps";
+import { MY_TELEGRAM_APPS_URL } from "../api/telegram";
+import { isHostedMode, useHostedApp } from "../hooks/useHostedApp";
 
 interface Props {
   onStatusChange?: () => void;
@@ -63,8 +69,17 @@ export function TelegramSetupWizard({ onStatusChange, onGoToChatsTab, hideSteppe
       .finally(() => setInitialLoading(false));
   }, [reload]);
 
-  const hostedApp = status?.hosted_app !== false;
+  const serverHosted = useHostedApp();
+  const hostedApp = isHostedMode(serverHosted, status?.hosted_app);
+  const wizardSteps = hostedApp
+    ? getTelegramWizardSteps(t.settings)
+    : getTelegramWizardStepsLegacy(t.settings);
   const { current, completed } = getTelegramWizardStep(status, hasMonitored, hostedApp);
+  const showCredentialsPanel =
+    serverHosted === false && !hostedApp && current === 0 && !status?.is_authorized;
+  const showAuthPanel =
+    !status?.is_authorized &&
+    ((hostedApp && current === 0) || (!hostedApp && current === 1));
   const allDone = status?.is_authorized && hasMonitored;
 
   const handleSaveCredentials = async (e: React.FormEvent) => {
@@ -122,7 +137,7 @@ export function TelegramSetupWizard({ onStatusChange, onGoToChatsTab, hideSteppe
     }
   };
 
-  if (initialLoading) {
+  if (initialLoading || serverHosted === null) {
     return (
       <div className="tg-wizard">
         <SettingsFormSkeleton fields={3} />
@@ -134,7 +149,7 @@ export function TelegramSetupWizard({ onStatusChange, onGoToChatsTab, hideSteppe
     <div className="tg-wizard">
       {!hideStepper && (
         <SetupStepper
-          steps={getTelegramWizardSteps(t.settings)}
+          steps={wizardSteps}
           currentIndex={current}
           completedThrough={completed}
         />
@@ -176,7 +191,55 @@ export function TelegramSetupWizard({ onStatusChange, onGoToChatsTab, hideSteppe
       {error && <p className="wizard-error">{error}</p>}
       {info && !error && <p className="wizard-info">{info}</p>}
 
-      {current === 0 && !status?.is_authorized && (
+      {showCredentialsPanel && (
+        <section className="wizard-panel">
+          <header className="panel-head">
+            <span className="panel-step">
+              {c.step} 1
+            </span>
+            <h3>{w.credentialsTitle}</h3>
+            <p>{w.credentialsLead}</p>
+          </header>
+          <form onSubmit={handleSaveCredentials} className="wizard-form">
+            <ol className="wizard-mini-steps">
+              <li>
+                <a href={MY_TELEGRAM_APPS_URL} target="_blank" rel="noreferrer">
+                  my.telegram.org/apps
+                </a>
+              </li>
+              <li>{w.credentialsCopyHint}</li>
+            </ol>
+            <label>
+              {w.appApiId}
+              <input
+                type="number"
+                value={apiId}
+                onChange={(e) => setApiId(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              {w.newApiHash}
+              <input
+                type="password"
+                value={apiHash}
+                onChange={(e) => setApiHash(e.target.value)}
+                placeholder={w.newApiHashPlaceholder}
+                required
+              />
+            </label>
+            <label>
+              App title <span className="opt">{c.optional}</span>
+              <input value={appTitle} onChange={(e) => setAppTitle(e.target.value)} />
+            </label>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? c.saving : w.credentialsNext}
+            </button>
+          </form>
+        </section>
+      )}
+
+      {showAuthPanel && (
         <section className="wizard-panel wizard-panel--auth">
           <TelegramAuth
             embedded
@@ -258,6 +321,16 @@ export function TelegramSetupWizard({ onStatusChange, onGoToChatsTab, hideSteppe
       )}
 
       <style>{`
+        .tg-wizard .wizard-mini-steps {
+          margin: 0 0 1rem;
+          padding-left: 1.2rem;
+          font-size: 0.84rem;
+          color: var(--muted);
+          line-height: 1.45;
+        }
+        .tg-wizard .wizard-mini-steps a {
+          color: #93c5fd;
+        }
         .tg-wizard .wizard-form label {
           display: block;
           margin-bottom: 0.85rem;

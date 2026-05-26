@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  fetchTelegramSetupRequired,
   fetchTelegramStatus,
   MY_TELEGRAM_APPS_URL,
   pollQrStatus,
@@ -14,6 +13,7 @@ import { TelegramLogo } from "../components/TelegramLogo";
 import "../styles/telegram-auth.css";
 import { trackAnalyticsEvent } from "../api/analytics";
 import { useI18n } from "../i18n";
+import { isHostedMode, useHostedApp } from "../hooks/useHostedApp";
 import { hasTelegramConsent, setTelegramConsent } from "../utils/telegramConsent";
 import { telegramQrImageUrl } from "../utils/telegramQrImage";
 
@@ -40,10 +40,9 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
   const [apiId, setApiId] = useState("");
   const [apiHash, setApiHash] = useState("");
   const [appTitle, setAppTitle] = useState("");
-  const [serverHosted, setServerHosted] = useState<boolean | null>(null);
-  const isHostedFlow =
-    wizard || embedded || serverHosted === true || Boolean(status?.hosted_app);
-  const [step, setStep] = useState<Step>(wizard || embedded ? "auth" : "credentials");
+  const serverHosted = useHostedApp();
+  const isHostedFlow = isHostedMode(serverHosted, status?.hosted_app);
+  const [step, setStep] = useState<Step>("credentials");
   const [qrLoginId, setQrLoginId] = useState<string | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [qrCountdown, setQrCountdown] = useState(0);
@@ -79,20 +78,14 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
       }
     } else {
       wasCompleteRef.current = false;
-      if (isHostedFlow || s.hosted_app || s.has_credentials) {
+      if (s.hosted_app || serverHosted === true || s.has_credentials) {
         setStep("auth");
         if (s.api_id) setApiId(String(s.api_id));
-      } else {
+      } else if (serverHosted === false) {
         setStep("credentials");
       }
     }
-  }, [onComplete, isHostedFlow]);
-
-  useEffect(() => {
-    fetchTelegramSetupRequired()
-      .then((s) => setServerHosted(s.hosted_app))
-      .catch(() => setServerHosted(null));
-  }, []);
+  }, [onComplete, serverHosted]);
 
   useEffect(() => {
     refresh().catch(() => setError("Не удалось связаться с API"));
@@ -168,15 +161,17 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
       });
       setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка QR");
+      const raw = err instanceof Error ? err.message : "";
+      const needsCreds =
+        /credentials not configured/i.test(raw) || /api_id|api_hash/i.test(raw);
+      setError(needsCreds ? i18n.auth.saveCredentialsFirst : raw || "Ошибка QR");
       setLoading(false);
     }
-  }, [refresh, requireConsent, i18n.auth.qrExpired]);
+  }, [refresh, requireConsent, i18n.auth.qrExpired, i18n.auth.saveCredentialsFirst]);
 
   useEffect(() => {
     if (
       isHostedFlow &&
-      step === "auth" &&
       !qrUrl &&
       !status?.is_authorized &&
       !qrAutoStarted.current &&
@@ -185,7 +180,7 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
       qrAutoStarted.current = true;
       void startQr();
     }
-  }, [isHostedFlow, step, qrUrl, status?.is_authorized, startQr, consent]);
+  }, [isHostedFlow, qrUrl, status?.is_authorized, startQr, consent]);
 
   const saveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,8 +252,23 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
     return null;
   }
 
-  const showHostedLogin =
-    isHostedFlow && !status?.is_authorized && step === "auth";
+  const booting = (wizard || embedded) && serverHosted === null;
+
+  if (booting) {
+    return (
+      <div className={`tg-auth ${embedded ? "embedded" : ""} ${wizard ? "wizard-mode" : ""}`}>
+        <div className="tg-auth-loading tg-auth-loading--block">
+          <span className="tg-auth-spinner" aria-hidden />
+        </div>
+      </div>
+    );
+  }
+
+  const showHostedLogin = isHostedFlow && !status?.is_authorized;
+  const showCredentialsForm =
+    !isHostedFlow && !status?.is_authorized && !status?.has_credentials;
+  const showLegacyAuth =
+    !isHostedFlow && !status?.is_authorized && Boolean(status?.has_credentials);
 
   const hostedQrBlock = (
     <div className="tg-auth-qr-stage">
@@ -383,7 +393,7 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
       {error && <p className="tg-auth-error">{error}</p>}
       {info && !error && <p className="tg-auth-info">{info}</p>}
 
-      {step === "credentials" && !status?.is_authorized && !isHostedFlow && (
+      {showCredentialsForm && (
         <form onSubmit={saveCredentials} className="auth-card">
           <h2>Ключи приложения</h2>
           <ol className="mini-steps">
@@ -423,7 +433,15 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
         </form>
       )}
 
-      {step === "auth" && !status?.is_authorized && status?.has_credentials && (
+      {!showCredentialsForm &&
+        !showLegacyAuth &&
+        !status?.is_authorized &&
+        status &&
+        serverHosted !== null && (
+          <p className="tg-auth-error">{i18n.auth.saveCredentialsFirst}</p>
+        )}
+
+      {showLegacyAuth && (
         <div className="auth-card auth-flow">
           <div className="auth-panel qr-panel">
               <p className="hint center">{i18n.auth.qrHint}</p>

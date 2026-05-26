@@ -174,6 +174,8 @@ export type Messages = {
     intEyebrow: string;
     intTitle: string;
     intLead: string;
+    intSteps: string[];
+    intFootnote: string;
     intSetup: string;
     intSkip: string;
   };
@@ -183,11 +185,34 @@ export type Messages = {
     done: string;
     archive: string;
   };
+  feed: {
+    pageTitle: string;
+    pageLead: string;
+    statsAria: string;
+    statMessages: string;
+    statCandidates: string;
+    searchPlaceholder: string;
+    searchAria: string;
+    searchClear: string;
+    searchMeta: string;
+    emptyNoMessages: string;
+    emptyNoMessagesHint: string;
+    emptyNoResults: string;
+    emptyNoResultsHint: string;
+    newPill: string;
+    unknownUser: string;
+    mediaNoText: string;
+    openTelegram: string;
+    creatingTask: string;
+    createTask: string;
+    loadingSkeleton: string;
+  };
   auth: {
     title: string;
     lead: string;
     consentLabel: string;
     consentRequired: string;
+    saveCredentialsFirst: string;
     privacyLink: string;
     qrHint: string;
     qrScanNote: string;

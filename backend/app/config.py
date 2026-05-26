@@ -1,10 +1,34 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Репозиторий: backend/app/config.py → ../../
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _discover_env_files() -> tuple[str, ...]:
+    """Корневой .env при uvicorn из backend/ и docker compose из корня."""
+    candidates = (
+        _REPO_ROOT / ".env",
+        Path.cwd() / ".env",
+        Path.cwd().parent / ".env",
+    )
+    found: list[str] = []
+    for path in candidates:
+        if path.is_file():
+            resolved = str(path.resolve())
+            if resolved not in found:
+                found.append(resolved)
+    return tuple(found) if found else (".env",)
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=_discover_env_files(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     telegram_api_id: int = 0
     telegram_api_hash: str = ""

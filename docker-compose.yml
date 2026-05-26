@@ -8,8 +8,10 @@ services:
       DATABASE_URL: sqlite+aiosqlite:////app/data/taskextraction.db
       MEDIA_DIR: /app/data/media
       PUBLIC_API_URL: http://localhost:8000
-      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
-      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
+      # Локально: значения по умолчанию как на task-extraction.ru (переопределяются через .env).
+      # Прод на VPS: redeploy-prod.sh + telegram.env — compose не используется.
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-11080576}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-14079e73df3157b7d96ac12cf28d1d9c}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-root}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
     volumes:

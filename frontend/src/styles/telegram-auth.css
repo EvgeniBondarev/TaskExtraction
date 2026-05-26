@@ -364,6 +364,11 @@
   font-size: 0.9rem;
 }
 
+.tg-auth-loading--block {
+  min-height: 12rem;
+  justify-content: center;
+}
+
 .tg-auth-spinner {
   width: 2.25rem;
   height: 2.25rem;

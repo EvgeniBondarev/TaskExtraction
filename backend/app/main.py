@@ -16,6 +16,8 @@ from starlette.requests import Request
 
 from app.api import api_router
 from app.config import get_settings
+
+get_settings.cache_clear()
 from app.telegram.ingest import set_ws_broadcast
 from app.telegram.listener import run_ingest_loop
 from app.tenancy import (

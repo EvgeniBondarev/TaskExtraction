@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import { AppLogo } from "./AppLogo";
 import { Skeleton, SkeletonGroup } from "./Skeleton";
 import "../styles/feed-page.css";
@@ -146,8 +147,9 @@ function FeedMessageSkeleton() {
 }
 
 export function FeedPageSkeleton() {
+  const { messages: t } = useI18n();
   return (
-    <SkeletonGroup className="sk-feed-wrap" label="Загрузка ленты">
+    <SkeletonGroup className="sk-feed-wrap" label={t.feed.loadingSkeleton}>
       <div className="sk-feed-header">
         <div className="sk-feed-header-main">
           <Skeleton width={40} height={40} radius={10} />

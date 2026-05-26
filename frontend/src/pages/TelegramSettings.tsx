@@ -60,7 +60,7 @@ export function TelegramSettings({ onStatusChange }: Props) {
     onStatusChange?.();
   }, [onStatusChange]);
 
-  const wizardStep = getTelegramWizardStep(status, hasMonitored, status?.hosted_app !== false);
+  const wizardStep = getTelegramWizardStep(status, hasMonitored, Boolean(status?.hosted_app));
   const wizardSteps = getTelegramWizardSteps(s);
 
   useEffect(() => {

@@ -45,6 +45,11 @@ export const settingsEn = {
       { id: "done", label: "Done", description: "Ready to go" },
     ],
     loadFailed: "Failed to load Telegram settings",
+    credentialsTitle: "Telegram application keys",
+    credentialsLead:
+      "For local development you need your own api_id and api_hash from my.telegram.org (on the server they are set via environment variables).",
+    credentialsCopyHint: "Copy App api_id and App api_hash into the fields below",
+    credentialsNext: "Next → sign in with QR",
     credentialsRequired: "Enter api_id and full api_hash",
     credentialsSaved: "Keys saved — proceed to sign in",
     loggedOut: "You signed out of Telegram",

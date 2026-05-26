@@ -15,15 +15,13 @@ import { fetchTelegramStatus } from "./api/telegram";
 import { AppTopBar, NavBadges } from "./components/AppTopBar";
 import { IntegrationsOnboardingPrompt } from "./components/IntegrationsOnboardingPrompt";
 import "./styles/app-shell.css";
-import { fetchGitHubStatus } from "./api/integrations/github";
-import { fetchJiraStatus } from "./api/integrations/jira";
-import { fetchSlackStatus } from "./api/integrations/slack";
-import { fetchTrelloStatus } from "./api/integrations/trello";
 import {
-  consumeIntegrationsPromptPending,
+  clearIntegrationsPromptPending,
   dismissIntegrationsPrompt,
+  fetchAllIntegrationsStatus,
   hasAnyIntegrationConfigured,
   isIntegrationsPromptDismissed,
+  isIntegrationsPromptPending,
   markIntegrationsPromptPending,
 } from "./hooks/useIntegrationsStatus";
 import { KanbanBoard } from "./components/KanbanBoard";
@@ -118,6 +116,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [integrationsPromptOpen, setIntegrationsPromptOpen] = useState(false);
+  const [integrationsPromptTick, setIntegrationsPromptTick] = useState(0);
   const [navBadges, setNavBadges] = useState<NavBadges>({ tasks: 0, feed: 0 });
   const [livePollSeedReady, setLivePollSeedReady] = useState(false);
   const [liveSessionKey, setLiveSessionKey] = useState(0);
@@ -128,6 +127,7 @@ export default function App() {
   const openedTaskFromUrl = useRef<string | null>(null);
   const reloadRef = useRef<() => Promise<void>>(async () => {});
   const reloadMessagesRef = useRef<() => Promise<void>>(async () => {});
+  const integrationsPromptCheckRef = useRef(false);
   const kanbanColumns = useKanbanColumns();
   const { enabled: jiraEnabled } = useJiraIntegration(gate === "ready");
   const { enabled: trelloEnabled } = useTrelloIntegration(gate === "ready");
@@ -175,6 +175,46 @@ export default function App() {
     dismissIntegrationsPrompt();
     setIntegrationsPromptOpen(false);
   }, []);
+
+  const queueIntegrationsPrompt = useCallback(() => {
+    markIntegrationsPromptPending();
+    setIntegrationsPromptTick((n) => n + 1);
+  }, []);
+
+  const tryShowIntegrationsPrompt = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const force = opts?.force === true;
+      if (!force && !isIntegrationsPromptPending()) return;
+      if (isIntegrationsPromptDismissed()) {
+        clearIntegrationsPromptPending();
+        return;
+      }
+      if (integrationsPromptCheckRef.current) return;
+      integrationsPromptCheckRef.current = true;
+
+      try {
+        const statuses = await fetchAllIntegrationsStatus();
+        clearIntegrationsPromptPending();
+        if (hasAnyIntegrationConfigured(
+          statuses.jira,
+          statuses.trello,
+          statuses.github,
+          statuses.slack
+        )) {
+          dismissIntegrationsPrompt();
+          return;
+        }
+        setIntegrationsPromptOpen(true);
+      } catch (err) {
+        console.error("Integrations prompt check failed", err);
+        clearIntegrationsPromptPending();
+        setIntegrationsPromptOpen(true);
+      } finally {
+        integrationsPromptCheckRef.current = false;
+      }
+    },
+    []
+  );
 
   const reloadMessages = useCallback(async () => {
     const m = await fetchMessages();
@@ -266,25 +306,8 @@ export default function App() {
 
   useEffect(() => {
     if (gate !== "ready") return;
-    if (!consumeIntegrationsPromptPending()) return;
-    if (isIntegrationsPromptDismissed()) return;
-
-    let cancelled = false;
-    Promise.all([fetchJiraStatus(), fetchTrelloStatus(), fetchGitHubStatus(), fetchSlackStatus()])
-      .then(([jira, trello, github, slack]) => {
-        if (cancelled) return;
-        if (hasAnyIntegrationConfigured(jira, trello, github, slack)) {
-          dismissIntegrationsPrompt();
-          return;
-        }
-        setIntegrationsPromptOpen(true);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [gate]);
+    void tryShowIntegrationsPrompt();
+  }, [gate, integrationsPromptTick, tryShowIntegrationsPrompt]);
 
   useEffect(() => {
     if (window.location.pathname === "/guide") {
@@ -300,6 +323,14 @@ export default function App() {
       window.history.replaceState({}, "", path);
     }
   }, []);
+
+  const finishSetupAndOpenIntegrations = useCallback(async () => {
+    queueIntegrationsPrompt();
+    goToTasks();
+    window.setTimeout(() => {
+      void tryShowIntegrationsPrompt({ force: true });
+    }, 0);
+  }, [queueIntegrationsPrompt, goToTasks, tryShowIntegrationsPrompt]);
 
   const enterApp = useCallback(() => {
     markWelcomeSeen();
@@ -527,15 +558,15 @@ export default function App() {
     if (!s?.setup_complete) return;
     const cs = await fetchChatsStatus().catch(() => null);
     if (cs?.has_monitored) {
-      markIntegrationsPromptPending();
-      goToTasks();
+      await finishSetupAndOpenIntegrations();
+    } else {
+      queueIntegrationsPrompt();
     }
   };
 
   const onChatsSelected = async () => {
     await checkSetup();
-    markIntegrationsPromptPending();
-    goToTasks();
+    await finishSetupAndOpenIntegrations();
   };
 
   if (isPrivacyPath(window.location.pathname)) {

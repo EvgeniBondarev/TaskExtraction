@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Message, reprocessMessage, Task } from "../api";
+import { useI18n } from "../i18n";
 import { MessageAvatar } from "./MessageAvatar";
 import { AttachmentList } from "./AttachmentList";
 import { MessageClassificationBadge } from "./MessageClassificationBadge";
@@ -30,8 +31,12 @@ export function MessageFeed({
   tasks?: Task[];
   onTaskCreated?: (task: Task) => void;
 }) {
+  const { locale, messages: t } = useI18n();
+  const f = t.feed;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+
+  const dateLocale = locale === "en" ? "en-US" : "ru-RU";
 
   const jiraByMessage = useMemo(() => jiraLinksByMessageId(tasks), [tasks]);
   const trelloByMessage = useMemo(() => trelloLinksByMessageId(tasks), [tasks]);
@@ -80,15 +85,15 @@ export function MessageFeed({
             </svg>
           </span>
           <div>
-            <h2>Лента сообщений</h2>
-            <p>Live-поток из отслеживаемых чатов Telegram</p>
+            <h2>{f.pageTitle}</h2>
+            <p>{f.pageLead}</p>
           </div>
         </div>
 
-        <div className="feed-page__stats" aria-label="Статистика ленты">
+        <div className="feed-page__stats" aria-label={f.statsAria}>
           <span className="feed-page__stat">
             <span className="feed-page__stat-num">{messages.length}</span>
-            <span className="feed-page__stat-label">сообщений</span>
+            <span className="feed-page__stat-label">{f.statMessages}</span>
           </span>
           <span
             className={`feed-page__stat feed-page__stat--accent${
@@ -96,7 +101,7 @@ export function MessageFeed({
             }`}
           >
             <span className="feed-page__stat-num">{taskCandidates}</span>
-            <span className="feed-page__stat-label">можно в задачи</span>
+            <span className="feed-page__stat-label">{f.statCandidates}</span>
           </span>
         </div>
       </header>
@@ -111,24 +116,28 @@ export function MessageFeed({
           </span>
           <input
             type="search"
-            placeholder="Поиск по тексту, автору, чату…"
+            placeholder={f.searchPlaceholder}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            aria-label="Поиск в ленте"
+            aria-label={f.searchAria}
           />
           {filter && (
             <button
               type="button"
               className="feed-page__search-clear"
               onClick={() => setFilter("")}
-              aria-label="Очистить поиск"
+              aria-label={f.searchClear}
             >
               ×
             </button>
           )}
         </div>
         <p className={`feed-page__search-meta${filter ? " is-visible" : ""}`} aria-live="polite">
-          {filter ? `Показано ${displayed.length} из ${messages.length}` : "\u00a0"}
+          {filter
+            ? f.searchMeta
+                .replace("{shown}", String(displayed.length))
+                .replace("{total}", String(messages.length))
+            : "\u00a0"}
         </p>
       </div>
 
@@ -136,11 +145,11 @@ export function MessageFeed({
         {displayed.length === 0 ? (
           <div className="feed-page__empty" role="status">
             <div className="feed-page__empty-icon" aria-hidden />
-            <strong>{messages.length === 0 ? "Пока нет сообщений" : "Ничего не найдено"}</strong>
+            <strong>{messages.length === 0 ? f.emptyNoMessages : f.emptyNoResults}</strong>
             <p>
               {messages.length === 0
-                ? "Как только в выбранных чатах появятся новые сообщения, они отобразятся здесь."
-                : `Нет совпадений по «${filter}»`}
+                ? f.emptyNoMessagesHint
+                : f.emptyNoResultsHint.replace("{query}", filter)}
             </p>
           </div>
         ) : (
@@ -171,12 +180,12 @@ export function MessageFeed({
                   </div>
                   <div className="feed-msg__head">
                     <div className="feed-msg__author-row">
-                      <strong>{m.user_display_name || "User"}</strong>
-                      {isFirst && !filter && <span className="feed-msg__new-pill">новое</span>}
+                      <strong>{m.user_display_name || f.unknownUser}</strong>
+                      {isFirst && !filter && <span className="feed-msg__new-pill">{f.newPill}</span>}
                     </div>
                     {m.chat_title && <span className="feed-msg__chat">{m.chat_title}</span>}
                     <time className="feed-msg__time" dateTime={m.created_at}>
-                      {new Date(m.created_at).toLocaleString("ru", {
+                      {new Date(m.created_at).toLocaleString(dateLocale, {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",
@@ -194,7 +203,7 @@ export function MessageFeed({
                     {m.text ? (
                       <p className="feed-msg__text">{m.text}</p>
                     ) : (
-                      <p className="feed-msg__text feed-msg__text--placeholder">Медиа без текста</p>
+                      <p className="feed-msg__text feed-msg__text--placeholder">{f.mediaNoText}</p>
                     )}
                   </div>
                 )}
@@ -224,7 +233,7 @@ export function MessageFeed({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Telegram
+                        {f.openTelegram}
                       </a>
                     )}
                     {showCreate && (
@@ -234,7 +243,7 @@ export function MessageFeed({
                         disabled={busyId === m.id}
                         onClick={() => handleCreate(m.id)}
                       >
-                        {busyId === m.id ? "Создаём…" : "Создать задачу"}
+                        {busyId === m.id ? f.creatingTask : f.createTask}
                       </button>
                     )}
                   </div>

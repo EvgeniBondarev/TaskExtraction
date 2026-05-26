@@ -16,7 +16,7 @@ export const TELEGRAM_WIZARD_STEPS: SetupStepItem[] = [];
 export function getTelegramWizardStep(
   status: TelegramStatus | null,
   hasMonitored: boolean,
-  hostedApp = true
+  hostedApp = false
 ): { current: number; completed: number } {
   if (!status) return { current: 0, completed: -1 };
   const hosted = hostedApp || Boolean(status.hosted_app);

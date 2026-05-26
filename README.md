@@ -211,17 +211,30 @@ docker run -d \
 
 ## Разработка (docker compose)
 
+Локально поведение как на **task-extraction.ru**: hosted Telegram (только QR), ключи приложения из `.env` / `docker-compose.yml`.
+
 ```bash
 git clone https://github.com/<user>/TaskExtraction.git
 cd TaskExtraction
 cp .env.example .env
-# Заполните ENCRYPTION_KEY в .env
+# Заполните ENCRYPTION_KEY в .env (TELEGRAM_API_* уже заданы как на сервере)
 
 docker compose up --build
 ```
 
 - Frontend: http://localhost:5173  
 - API / Swagger: http://localhost:8000/docs  
+
+**Только API без Docker** (фронт: `cd frontend && npm run dev`):
+
+```bash
+cd backend
+export $(grep -v '^#' ../.env | xargs)   # или source ../.env при необходимости
+# В ../.env для локального SQLite: DATABASE_URL=sqlite+aiosqlite:///./data/taskextraction.db
+uvicorn app.main:app --reload --port 8000
+```
+
+> **Прод на VPS** по-прежнему через `scripts/redeploy-prod.sh` и `telegram.env` на диске — `docker compose` там не обязателен.
 
 Сборка и публикация образа `linux/amd64`:
 

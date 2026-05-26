@@ -44,6 +44,23 @@ export function isIntegrationsPromptDismissed(): boolean {
   }
 }
 
+export function isIntegrationsPromptPending(): boolean {
+  try {
+    return sessionStorage.getItem(INTEGRATIONS_PROMPT_PENDING_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearIntegrationsPromptPending(): void {
+  try {
+    sessionStorage.removeItem(INTEGRATIONS_PROMPT_PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Забирает флаг «показать промпт» один раз (legacy; предпочтительно peek + clear). */
 export function consumeIntegrationsPromptPending(): boolean {
   try {
     const pending = sessionStorage.getItem(INTEGRATIONS_PROMPT_PENDING_KEY) === "1";
@@ -52,6 +69,21 @@ export function consumeIntegrationsPromptPending(): boolean {
   } catch {
     return false;
   }
+}
+
+export async function fetchAllIntegrationsStatus(): Promise<{
+  jira: IntegrationStatus;
+  trello: IntegrationStatus;
+  github: IntegrationStatus;
+  slack: IntegrationStatus;
+}> {
+  const [jira, trello, github, slack] = await Promise.all([
+    fetchJiraStatus().catch(() => null),
+    fetchTrelloStatus().catch(() => null),
+    fetchGitHubStatus().catch(() => null),
+    fetchSlackStatus().catch(() => null),
+  ]);
+  return { jira, trello, github, slack };
 }
 
 export type IntegrationId = "jira" | "trello" | "github" | "slack";

@@ -269,6 +269,14 @@ const messages: Messages = {
     intTitle: "Where should tasks go?",
     intLead:
       "Connect integrations: new tasks from chats can be created in trackers automatically or duplicated to Slack.",
+    intSteps: [
+      "Jira — issues and projects…",
+      "Trello — boards and cards…",
+      "GitHub — issues in your repo…",
+      "Slack — notifications to a channel…",
+      "Connect all or only what you need…",
+    ],
+    intFootnote: "Integrations are always available in Settings",
     intSetup: "Set up integrations",
     intSkip: "Later",
   },
@@ -278,12 +286,37 @@ const messages: Messages = {
     done: "Done",
     archive: "Archive",
   },
+  feed: {
+    pageTitle: "Message feed",
+    pageLead: "Live stream from monitored Telegram chats",
+    statsAria: "Feed statistics",
+    statMessages: "messages",
+    statCandidates: "can become tasks",
+    searchPlaceholder: "Search text, author, chat…",
+    searchAria: "Search feed",
+    searchClear: "Clear search",
+    searchMeta: "Showing {shown} of {total}",
+    emptyNoMessages: "No messages yet",
+    emptyNoMessagesHint:
+      "New messages from your selected chats will appear here as they arrive.",
+    emptyNoResults: "No results",
+    emptyNoResultsHint: "No matches for “{query}”",
+    newPill: "new",
+    unknownUser: "User",
+    mediaNoText: "Media without text",
+    openTelegram: "Telegram",
+    creatingTask: "Creating…",
+    createTask: "Create task",
+    loadingSkeleton: "Loading feed",
+  },
   auth: {
     title: "Sign in with Telegram",
     lead: "Scan the QR code in Telegram — we only process messages in chats you select.",
     consentLabel:
       "I connect my Telegram account and agree to processing messages in selected support chats according to the",
     consentRequired: "Please confirm consent to continue",
+    saveCredentialsFirst:
+      "Save API credentials first (my.telegram.org/apps), or set TELEGRAM_API_ID and TELEGRAM_API_HASH in the backend .env",
     privacyLink: "Privacy Policy",
     qrHint: "Telegram → Settings → Devices → Link Desktop Device",
     qrScanNote:
