@@ -28,6 +28,32 @@ export interface TimeseriesPoint {
   count: number;
 }
 
+export interface AdminUserRow {
+  api_id: string;
+  display_name: string | null;
+  telegram_username: string | null;
+  telegram_first_name: string | null;
+  telegram_last_name: string | null;
+  telegram_phone: string | null;
+  telegram_user_id: number | null;
+  app_title: string | null;
+  has_credentials: boolean;
+  is_authorized: boolean;
+  monitored_chats: number;
+  total_chats: number;
+  tasks_count: number;
+  messages_count: number;
+  integrations: string[];
+  registered_at: string | null;
+  updated_at: string | null;
+  last_message_at: string | null;
+}
+
+export interface AdminUsersResponse {
+  total: number;
+  users: AdminUserRow[];
+}
+
 export async function adminLogin(username: string, password: string): Promise<void> {
   const r = await apiFetch(`${API}/api/admin/login`, {
     method: "POST",
@@ -63,4 +89,10 @@ export async function fetchAdminTimeseries(
   if (!r.ok) throw new Error("Не удалось загрузить график");
   const data = await r.json();
   return data.points as TimeseriesPoint[];
+}
+
+export async function fetchAdminUsers(): Promise<AdminUsersResponse> {
+  const r = await apiFetch(`${API}/api/admin/users`);
+  if (!r.ok) throw new Error("Не удалось загрузить пользователей");
+  return r.json();
 }

@@ -4,8 +4,10 @@ import {
   adminLogin,
   adminLogout,
   AdminStats,
+  AdminUserRow,
   fetchAdminStats,
   fetchAdminTimeseries,
+  fetchAdminUsers,
   TimeseriesPoint,
 } from "../api/admin";
 import "../styles/admin.css";
@@ -30,6 +32,29 @@ const DAY_OPTIONS = [
   { label: "90 дней", days: 90 },
 ];
 
+type AdminTab = "analytics" | "users";
+
+function formatDt(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function userNick(u: AdminUserRow): string {
+  if (u.display_name) return u.display_name;
+  if (u.telegram_username) return `@${u.telegram_username.replace(/^@/, "")}`;
+  return `api_id ${u.api_id}`;
+}
+
 export function AdminApp() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [username, setUsername] = useState("root");
@@ -40,6 +65,10 @@ export function AdminApp() {
   const [visitsSeries, setVisitsSeries] = useState<TimeseriesPoint[]>([]);
   const [regSeries, setRegSeries] = useState<TimeseriesPoint[]>([]);
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<AdminTab>("users");
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   const checkAuth = useCallback(async () => {
     setAuthed(await adminCheck());
@@ -67,9 +96,26 @@ export function AdminApp() {
     }
   }, [days]);
 
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const data = await fetchAdminUsers();
+      setUsers(data.users);
+      setUsersTotal(data.total);
+    } catch {
+      setAuthed(false);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (authed) loadStats();
   }, [authed, loadStats]);
+
+  useEffect(() => {
+    if (authed) loadUsers();
+  }, [authed, loadUsers]);
 
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +153,7 @@ export function AdminApp() {
       <div className="admin-root">
         <div className="admin-login">
           <h1>Админ-панель</h1>
-          <p style={{ color: "#94a3b8", margin: 0 }}>Аналитика посещений и UTM</p>
+          <p style={{ color: "#94a3b8", margin: 0 }}>Аналитика и зарегистрированные пользователи</p>
           <form onSubmit={onLogin}>
             <input
               value={username}
@@ -144,7 +190,7 @@ export function AdminApp() {
     <div className="admin-root">
       <header className="admin-header">
         <h1>
-          <AppBrandName /> — аналитика
+          <AppBrandName /> — админ
         </h1>
         <button type="button" onClick={onLogout}>
           Выйти
@@ -152,6 +198,89 @@ export function AdminApp() {
       </header>
 
       <main className="admin-main">
+        <div className="admin-tabs">
+          <button
+            type="button"
+            className={tab === "users" ? "active" : ""}
+            onClick={() => setTab("users")}
+          >
+            Пользователи ({usersTotal})
+          </button>
+          <button
+            type="button"
+            className={tab === "analytics" ? "active" : ""}
+            onClick={() => setTab("analytics")}
+          >
+            Аналитика UTM
+          </button>
+        </div>
+
+        {tab === "users" && (
+          <section className="admin-section admin-section-users">
+            <h2>Зарегистрированные пользователи</h2>
+            {usersLoading && users.length === 0 ? (
+              <p className="admin-loading">Загрузка…</p>
+            ) : users.length === 0 ? (
+              <p style={{ color: "#94a3b8", margin: 0 }}>Пока нет tenant с данными на диске.</p>
+            ) : (
+              <table className="admin-table admin-table-users">
+                <thead>
+                  <tr>
+                    <th>Пользователь</th>
+                    <th>Статус</th>
+                    <th>Чаты · задачи · сообщ.</th>
+                    <th>Интеграции</th>
+                    <th>Даты</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.api_id}>
+                      <td>
+                        <strong>{userNick(u)}</strong>
+                        {u.telegram_username && (
+                          <div className="admin-muted">@{u.telegram_username.replace(/^@/, "")}</div>
+                        )}
+                        {u.telegram_phone && (
+                          <div className="admin-muted">{u.telegram_phone}</div>
+                        )}
+                        {u.telegram_user_id != null && (
+                          <div className="admin-muted">TG ID {u.telegram_user_id}</div>
+                        )}
+                        <div className="admin-muted">
+                          api_id <code>{u.api_id}</code>
+                        </div>
+                        {u.app_title && <div className="admin-muted">Приложение: {u.app_title}</div>}
+                      </td>
+                      <td>
+                        {u.is_authorized ? (
+                          <span className="admin-badge admin-badge-ok">В Telegram</span>
+                        ) : u.has_credentials ? (
+                          <span className="admin-badge">Ключи заданы</span>
+                        ) : (
+                          <span className="admin-badge admin-badge-muted">Нет входа</span>
+                        )}
+                      </td>
+                      <td className="admin-col-stats">
+                        {u.monitored_chats}/{u.total_chats} · {u.tasks_count} · {u.messages_count}
+                      </td>
+                      <td>
+                        {u.integrations.length > 0 ? u.integrations.join(", ") : "—"}
+                      </td>
+                      <td>
+                        <div className="admin-muted">Рег. {formatDt(u.registered_at)}</div>
+                        <div>Акт. {formatDt(u.last_message_at || u.updated_at)}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
+
+        {tab === "analytics" && (
+          <>
         <div className="admin-filters">
           {DAY_OPTIONS.map((o) => (
             <button
@@ -291,6 +420,8 @@ export function AdminApp() {
             </section>
           </>
         ) : null}
+          </>
+        )}
       </main>
     </div>
     </>

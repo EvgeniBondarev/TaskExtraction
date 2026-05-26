@@ -13,7 +13,9 @@ from app.admin_auth import (
 )
 from app.analytics.db import get_analytics_session_factory
 from app.analytics.service import get_admin_stats, get_timeseries
+from app.schemas.admin_users import AdminUsersOut
 from app.schemas.analytics import AdminLoginIn, AdminLoginOut
+from app.services.admin_users import list_admin_users
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -47,6 +49,12 @@ async def admin_logout(request: Request, response: Response):
 @router.get("/me")
 async def admin_me(_user: str = Depends(require_admin)):
     return {"ok": True, "username": _user}
+
+
+@router.get("/users", response_model=AdminUsersOut)
+async def admin_users(_user: str = Depends(require_admin)):
+    data = await list_admin_users()
+    return AdminUsersOut(**data)
 
 
 @router.get("/stats")
