@@ -34,6 +34,19 @@ export type PlaygroundMessage = {
 
 export type PanelMessages = DeepString<typeof panelRu>;
 
+export type PrivacyMessages = {
+  metaTitle: string;
+  metaDescription: string;
+  title: string;
+  back: string;
+  updated: string;
+  summaryTitle: string;
+  summary: string[];
+  tocTitle: string;
+  contactLabel: string;
+  sections: Array<{ id: string; title: string; paragraphs?: string[]; items?: string[] }>;
+};
+
 type LandingCopy = DeepString<typeof landingRu>;
 
 export type LandingMessages = Omit<LandingCopy, "playground"> & {
@@ -156,13 +169,6 @@ export type Messages = {
     phoneOtherNumber: string;
     qrTab: string;
   };
-  privacy: {
-    metaTitle: string;
-    metaDescription: string;
-    title: string;
-    back: string;
-    updated: string;
-    sections: Array<{ title: string; paragraphs: string[] }>;
-  };
+  privacy: PrivacyMessages;
   settings: SettingsMessages;
 };

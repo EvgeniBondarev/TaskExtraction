@@ -15,7 +15,7 @@ export const landingEn: LandingMessages = {
   hero: {
     title: "Tasks from Telegram on one board",
     lead: "A bot reads your work groups, tells requests apart from chatter and creates cards. No tags, no commands.",
-    videoLabel: "Screen recording: the TaskExtraction task board",
+    videoLabel: "TaskExtraction board: New, In progress, Done and Archive columns with a new task notification",
   },
   strip: {
     label: "Source and export",
@@ -135,7 +135,7 @@ export const landingEn: LandingMessages = {
     card: {
       title: "A card with the full context",
       body: "Author, original text, attachments and links to tickets in external trackers.",
-      alt: "Task window in the panel: author, description, attachment and links to Jira, Trello, GitHub and Slack",
+      alt: "Task card: status, type, priority, author, description, tracker links and chat reply",
     },
     replies: {
       title: "The bot posts status updates to the chat",
@@ -146,9 +146,9 @@ export const landingEn: LandingMessages = {
       body: "Write a reply in the task and it goes to the original chat with a link to the card.",
     },
     board: {
-      title: "Board: new, in progress, done, archive",
-      body: "Drag cards between columns. The model sets priority and type for you.",
-      alt: "In progress and Done columns with task cards",
+      title: "A feed with the model's reasoning",
+      body: "Every chat message in one place. See what became a task, what didn't, and why.",
+      alt: "Message feed with statuses: task created, not a task, looks like a task",
     },
     prompt: {
       title: "Your own rules",

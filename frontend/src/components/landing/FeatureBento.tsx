@@ -1,6 +1,7 @@
 import { ArrowBendUpLeft, SlidersHorizontal } from "@phosphor-icons/react";
 import { useI18n } from "../../i18n";
 import { Reveal } from "./Reveal";
+import { ThemedShot } from "./ThemedShot";
 
 export function FeatureBento() {
   const { messages } = useI18n();
@@ -17,7 +18,7 @@ export function FeatureBento() {
             <h3>{t.card.title}</h3>
             <p>{t.card.body}</p>
           </div>
-          <img src="/landing/panel-task.jpg" alt={t.card.alt} width={720} height={871} loading="lazy" />
+          <ThemedShot name="task" alt={t.card.alt} width={778} height={1100} />
         </Reveal>
 
         <Reveal className="lnd-cell lnd-cell--replies" delay={0.05}>
@@ -42,7 +43,7 @@ export function FeatureBento() {
         </Reveal>
 
         <Reveal className="lnd-cell lnd-cell--board" delay={0.05}>
-          <img src="/landing/panel-cards.jpg" alt={t.board.alt} width={1100} height={797} loading="lazy" />
+          <ThemedShot name="feed" alt={t.board.alt} width={1280} height={1093} />
           <div className="lnd-cell__text">
             <h3>{t.board.title}</h3>
             <p>{t.board.body}</p>

@@ -2,6 +2,7 @@ import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import { MotionConfig } from "motion/react";
 import { useEffect } from "react";
+import { AppIcon3D } from "../components/AppIcon3D";
 import { AppLogo } from "../components/AppLogo";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { ThemeSwitch } from "../components/ThemeSwitch";
@@ -145,6 +146,7 @@ export function LandingPage({ onTry, onHome }: Props) {
 
           <section className="lnd-closing lnd-wrap" aria-labelledby="lnd-closing-title">
             <Reveal className="lnd-closing__inner">
+              <AppIcon3D size={132} className="lnd-closing__icon" />
               <h2 id="lnd-closing-title">{t.closing.title}</h2>
               <p>{t.closing.lead}</p>
               <button type="button" className="lnd-btn lnd-btn--primary" onClick={open}>

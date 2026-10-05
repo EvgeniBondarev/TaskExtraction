@@ -243,6 +243,33 @@ export const panelEn: PanelMessages = {
       error: "Could not save. Please try again.",
     },
   },
+  login: {
+    title: "Sign in to TaskExtraction",
+    lead: "The panel where requests from Telegram work chats become tasks on a board.",
+    stepsTitle: "What happens next",
+    steps: [
+      { title: "Sign in with Google", body: "This creates your personal workspace." },
+      { title: "Add the bot to a work group", body: "The link is in settings, it takes a minute." },
+      { title: "Tasks show up on the board", body: "The model finds requests in regular messages." },
+    ],
+    cardTitle: "Continue with your Google account",
+    google: "Sign in with Google",
+    redirecting: "Opening Google…",
+    access: [
+      "The service only receives your Google name, email and profile photo.",
+      "No access to Gmail, Drive or contacts.",
+      "No Telegram account or phone number needed.",
+    ],
+    consentBefore: "By continuing you agree to the",
+    consentLink: "privacy policy",
+    back: "Home",
+    errors: {
+      cancelled: "Sign-in was cancelled. You can try again.",
+      expired: "The sign-in session expired. Press the button again.",
+      google: "Google did not confirm the sign-in. Try again or pick another account.",
+      unavailable: "Google sign-in is not configured on the server. Contact @Burn1ngSnow.",
+    },
+  },
   toasts: {
     newMessage: "New message",
     newTask: "New task",

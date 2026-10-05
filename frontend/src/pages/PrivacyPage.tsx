@@ -1,6 +1,13 @@
+import { ArrowLeft, Check, TelegramLogo } from "@phosphor-icons/react";
+import { AppLogo } from "../components/AppLogo";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { SeoHead } from "../components/SeoHead";
+import { ThemeSwitch } from "../components/ThemeSwitch";
 import { useI18n } from "../i18n";
-import "../styles/legal.css";
+import "@fontsource-variable/geist";
+import "../styles/ui.css";
+
+const CONTACT_URL = "https://t.me/Burn1ngSnow";
 
 export function PrivacyPage() {
   const { messages, locale } = useI18n();
@@ -9,25 +16,76 @@ export function PrivacyPage() {
   return (
     <>
       <SeoHead path="/privacy" title={p.metaTitle} description={p.metaDescription} />
-      <div className="legal-page">
-        <header className="legal-header">
-          <a href="/welcome" className="legal-back">
-            ← {p.back}
+      <div className="te-theme te-app te-legal">
+        <header className="te-legal__nav te-glass">
+          <a href="/welcome" className="te-login__brand">
+            <AppLogo size={26} />
+            <span>TaskExtraction</span>
           </a>
-          <h1>{p.title}</h1>
-          <p className="legal-updated">{p.updated}</p>
+          <span className="te-login__tools">
+            <ThemeSwitch />
+            <LanguageSwitcher className="lang-switch--compact" />
+          </span>
         </header>
 
-        <article className="legal-body" lang={locale}>
-          {p.sections.map((section) => (
-            <section key={section.title}>
-              <h2>{section.title}</h2>
-              {section.paragraphs.map((para, i) => (
-                <p key={i}>{para}</p>
+        <div className="te-legal__layout">
+          <aside className="te-legal__toc" aria-label={p.tocTitle}>
+            <a href="/welcome" className="te-btn te-btn--quiet te-btn--sm te-legal__back">
+              <ArrowLeft size={16} aria-hidden />
+              {p.back}
+            </a>
+            <span className="te-field__label">{p.tocTitle}</span>
+            <ol>
+              {p.sections.map((s) => (
+                <li key={s.id}>
+                  <a href={`#${s.id}`}>{s.title}</a>
+                </li>
               ))}
+            </ol>
+          </aside>
+
+          <main className="te-legal__body" lang={locale}>
+            <h1>{p.title}</h1>
+            <p className="te-muted">{p.updated}</p>
+
+            <section className="te-legal__summary" aria-label={p.summaryTitle}>
+              <h2>{p.summaryTitle}</h2>
+              <ul>
+                {p.summary.map((line) => (
+                  <li key={line}>
+                    <Check size={16} weight="bold" aria-hidden />
+                    {line}
+                  </li>
+                ))}
+              </ul>
             </section>
-          ))}
-        </article>
+
+            {p.sections.map((s, i) => (
+              <section key={s.id} id={s.id} className="te-legal__section">
+                <h2>
+                  <span className="te-legal__num">{i + 1}</span>
+                  {s.title}
+                </h2>
+                {s.items && (
+                  <ul className="te-legal__list">
+                    {s.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
+                {s.paragraphs?.map((para) => <p key={para}>{para}</p>)}
+              </section>
+            ))}
+
+            <a className="te-legal__contact" href={CONTACT_URL} target="_blank" rel="noopener noreferrer">
+              <TelegramLogo size={22} weight="fill" aria-hidden />
+              <span>
+                <small>{p.contactLabel}</small>
+                <strong>@Burn1ngSnow</strong>
+              </span>
+            </a>
+          </main>
+        </div>
       </div>
     </>
   );

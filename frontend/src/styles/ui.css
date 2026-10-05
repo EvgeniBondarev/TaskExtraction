@@ -1585,7 +1585,7 @@ body:has(.te-boot) {
   border-color: var(--border);
 }
 
-.te-tracker > span {
+.te-tracker > span:not(.integration-brand-icon) {
   flex: 1;
 }
 
@@ -3249,5 +3249,501 @@ body:has(.te-boot) {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- 3D app icon (используется на лендинге и странице входа, вне .te-theme тоже) ---------- */
+.te-icon3d {
+  --icon-size: 160px;
+  position: relative;
+  width: var(--icon-size);
+  height: calc(var(--icon-size) * 1.18);
+  perspective: calc(var(--icon-size) * 5);
+  display: grid;
+  justify-items: center;
+}
+
+.te-icon3d__body {
+  position: relative;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  transform-style: preserve-3d;
+}
+
+.te-icon3d.is-floating .te-icon3d__body {
+  animation: te-icon-float 6s ease-in-out infinite;
+}
+
+.te-icon3d__tile {
+  position: absolute;
+  inset: 0;
+  border-radius: 25%;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 30% 10%, #3a3a40 0%, #1f1f23 45%, #141416 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 -2px 6px rgb(0 0 0 / 0.5),
+    0 1px 0 rgb(255 255 255 / 0.04);
+  transform: translateZ(0);
+}
+
+.te-icon3d__glare {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 50% at var(--gx, 35%) var(--gy, 20%), rgb(255 255 255 / 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+.te-icon3d__bubble,
+.te-icon3d__check {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.te-icon3d__bubble {
+  transform: translateZ(calc(var(--icon-size) * 0.16));
+  filter: drop-shadow(0 calc(var(--icon-size) * 0.04) calc(var(--icon-size) * 0.05) rgb(0 0 0 / 0.45));
+}
+
+.te-icon3d__check {
+  transform: translateZ(calc(var(--icon-size) * 0.3));
+  filter: drop-shadow(0 calc(var(--icon-size) * 0.02) calc(var(--icon-size) * 0.03) rgb(234 88 12 / 0.45));
+}
+
+.te-icon3d__shadow {
+  position: absolute;
+  bottom: 0;
+  width: 70%;
+  height: calc(var(--icon-size) * 0.08);
+  border-radius: 50%;
+  background: rgb(24 24 27 / 0.28);
+  filter: blur(calc(var(--icon-size) * 0.06));
+}
+
+.te-icon3d.is-floating .te-icon3d__shadow {
+  animation: te-icon-shadow 6s ease-in-out infinite;
+}
+
+@keyframes te-icon-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 calc(var(--icon-size) * -0.05); }
+}
+
+@keyframes te-icon-shadow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.85); opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .te-icon3d__body,
+  .te-icon3d__shadow {
+    animation: none !important;
+  }
+}
+
+/* ---------- Login ---------- */
+.te-login {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 16px clamp(16px, 3vw, 32px) 24px;
+  background:
+    radial-gradient(60% 50% at 85% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    var(--bg);
+}
+
+.te-login__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  height: 56px;
+}
+
+.te-login__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.te-theme a.te-login__brand {
+  color: var(--text);
+}
+
+.te-login__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.te-login__main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-areas: "story card" "steps card";
+  align-items: center;
+  align-content: center;
+  row-gap: 0.5rem;
+  gap: clamp(2rem, 6vw, 5rem);
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.te-login__story {
+  grid-area: story;
+  align-self: end;
+  display: grid;
+  gap: 1.1rem;
+  justify-items: start;
+}
+
+.te-login__story h1 {
+  font-size: clamp(2rem, 3.6vw, 2.9rem);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.te-login__lead {
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.te-login__steps {
+  grid-area: steps;
+  align-self: start;
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.te-login__steps .te-steps li {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.te-login__steps .te-steps strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.te-login__steps .te-steps span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.te-login__card {
+  grid-area: card;
+  display: grid;
+  gap: 1.1rem;
+  padding: 28px;
+  border-radius: 22px;
+  box-shadow: var(--glass-highlight), 0 0 0 0.5px var(--glass-edge), var(--shadow-lg);
+}
+
+.te-login__card h2 {
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.te-login__google {
+  height: 52px;
+  font-size: 1rem;
+  gap: 0.6rem;
+}
+
+.te-login__access {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.te-login__access li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+
+.te-login__access svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--ok);
+}
+
+.te-login__consent {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.te-login__foot {
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 860px) {
+  .te-login__main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "story" "card" "steps";
+    gap: 1.75rem;
+    padding-top: 1rem;
+  }
+
+  .te-login__story .te-icon3d {
+    --icon-size: 110px !important;
+  }
+
+  .te-login__card {
+    padding: 20px;
+  }
+}
+
+/* ---------- Legal (privacy) ---------- */
+.te-legal {
+  padding-top: 12px;
+}
+
+.te-legal__nav {
+  position: sticky;
+  top: 12px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1120px;
+  height: 56px;
+  margin: 0 auto 32px;
+  padding: 0 10px 0 14px;
+  border-radius: 18px;
+}
+
+.te-legal__layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 48px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.te-legal__toc {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.te-legal__back {
+  justify-self: start;
+  margin-left: -0.6rem;
+}
+
+.te-legal__toc ol {
+  display: grid;
+  gap: 2px;
+  counter-reset: toc;
+}
+
+.te-legal__toc li {
+  counter-increment: toc;
+}
+
+.te-legal__toc ol a {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  text-decoration: none;
+}
+
+.te-legal__toc ol a::before {
+  content: counter(toc);
+  min-width: 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--faint);
+}
+
+.te-legal__toc ol a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.te-legal__body {
+  max-width: 720px;
+  padding-bottom: 64px;
+}
+
+.te-legal__body h1 {
+  font-size: clamp(2rem, 3.4vw, 2.6rem);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.te-legal__body > .te-muted {
+  margin-top: 0.5rem;
+}
+
+.te-legal__summary {
+  margin: 28px 0 40px;
+  padding: 20px 22px;
+  border-radius: var(--r-panel);
+  background: var(--accent-soft);
+}
+
+.te-legal__summary h2 {
+  font-size: 1rem;
+  font-weight: 650;
+  margin-bottom: 0.75rem;
+}
+
+.te-legal__summary ul {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.te-legal__summary li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  color: var(--text-2);
+}
+
+.te-legal__summary svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: var(--accent);
+}
+
+.te-legal__section {
+  padding: 28px 0;
+  border-top: 1px solid var(--border);
+  scroll-margin-top: 90px;
+}
+
+.te-legal__section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.te-legal__num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.te-legal__section p {
+  color: var(--text-2);
+  line-height: 1.65;
+}
+
+.te-legal__section p + p,
+.te-legal__list + p {
+  margin-top: 0.8rem;
+}
+
+.te-legal__list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.te-legal__list li {
+  position: relative;
+  padding-left: 1.2rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.te-legal__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.te-legal__contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 16px;
+  padding: 12px 18px 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-decoration: none;
+  transition: border-color 0.18s;
+}
+
+.te-theme a.te-legal__contact {
+  color: var(--text);
+}
+
+.te-legal__contact:hover {
+  border-color: var(--line-strong);
+}
+
+.te-legal__contact svg {
+  color: #229ed9;
+}
+
+.te-legal__contact span {
+  display: grid;
+  line-height: 1.25;
+}
+
+.te-legal__contact small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 860px) {
+  .te-legal__layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .te-legal__toc {
+    position: static;
+  }
+
+  .te-legal__toc ol,
+  .te-legal__toc > .te-field__label {
+    display: none;
   }
 }

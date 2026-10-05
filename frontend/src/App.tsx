@@ -10,7 +10,7 @@ import {
   WsMessagePayload,
 } from "./api";
 import { ChatItem, fetchChats, fetchChatsStatus } from "./api/chats";
-import { fetchGoogleAuthStatus, logoutGoogle, startGoogleLogin } from "./api/auth";
+import { fetchGoogleAuthStatus, logoutGoogle } from "./api/auth";
 import type { GoogleUser } from "./api/auth";
 import { AppTopBar, NavBadges } from "./components/AppTopBar";
 import { IntegrationsOnboardingPrompt } from "./components/IntegrationsOnboardingPrompt";
@@ -31,6 +31,7 @@ import { AppBootSkeleton, FeedPageSkeleton, KanbanBoardSkeleton } from "./compon
 import { MessageToasts, ToastItem } from "./components/MessageToasts";
 import { TaskModal } from "./components/TaskModal";
 import { LandingPage, markWelcomeSeen } from "./pages/LandingPage";
+import { LoginPage } from "./pages/LoginPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TelegramSettings } from "./pages/TelegramSettings";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
@@ -79,6 +80,10 @@ function isWelcomePath(path: string): boolean {
   return path === "/welcome" || path === "/guide";
 }
 
+function isLoginPath(path: string): boolean {
+  return path === "/login";
+}
+
 function isPrivacyPath(path: string): boolean {
   return path === "/privacy";
 }
@@ -99,7 +104,9 @@ export default function App() {
     void trackVisit();
   }, []);
 
-  const [view, setView] = useState<"welcome" | "app">("welcome");
+  const [view, setView] = useState<"welcome" | "login" | "app">(() =>
+    isLoginPath(window.location.pathname) ? "login" : "welcome",
+  );
   const [panelAuthed, setPanelAuthed] = useState(false);
   const [currentUser, setCurrentUser] = useState<GoogleUser | null>(null);
   const [gate, setGate] = useState<Gate>("loading");
@@ -134,10 +141,11 @@ export default function App() {
     setPanelAuthed(auth.authenticated);
     setCurrentUser(auth.user);
     if (!auth.authenticated) {
-      setView("welcome");
+      setView(isLoginPath(window.location.pathname) ? "login" : "welcome");
       setGate("loading");
       return;
     }
+    if (isLoginPath(window.location.pathname)) window.history.replaceState({}, "", "/");
     if (!isWelcomePath(window.location.pathname)) setView("app");
     const chats = await fetchChatsStatus();
     setGate(chats.has_monitored ? "ready" : "setup");
@@ -300,10 +308,19 @@ export default function App() {
     }
   }, []);
 
+  /** Кнопка «Открыть панель»: авторизованных пускает сразу, остальных ведёт на страницу входа. */
   const enterApp = useCallback(() => {
     markWelcomeSeen();
-    startGoogleLogin();
-  }, []);
+    if (panelAuthed) {
+      setView("app");
+      setPage("tasks");
+      window.history.pushState({}, "", "/");
+      return;
+    }
+    window.history.pushState({}, "", "/login");
+    setView("login");
+    window.scrollTo({ top: 0 });
+  }, [panelAuthed]);
 
   const handleGoogleLogout = useCallback(async () => {
     await logoutGoogle();
@@ -339,6 +356,10 @@ export default function App() {
       }
       if (isWelcomePath(path)) {
         setView("welcome");
+        return;
+      }
+      if (isLoginPath(path) && !panelAuthed) {
+        setView("login");
         return;
       }
       if (!panelAuthed) {
@@ -509,6 +530,10 @@ export default function App() {
 
   if (isPrivacyPath(window.location.pathname)) {
     return <PrivacyPage />;
+  }
+
+  if (view === "login") {
+    return <LoginPage onHome={goHome} />;
   }
 
   if (view === "welcome") {

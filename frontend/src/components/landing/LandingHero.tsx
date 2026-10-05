@@ -1,6 +1,7 @@
 import { ArrowDown } from "@phosphor-icons/react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useI18n } from "../../i18n";
+import { ThemedShot } from "./ThemedShot";
 
 interface Props {
   onOpen: () => void;
@@ -12,7 +13,6 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 export function LandingHero({ onOpen, onExample }: Props) {
   const { messages } = useI18n();
   const t = messages.landing;
-  const reduce = useReducedMotion();
 
   const item = (i: number) => ({
     initial: { opacity: 0, y: 14 },
@@ -44,19 +44,7 @@ export function LandingHero({ onOpen, onExample }: Props) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.9, delay: 0.15, ease: EASE }}
       >
-        <video
-          src="/landing/panel-demo.mp4"
-          poster="/landing/panel-board.jpg"
-          width={1280}
-          height={728}
-          autoPlay={!reduce}
-          controls={!!reduce}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-label={t.hero.videoLabel}
-        />
+        <ThemedShot name="board" alt={t.hero.videoLabel} width={1600} height={1028} priority />
       </motion.figure>
     </section>
   );
