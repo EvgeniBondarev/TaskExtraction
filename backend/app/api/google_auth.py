@@ -6,7 +6,7 @@ import secrets
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from app.config import get_settings
@@ -44,10 +44,16 @@ async def google_auth_status(request: Request):
     }
 
 
+def _login_error(code: str) -> RedirectResponse:
+    """Вернуть пользователя на страницу входа с понятной причиной вместо JSON-ошибки."""
+    base = get_settings().public_web_url.rstrip("/")
+    return RedirectResponse(f"{base}/login?error={code}")
+
+
 @router.get("/start")
 async def google_auth_start(request: Request):
     if not _configured():
-        raise HTTPException(503, "Google OAuth is not configured")
+        return _login_error("unavailable")
     state = secrets.token_urlsafe(32)
     request.session["google_oauth_state"] = state
     settings = get_settings()
@@ -65,10 +71,17 @@ async def google_auth_start(request: Request):
 
 
 @router.get("/callback")
-async def google_auth_callback(request: Request, code: str | None = None, state: str | None = None):
+async def google_auth_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+):
     expected = request.session.pop("google_oauth_state", None)
+    if error:
+        return _login_error("cancelled" if error == "access_denied" else "google")
     if not code or not state or not expected or not secrets.compare_digest(state, expected):
-        raise HTTPException(400, "Google OAuth state is invalid or expired")
+        return _login_error("expired")
     settings = get_settings()
     async with httpx.AsyncClient(timeout=15) as client:
         token_response = await client.post(
@@ -82,15 +95,15 @@ async def google_auth_callback(request: Request, code: str | None = None, state:
             },
         )
         if not token_response.is_success:
-            raise HTTPException(401, "Google OAuth token exchange failed")
+            return _login_error("google")
         access_token = token_response.json().get("access_token")
         profile_response = await client.get(_USERINFO_URL, headers={"Authorization": f"Bearer {access_token}"})
     if not profile_response.is_success:
-        raise HTTPException(401, "Google profile verification failed")
+        return _login_error("google")
     profile = profile_response.json()
     subject = profile.get("sub")
     if not isinstance(subject, str) or not subject:
-        raise HTTPException(401, "Google profile has no subject")
+        return _login_error("google")
     tenant = tenant_key_from_google_subject(subject)
     ensure_tenant(tenant)
     set_session_tenant(request, tenant)
