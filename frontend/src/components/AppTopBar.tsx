@@ -1,8 +1,9 @@
-import { AppBrandName } from "./AppBrandName";
+import { ChatsCircle, GearSix, Kanban, SignOut } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import type { GoogleUser } from "../api/auth";
+import { useI18n } from "../i18n";
 import { AppLogo } from "./AppLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { useI18n } from "../i18n";
-import type { GoogleUser } from "../api/auth";
 
 export type AppMainPage = "tasks" | "feed" | "settings";
 
@@ -18,101 +19,127 @@ interface Props {
   onHome: () => void;
   onLogout?: () => void;
   user?: GoogleUser | null;
+  /** Скрыть разделы (первичная настройка, пока нет подключённых чатов). */
+  hideNav?: boolean;
 }
 
-function formatBadgeCount(n: number): string {
-  if (n > 99) return "99+";
-  return String(n);
+const ITEMS: { id: AppMainPage; icon: typeof Kanban }[] = [
+  { id: "tasks", icon: Kanban },
+  { id: "feed", icon: ChatsCircle },
+  { id: "settings", icon: GearSix },
+];
+
+function formatBadge(n: number) {
+  return n > 99 ? "99+" : String(n);
 }
 
-function NavBadge({ count }: { count: number }) {
-  if (count <= 0) return null;
+export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user, hideNav }: Props) {
+  const { messages } = useI18n();
+  const nav = messages.panel.nav;
+  const legacyNav = messages.nav;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const userName = user?.name || user?.email || nav.account;
+  const initial = userName.slice(0, 1).toUpperCase();
+
   return (
-    <span className="nav-badge" aria-hidden>
-      {formatBadgeCount(count)}
-    </span>
-  );
-}
-
-export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user }: Props) {
-  const { messages: t } = useI18n();
-  const nav = t.nav;
-  const tasksUnread = badges?.tasks ?? 0;
-  const feedUnread = badges?.feed ?? 0;
-
-  const tasksAria =
-    tasksUnread > 0 ? `${nav.tasks}, ${tasksUnread} ${nav.tasksNew}` : nav.tasks;
-  const feedAria =
-    feedUnread > 0 ? `${nav.feed}, ${feedUnread} ${nav.feedNew}` : nav.feed;
-
-  return (
-    <header className="app-top-bar">
-      <button type="button" className="app-title" onClick={onHome} title={nav.homeTitle}>
-        <AppLogo size={28} />
-        <AppBrandName />
+    <header className="te-topbar te-glass">
+      <button type="button" className="te-topbar__brand" onClick={onHome} title={legacyNav.homeTitle}>
+        <AppLogo size={30} />
+        <span className="te-topbar__name">TaskExtraction</span>
       </button>
 
-      <div className="app-top-bar__actions">
-        <nav className="app-top-bar__nav" aria-label={nav.mainNav}>
-          <div className="app-top-bar__nav-group app-top-bar__nav-group--primary">
+      {!hideNav && (
+      <nav className="te-topbar__nav" aria-label={legacyNav.mainNav}>
+        {ITEMS.map(({ id, icon: Icon }) => {
+          const count = id === "tasks" ? badges?.tasks ?? 0 : id === "feed" ? badges?.feed ?? 0 : 0;
+          const label = nav[id];
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`te-topbar__tab${page === id ? " is-active" : ""}`}
+              onClick={() => onNavigate(id)}
+              aria-current={page === id ? "page" : undefined}
+              aria-label={count > 0 ? `${label}, ${count} ${legacyNav.tasksNew}` : label}
+            >
+              <Icon size={18} weight={page === id ? "fill" : "regular"} aria-hidden />
+              <span className="te-topbar__tab-label">{label}</span>
+              {count > 0 && (
+                <span className="te-topbar__badge" aria-hidden>
+                  {formatBadge(count)}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+      )}
+
+      <div className="te-topbar__end">
+        <LanguageSwitcher className="lang-switch--compact" />
+        {user && (
+          <div className="te-account" ref={menuRef}>
             <button
               type="button"
-              className={page === "tasks" ? "active" : ""}
-              onClick={() => onNavigate("tasks")}
-              aria-label={tasksAria}
-              aria-current={page === "tasks" ? "page" : undefined}
+              className="te-account__trigger"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label={nav.menu}
             >
-              {nav.tasks}
-              <NavBadge count={tasksUnread} />
+              {user.picture ? (
+                <img className="te-avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="te-avatar te-avatar--initial" aria-hidden>
+                  {initial}
+                </span>
+              )}
             </button>
-            <button
-              type="button"
-              className={page === "feed" ? "active" : ""}
-              onClick={() => onNavigate("feed")}
-              aria-label={feedAria}
-              aria-current={page === "feed" ? "page" : undefined}
-            >
-              {nav.feed}
-              <NavBadge count={feedUnread} />
-            </button>
-          </div>
-
-          <span className="app-top-bar__nav-sep" aria-hidden />
-
-          <button
-            type="button"
-            className={`app-top-bar__nav-settings${page === "settings" ? " active" : ""}`}
-            onClick={() => onNavigate("settings")}
-            aria-current={page === "settings" ? "page" : undefined}
-          >
-            {nav.settings}
-          </button>
-        </nav>
-
-        <div className="app-top-bar__tools">
-          <LanguageSwitcher className="lang-switch--compact" />
-          {user && <div className="app-user" title={user.email || undefined}>
-            {user.picture ? (
-              <img className="app-user__avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="app-user__avatar app-user__avatar--initials" aria-hidden>
-                {(user.name || user.email || "?").slice(0, 1).toUpperCase()}
-              </span>
+            {menuOpen && (
+              <div className="te-account__menu te-glass" role="menu">
+                <div className="te-account__who">
+                  <strong>{userName}</strong>
+                  {user.name && user.email && <small>{user.email}</small>}
+                </div>
+                {onLogout && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="te-account__item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onLogout();
+                    }}
+                  >
+                    <SignOut size={18} aria-hidden />
+                    <span>
+                      {nav.logout}
+                      <small>{nav.logoutHint}</small>
+                    </span>
+                  </button>
+                )}
+              </div>
             )}
-            <span className="app-user__identity">
-              <strong>{user.name || user.email}</strong>
-              {user.name && user.email && <small>{user.email}</small>}
-            </span>
-          </div>}
-          {onLogout && <button
-            type="button"
-            className="app-top-bar__logout"
-            onClick={onLogout}
-            title={nav.logoutPanelTitle}
-          >
-            {nav.logout}
-          </button>}
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

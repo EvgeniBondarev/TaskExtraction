@@ -1,5 +1,6 @@
 import type { Messages } from "../types";
 import { landingRu } from "./landing.ru";
+import { panelRu } from "./panel.ru";
 import { settingsRu } from "./settings.ru";
 
 const messages: Messages = {
@@ -42,6 +43,7 @@ const messages: Messages = {
     feedNew: "новых",
   },
   landing: landingRu,
+  panel: panelRu,
   faq: {
     items: [
       {
@@ -94,7 +96,7 @@ const messages: Messages = {
       "Обрабатываем последние чаты…",
       "Почти готово…",
     ],
-    intEyebrow: "Готово — Telegram подключён",
+    intEyebrow: "Telegram подключён",
     intTitle: "Куда отправлять задачи?",
     intLead:
       "Подключите готовые интеграции: новые задачи из чатов можно автоматически создавать в трекерах или дублировать в Slack.",
@@ -116,8 +118,8 @@ const messages: Messages = {
     archive: "Архив",
   },
   feed: {
-    pageTitle: "Лента сообщений",
-    pageLead: "Live-поток из отслеживаемых чатов Telegram",
+    pageTitle: "Лента",
+    pageLead: "Все сообщения из подключённых чатов в реальном времени. Модель отмечает, где поручение.",
     statsAria: "Статистика ленты",
     statMessages: "сообщений",
     statCandidates: "можно в задачи",
@@ -129,13 +131,13 @@ const messages: Messages = {
     searchMeta: "Показано {shown} из {total}",
     emptyNoMessages: "Пока нет сообщений",
     emptyNoMessagesHint:
-      "Как только в выбранных чатах появятся новые сообщения, они отобразятся здесь.",
+      "Добавьте бота в рабочую группу в настройках и напишите туда сообщение. Оно появится здесь через пару секунд.",
     emptyNoResults: "Ничего не найдено",
     emptyNoResultsHint: "Нет совпадений по «{query}»",
     newPill: "новое",
     unknownUser: "Пользователь",
     mediaNoText: "Медиа без текста",
-    openTelegram: "Telegram",
+    openTelegram: "Открыть в Telegram",
     creatingTask: "Создаём…",
     createTask: "Создать задачу",
     loadingSkeleton: "Загрузка ленты",

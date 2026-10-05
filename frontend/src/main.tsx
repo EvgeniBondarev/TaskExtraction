@@ -6,6 +6,7 @@ import { I18nProvider } from "./i18n";
 import "./index.css";
 import "./styles/brand.css";
 import "./styles/lang-switch.css";
+import "./styles/taste-retheme.css";
 
 const isAdminRoute =
   window.location.pathname === "/admin" ||

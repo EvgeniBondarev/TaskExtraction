@@ -1,3 +1,4 @@
+import { CaretDown } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { IntegrationBrandIcon } from "../IntegrationBrandIcon";
 import { IntegrationsOverviewSkeleton } from "../PageSkeletons";
@@ -13,7 +14,6 @@ import {
   useIntegrationsStatus,
 } from "../../hooks/useIntegrationsStatus";
 import { useI18n } from "../../i18n";
-import "../../styles/integrations-hub.css";
 
 export function IntegrationsSettingsHub() {
   const { messages: t } = useI18n();
@@ -32,9 +32,7 @@ export function IntegrationsSettingsHub() {
 
   if (loading) {
     return (
-      <div className="integrations-hub">
-        <IntegrationsOverviewSkeleton />
-      </div>
+      <IntegrationsOverviewSkeleton />
     );
   }
 
@@ -48,34 +46,20 @@ export function IntegrationsSettingsHub() {
   };
 
   return (
-    <div className="integrations-hub">
-      <section className="integrations-hub-intro">
-        <h3>{intl.hubTitle}</h3>
-        <p>{intl.hubLead}</p>
-        <ol className="integrations-hub-steps">
-          <li>
-            <strong>1</strong>
-            <span>{intl.hubStep1}</span>
-          </li>
-          <li>
-            <strong>2</strong>
-            <span>{intl.hubStep2}</span>
-          </li>
-          <li>
-            <strong>3</strong>
-            <span>{intl.hubStep3}</span>
-          </li>
+    <div className="te-stack">
+      <section className="te-panel te-panel--flat">
+        <h3 className="te-panel__title">{intl.hubTitle}</h3>
+        <ol className="te-steps te-steps--row">
+          <li>{intl.hubStep1}</li>
+          <li>{intl.hubStep2}</li>
+          <li>{intl.hubStep3}</li>
         </ol>
+        <p className="te-muted">
+          {intl.activeCount} <strong>{activeCount}</strong> {intl.activeOf} {integrations.length}. {intl.manualSend}
+        </p>
       </section>
 
-      <div className="integrations-hub-summary">
-        <span className="integrations-hub-pill">
-          {intl.activeCount} <strong>{activeCount}</strong> {intl.activeOf} {integrations.length}
-        </span>
-        <span className="integrations-hub-pill">{intl.manualSend}</span>
-      </div>
-
-      <div className="integrations-accordion" role="list">
+      <div className="te-int-list" role="list">
         {integrations.map((meta) => {
           const state = getIntegrationState(meta.id, jira, trello, github, slack);
           const summary = getIntegrationSummary(meta.id, jira, trello, github, slack, intl);
@@ -87,46 +71,25 @@ export function IntegrationsSettingsHub() {
             (meta.id === "slack" && slack?.auto_push);
 
           return (
-            <article
-              key={meta.id}
-              role="listitem"
-              className={`int-accordion-item state-${state}${isOpen ? " is-open" : ""}`}
-            >
-              <button
-                type="button"
-                className="int-accordion-trigger"
-                aria-expanded={isOpen}
-                onClick={() => toggle(meta.id)}
-              >
-                <span className="int-accordion-icon">
-                  <IntegrationBrandIcon provider={meta.id} size={26} />
-                </span>
-                <span className="int-accordion-text">
+            <article key={meta.id} role="listitem" className={`te-int te-int--${state}${isOpen ? " is-open" : ""}`}>
+              <button type="button" className="te-int__trigger" aria-expanded={isOpen} onClick={() => toggle(meta.id)}>
+                <IntegrationBrandIcon provider={meta.id} size={22} />
+                <span className="te-int__text">
                   <strong>{meta.name}</strong>
                   <span>{summary || meta.tagline}</span>
                 </span>
-                <span className={`int-accordion-badge state-${state}`}>
+                <span className={`te-int__badge te-int__badge--${state}`}>
                   {badgeLabel(state, Boolean(auto && state === "active"))}
                 </span>
-                <span className="int-accordion-chevron" aria-hidden>
-                  ▼
-                </span>
+                <CaretDown size={16} weight="bold" className="te-int__chevron" aria-hidden />
               </button>
 
               {isOpen && (
-                <div className="int-accordion-panel">
-                  {meta.id === "jira" && (
-                    <JiraSettings embedded hideHeader onSaved={() => reload()} />
-                  )}
-                  {meta.id === "trello" && (
-                    <TrelloSettings embedded hideHeader onSaved={() => reload()} />
-                  )}
-                  {meta.id === "github" && (
-                    <GitHubSettings embedded hideHeader onSaved={() => reload()} />
-                  )}
-                  {meta.id === "slack" && (
-                    <SlackSettings embedded hideHeader onSaved={() => reload()} />
-                  )}
+                <div className="te-int__panel int-form-scope">
+                  {meta.id === "jira" && <JiraSettings embedded hideHeader onSaved={() => reload()} />}
+                  {meta.id === "trello" && <TrelloSettings embedded hideHeader onSaved={() => reload()} />}
+                  {meta.id === "github" && <GitHubSettings embedded hideHeader onSaved={() => reload()} />}
+                  {meta.id === "slack" && <SlackSettings embedded hideHeader onSaved={() => reload()} />}
                 </div>
               )}
             </article>

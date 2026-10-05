@@ -1,12 +1,17 @@
+import { CheckCircle, Key, Lightning, WarningCircle } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
 import { fetchLlmStatus, LlmStatus, LlmTestResult, saveLlmSettings, testLlmSettings } from "../api/llm";
-import { SettingsFormSkeleton } from "./PageSkeletons";
 import { useI18n } from "../i18n";
+import { SettingsFormSkeleton } from "./PageSkeletons";
 
-export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
+/** Примеры моделей OpenRouter для быстрого заполнения поля. */
+const MODEL_EXAMPLES = ["openai/gpt-4o-mini", "google/gemini-2.0-flash-001", "anthropic/claude-3.5-haiku"];
+
+export function LlmSettings(_props: { embedded?: boolean } = {}) {
   const { messages: t } = useI18n();
   const l = t.settings.llm;
   const c = t.settings.common;
+  const pl = t.panel.settings.llm;
   const [status, setStatus] = useState<LlmStatus | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
@@ -24,9 +29,16 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
 
   useEffect(() => {
     reload().catch(() => setError(l.loadFailed));
-  }, [reload]);
+  }, [reload, l.loadFailed]);
 
-  const canEditModel = status?.has_user_key || apiKey.trim().length > 0;
+  const canEditModel = Boolean(status?.has_user_key) || apiKey.trim().length > 0;
+
+  const body = () => {
+    const b: { api_key?: string; model?: string } = {};
+    if (apiKey.trim()) b.api_key = apiKey.trim();
+    if (canEditModel && model.trim()) b.model = model.trim();
+    return b;
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,10 +46,7 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
     setInfo("");
     setLoading(true);
     try {
-      const body: { api_key?: string; model?: string } = {};
-      if (apiKey.trim()) body.api_key = apiKey.trim();
-      if (canEditModel && model.trim()) body.model = model.trim();
-      const s = await saveLlmSettings(body);
+      const s = await saveLlmSettings(body());
       setStatus(s);
       setApiKey("");
       setInfo(l.saved);
@@ -54,12 +63,8 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
     setTestResult(null);
     setTesting(true);
     try {
-      const body: { api_key?: string; model?: string } = {};
-      if (apiKey.trim()) body.api_key = apiKey.trim();
-      if (canEditModel && model.trim()) body.model = model.trim();
-      const result = await testLlmSettings(body);
+      const result = await testLlmSettings(body());
       setTestResult(result);
-      if (!result.success) setError(result.message);
     } catch (err) {
       setError(err instanceof Error ? err.message : l.testFailed);
     } finally {
@@ -86,193 +91,122 @@ export function LlmSettings({ embedded }: { embedded?: boolean } = {}) {
   };
 
   if (!status) {
-    return (
-      <section className={`llm-settings${embedded ? " embedded" : ""}`}>
-        <SettingsFormSkeleton fields={2} />
-      </section>
-    );
+    return error ? <p className="te-alert te-alert--error">{error}</p> : <SettingsFormSkeleton fields={2} />;
   }
 
+  const examples = Array.from(new Set([status.default_model, ...MODEL_EXAMPLES].filter(Boolean)));
+
   return (
-    <section className={`llm-settings${embedded ? " embedded" : ""}`}>
-      {!embedded && (
-        <>
-          <h3>{l.title}</h3>
-          <p className="hint">
-            {l.hintBefore}{" "}
-            <a href="https://openrouter.ai" target="_blank" rel="noreferrer">
-              openrouter.ai
-            </a>
-          </p>
-        </>
-      )}
+    <div className="te-stack">
+      <section className="te-panel">
+        <h3 className="te-panel__title">{pl.statusTitle}</h3>
+        <dl className="te-kv">
+          <div>
+            <dt>{l.provider}</dt>
+            <dd>{status.provider}</dd>
+          </div>
+          <div>
+            <dt>{l.key}</dt>
+            <dd>
+              {status.key_source === "user" ? (
+                <>
+                  <span className="te-dot-ok" aria-hidden /> {l.keyUser} <code>{status.user_key_masked}</code>
+                </>
+              ) : (
+                l.keyBuiltin
+              )}
+            </dd>
+          </div>
+          <div className="te-kv__wide">
+            <dt>{l.activeModel}</dt>
+            <dd>
+              <code>{status.active_model}</code>
+            </dd>
+          </div>
+        </dl>
+      </section>
 
-      <div className="status-grid">
-        <div className="status-card">
-          <span className="stat-label">{l.provider}</span>
-          <span className="stat-value">{status.provider}</span>
-        </div>
-        <div className="status-card">
-          <span className="stat-label">{l.key}</span>
-          <span className={`stat-value ${status.key_source === "user" ? "ok" : ""}`}>
-            {status.key_source === "user" ? `${l.keyUser} · ${status.user_key_masked}` : l.keyBuiltin}
+      <form className="te-panel" onSubmit={handleSave}>
+        <label className="te-field">
+          <span className="te-field__label">
+            <Key size={16} aria-hidden /> {pl.keyTitle}
           </span>
-        </div>
-        <div className="status-card wide">
-          <span className="stat-label">{l.activeModel}</span>
-          <code className="stat-code">{status.active_model}</code>
-        </div>
-      </div>
-
-      {error && <p className="llm-error">{error}</p>}
-      {info && !error && <p className="llm-info">{info}</p>}
-
-      <form className="llm-form" onSubmit={handleSave}>
-        <label>
-          {l.apiKeyLabel} <span className="opt">{c.optional}</span>
+          <span className="te-field__hint">{pl.keyLead}</span>
           <input
+            className="te-input"
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-or-v1-…"
+            placeholder={status.has_user_key ? `${status.user_key_masked ?? ""}` : "sk-or-v1-…"}
             autoComplete="off"
           />
+          <span className="te-field__hint">
+            {pl.keyHelp}{" "}
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">
+              openrouter.ai/keys
+            </a>
+          </span>
         </label>
-        <label className={!canEditModel ? "disabled" : ""}>
-          {l.customModel}
+
+        <label className="te-field">
+          <span className="te-field__label">{pl.modelTitle}</span>
+          <span className="te-field__hint">{pl.modelLead}</span>
           <input
+            className="te-input te-input--mono"
             type="text"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             placeholder={status.default_model}
             disabled={!canEditModel}
           />
-          {!canEditModel && (
-            <span className="field-hint">{l.customModelHint}</span>
+          {canEditModel ? (
+            <span className="te-examples">
+              <span>{pl.examples}:</span>
+              {examples.map((id) => (
+                <button key={id} type="button" className="te-chip te-chip--sm" onClick={() => setModel(id)}>
+                  {id}
+                </button>
+              ))}
+            </span>
+          ) : (
+            <span className="te-field__hint">{l.customModelHint}</span>
           )}
         </label>
 
-        <div className="form-actions">
-          <button type="submit" className="btn-primary" disabled={loading || testing}>
+        {error && <p className="te-alert te-alert--error">{error}</p>}
+        {info && !error && <p className="te-alert te-alert--ok">{info}</p>}
+
+        <div className="te-panel__actions">
+          <button type="submit" className="te-btn te-btn--primary" disabled={loading || testing}>
             {loading ? c.saving : c.save}
           </button>
-          <button type="button" className="btn-secondary" onClick={handleTest} disabled={loading || testing}>
+          <button type="button" className="te-btn te-btn--ghost" onClick={handleTest} disabled={loading || testing}>
+            <Lightning size={16} aria-hidden />
             {testing ? c.testing : c.test}
           </button>
           {status.has_user_key && (
-            <button type="button" className="btn-ghost" onClick={handleClearKey} disabled={loading || testing}>
+            <button type="button" className="te-btn te-btn--danger-ghost" onClick={handleClearKey} disabled={loading || testing}>
               {l.clearKey}
             </button>
           )}
         </div>
+        <p className="te-field__hint">{pl.testLead}</p>
 
         {testResult && (
-          <div className={`test-result ${testResult.success ? "ok" : "fail"}`}>
-            <p className="test-title">{testResult.success ? l.testPassed : l.testFailedTitle}</p>
+          <div className={`te-result${testResult.success ? " is-ok" : " is-fail"}`} role="status">
+            <strong>
+              {testResult.success ? <CheckCircle size={18} weight="fill" aria-hidden /> : <WarningCircle size={18} weight="fill" aria-hidden />}
+              {testResult.success ? l.testPassed : l.testFailedTitle}
+            </strong>
             <p>{testResult.message}</p>
-            <p className="test-meta">
+            <p className="te-muted">
               <code>{testResult.model}</code>
               {testResult.latency_ms != null && ` · ${testResult.latency_ms} ${l.ms}`}
             </p>
-            {testResult.reply_preview && <pre className="test-preview">{testResult.reply_preview}</pre>}
+            {testResult.reply_preview && <pre>{testResult.reply_preview}</pre>}
           </div>
         )}
       </form>
-
-      <style>{`
-        .llm-settings h3 { margin: 0 0 0.35rem; font-size: 1rem; }
-        .llm-settings .stat-code {
-          display: block;
-          font-size: 0.8rem;
-          color: #c4b5fd;
-          word-break: break-all;
-        }
-        .llm-settings .llm-error {
-          color: #f87171;
-          font-size: 0.85rem;
-          padding: 0.55rem 0.75rem;
-          background: rgba(248, 113, 113, 0.08);
-          border-radius: 8px;
-          margin-bottom: 0.75rem;
-        }
-        .llm-settings .llm-info {
-          color: #60a5fa;
-          font-size: 0.85rem;
-          margin-bottom: 0.75rem;
-        }
-        .llm-settings .llm-form label.disabled { opacity: 0.65; }
-        .llm-settings .llm-form input:focus {
-          outline: none;
-          border-color: #a855f7;
-          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
-        }
-        .llm-settings .llm-form input:disabled { opacity: 0.5; cursor: not-allowed; }
-        .llm-settings .opt { font-weight: 400; opacity: 0.75; }
-        .llm-settings .field-hint { display: block; margin-top: 0.25rem; font-size: 0.72rem; }
-        .llm-settings .form-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-          margin-top: 0.25rem;
-        }
-        .llm-settings .btn-primary {
-          background: linear-gradient(135deg, #a855f7, #7c3aed);
-          border: none;
-          color: #fff;
-          padding: 0.6rem 1.1rem;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          font: inherit;
-        }
-        .llm-settings .btn-secondary {
-          background: var(--bg);
-          border: 1px solid var(--border);
-          color: var(--text);
-          padding: 0.6rem 1rem;
-          border-radius: 10px;
-          cursor: pointer;
-          font: inherit;
-        }
-        .llm-settings .btn-ghost {
-          background: transparent;
-          border: none;
-          color: var(--muted);
-          padding: 0.6rem 0.75rem;
-          cursor: pointer;
-          font: inherit;
-          font-size: 0.85rem;
-        }
-        .llm-settings .btn-ghost:hover { color: #f87171; }
-        .llm-settings button:disabled { opacity: 0.55; cursor: not-allowed; }
-        .llm-settings .test-result {
-          margin-top: 1rem;
-          padding: 0.85rem 1rem;
-          border-radius: 12px;
-          font-size: 0.88rem;
-          line-height: 1.45;
-        }
-        .llm-settings .test-result.ok {
-          background: rgba(34, 197, 94, 0.1);
-          border: 1px solid rgba(34, 197, 94, 0.35);
-        }
-        .llm-settings .test-result.fail {
-          background: rgba(248, 113, 113, 0.08);
-          border: 1px solid rgba(248, 113, 113, 0.35);
-        }
-        .llm-settings .test-title { font-weight: 600; margin: 0 0 0.25rem; }
-        .llm-settings .test-result p { margin: 0.15rem 0; }
-        .llm-settings .test-meta { color: var(--muted); font-size: 0.8rem; }
-        .llm-settings .test-preview {
-          margin: 0.5rem 0 0;
-          padding: 0.55rem;
-          border-radius: 8px;
-          background: var(--bg);
-          font-size: 0.75rem;
-          white-space: pre-wrap;
-          word-break: break-word;
-        }
-      `}</style>
-    </section>
+    </div>
   );
 }

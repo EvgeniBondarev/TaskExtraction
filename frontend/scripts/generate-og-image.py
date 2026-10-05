@@ -29,57 +29,37 @@ def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFo
 
 
 def main() -> None:
-    img = Image.new("RGB", (W, H), "#0f1419")
+    img = Image.new("RGB", (W, H), "#f6f6f4")
     draw = ImageDraw.Draw(img)
 
-    for y in range(H):
-        t = y / H
-        draw.line(
-            [(0, y), (W, y)],
-            fill=(int(12 + t * 8), int(18 + t * 12), int(28 + t * 20)),
-        )
+    mark_path = OUT.parent / "brand" / "logo-mark-512.png"
+    if mark_path.exists():
+        mark = Image.open(mark_path).convert("RGBA").resize((136, 136), Image.LANCZOS)
+        img.paste(mark, (88, 120), mark)
 
-    draw.ellipse((-120, -160, 480, 420), fill=(28, 52, 88))
-    draw.ellipse((720, 280, 1280, 720), fill=(45, 35, 95))
+    title_font = load_font(64, bold=True)
+    brand_font = load_font(30, bold=True)
+    body_font = load_font(28)
+    tag_font = load_font(22, bold=True)
 
-    lx, ly, size = 88, 155, 128
-    draw.rounded_rectangle((lx, ly, lx + size, ly + size), radius=30, fill=(37, 99, 235))
-    for y_off, w in ((36, 48), (54, 32), (72, 42)):
-        draw.rounded_rectangle(
-            (lx + 30, ly + y_off, lx + 30 + w, ly + y_off + 7),
-            radius=3,
-            fill="#ffffff",
-        )
-    draw.polygon(
-        [
-            (lx + 82, ly + 36),
-            (lx + 98, ly + 52),
-            (lx + 76, ly + 76),
-            (lx + 64, ly + 76),
-            (lx + 64, ly + 64),
-        ],
-        fill="#93c5fd",
-    )
-    draw.ellipse((lx + 84, ly + 24, lx + 104, ly + 44), fill="#4ade80")
+    draw.text((252, 188), "TaskExtraction", fill="#18181b", font=brand_font, anchor="lm")
 
-    title_font = load_font(52, bold=True)
-    slogan_font = load_font(34, bold=True)
-    body_font = load_font(24)
-    tag_font = load_font(18)
+    draw.text((88, 312), "Задачи из Telegram", fill="#18181b", font=title_font)
+    draw.text((88, 390), "на одной доске", fill="#18181b", font=title_font)
 
-    draw.text((248, 168), "TaskExtraction", fill="#f1f5f9", font=title_font)
-    draw.text((248, 238), "Пиши в Telegram — выполняй везде", fill="#93c5fd", font=slogan_font)
-
-    draw.rounded_rectangle((248, 302, 1080, 368), radius=14, fill=(30, 41, 59))
     draw.text(
-        (272, 322),
-        "AI-задачи из чатов  ·  Канбан  ·  Jira  ·  Trello  ·  GitHub  ·  Slack",
-        fill="#94a3b8",
+        (88, 492),
+        "Бот находит поручения в чатах и заводит карточки. Без тегов и команд.",
+        fill="#5c5c63",
         font=body_font,
     )
 
-    draw.rounded_rectangle((248, 392, 420, 432), radius=8, fill=(34, 197, 94, 40))
-    draw.text((268, 400), "Старт за 5 минут", fill="#86efac", font=tag_font)
+    for i, label in enumerate(("Jira", "Trello", "GitHub", "Slack")):
+        x = 88 + i * 132
+        draw.rounded_rectangle((x, 552, x + 118, 592), radius=20, fill="#eeeeeb")
+        draw.text((x + 59, 572), label, fill="#3f3f46", font=tag_font, anchor="mm")
+
+    draw.rectangle((0, H - 8, W, H), fill="#c2410c")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     img.save(OUT, "PNG", optimize=True)

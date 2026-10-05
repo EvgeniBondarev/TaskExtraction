@@ -6,39 +6,31 @@ interface Props {
   className?: string;
 }
 
+/** Знак TaskExtraction: сообщение, превращённое в выполненную задачу. Исходник: public/brand/logo-mark.svg */
 export function AppLogo({ size = 28, showText = false, className = "" }: Props) {
   return (
     <span className={`app-logo ${className}`.trim()}>
       <svg
         width={size}
         height={size}
-        viewBox="0 0 32 32"
+        viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden
         className="app-logo-mark"
       >
-        <defs>
-          <linearGradient id="te-logo-bg" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#3b82f6" />
-            <stop offset="1" stopColor="#2563eb" />
-          </linearGradient>
-        </defs>
-        <rect width="32" height="32" rx="8" fill="url(#te-logo-bg)" />
+        <rect width="64" height="64" rx="16" fill="#18181B" />
         <path
-          d="M9 10h10M9 14h7M9 18h9"
-          stroke="#fff"
-          strokeWidth="2"
+          d="M19 15h26a6 6 0 0 1 6 6v16a6 6 0 0 1-6 6H27.5l-8.7 7.1c-.98.8-2.45.1-2.45-1.16V42.6A6 6 0 0 1 13 37V21a6 6 0 0 1 6-6Z"
+          fill="#FAFAF9"
+        />
+        <path
+          d="M23.5 29.5l5.5 5.5 11.5-11.5"
+          stroke="#EA580C"
+          strokeWidth="4.2"
           strokeLinecap="round"
-          opacity="0.95"
+          strokeLinejoin="round"
         />
-        <path
-          d="M21 9l3 3-6 6h-3v-3l6-6z"
-          fill="#93c5fd"
-          stroke="#e0f2fe"
-          strokeWidth="0.5"
-        />
-        <circle cx="23" cy="8" r="1.5" fill="#4ade80" />
       </svg>
       {showText && <AppBrandName className="app-logo-text" />}
     </span>

@@ -1,5 +1,6 @@
 import type { Messages } from "../types";
 import { landingEn } from "./landing.en";
+import { panelEn } from "./panel.en";
 import { settingsEn } from "./settings.en";
 
 const messages: Messages = {
@@ -42,6 +43,7 @@ const messages: Messages = {
     feedNew: "new",
   },
   landing: landingEn,
+  panel: panelEn,
   faq: {
     items: [
       {
@@ -93,7 +95,7 @@ const messages: Messages = {
       "Processing remaining chats…",
       "Almost done…",
     ],
-    intEyebrow: "Done — Telegram connected",
+    intEyebrow: "Telegram connected",
     intTitle: "Where should tasks go?",
     intLead:
       "Connect integrations: new tasks from chats can be created in trackers automatically or duplicated to Slack.",
@@ -115,8 +117,8 @@ const messages: Messages = {
     archive: "Archive",
   },
   feed: {
-    pageTitle: "Message feed",
-    pageLead: "Live stream from monitored Telegram chats",
+    pageTitle: "Feed",
+    pageLead: "Every message from connected chats in real time. The model marks the ones that are requests.",
     statsAria: "Feed statistics",
     statMessages: "messages",
     statCandidates: "can become tasks",
@@ -128,13 +130,13 @@ const messages: Messages = {
     searchMeta: "Showing {shown} of {total}",
     emptyNoMessages: "No messages yet",
     emptyNoMessagesHint:
-      "New messages from your selected chats will appear here as they arrive.",
+      "Add the bot to a work group in settings and send a message there. It shows up here within seconds.",
     emptyNoResults: "No results",
     emptyNoResultsHint: "No matches for “{query}”",
     newPill: "new",
     unknownUser: "User",
     mediaNoText: "Media without text",
-    openTelegram: "Telegram",
+    openTelegram: "Open in Telegram",
     creatingTask: "Creating…",
     createTask: "Create task",
     loadingSkeleton: "Loading feed",

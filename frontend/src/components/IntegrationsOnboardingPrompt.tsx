@@ -1,7 +1,7 @@
-import { IntegrationBrandIcon } from "./IntegrationBrandIcon";
+import { motion } from "motion/react";
 import { getIntegrationsList } from "../hooks/useIntegrationsStatus";
 import { useI18n } from "../i18n";
-import "../styles/integrations-onboarding.css";
+import { IntegrationBrandIcon } from "./IntegrationBrandIcon";
 
 interface Props {
   onSetup: () => void;
@@ -13,55 +13,45 @@ export function IntegrationsOnboardingPrompt({ onSetup, onSkip }: Props) {
   const integrations = getIntegrationsList(t.settings.integrations);
 
   return (
-    <div
-      className="int-onboarding-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="int-onboarding-title"
-    >
-      <div className="int-onboarding-panel">
-        <header className="int-onboarding-header">
-          <div className="int-onboarding-header__icons" aria-hidden>
-            {integrations.map((item) => (
-              <span key={item.id} className={`int-onboarding-header__icon provider-${item.id}`}>
-                <IntegrationBrandIcon provider={item.id} size={22} />
-              </span>
-            ))}
-          </div>
-          <p className="int-onboarding-eyebrow">{t.app.intEyebrow}</p>
-          <h2 id="int-onboarding-title" className="int-onboarding-title">
-            {t.app.intTitle}
-          </h2>
-          <p id="int-onboarding-lead" className="int-onboarding-lead">
-            {t.app.intLead}
-          </p>
-        </header>
+    <div className="te-dialog-layer" role="dialog" aria-modal="true" aria-labelledby="int-onboarding-title">
+      <motion.div
+        className="te-dialog-backdrop"
+        onClick={onSkip}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      />
+      <motion.div
+        className="te-dialog"
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <p className="te-muted">{t.app.intEyebrow}</p>
+        <h2 id="int-onboarding-title">{t.app.intTitle}</h2>
+        <p className="te-dialog__lead">{t.app.intLead}</p>
 
-        <ul className="int-onboarding-list">
+        <ul className="te-dialog__list">
           {integrations.map((item) => (
-            <li key={item.id} className={`int-onboarding-item provider-${item.id}`}>
-              <span className="int-onboarding-item__icon">
-                <IntegrationBrandIcon provider={item.id} size={26} />
-              </span>
-              <span className="int-onboarding-item__text">
+            <li key={item.id}>
+              <IntegrationBrandIcon provider={item.id} size={20} />
+              <span>
                 <strong>{item.name}</strong>
-                <span>{item.tagline}</span>
+                <small>{item.tagline}</small>
               </span>
             </li>
           ))}
         </ul>
 
-        <p className="int-onboarding-footnote">{t.app.intFootnote}</p>
-
-        <div className="int-onboarding-actions">
-          <button type="button" className="int-onboarding-primary" onClick={onSetup}>
-            {t.app.intSetup}
-          </button>
-          <button type="button" className="int-onboarding-secondary" onClick={onSkip}>
+        <p className="te-field__hint">{t.app.intFootnote}</p>
+        <div className="te-dialog__actions">
+          <button type="button" className="te-btn te-btn--ghost" onClick={onSkip}>
             {t.app.intSkip}
           </button>
+          <button type="button" className="te-btn te-btn--primary" onClick={onSetup}>
+            {t.app.intSetup}
+          </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

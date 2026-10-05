@@ -1,146 +1,85 @@
 import { useI18n } from "../i18n";
 import { AppLogo } from "./AppLogo";
 import { Skeleton, SkeletonGroup } from "./Skeleton";
-import "../styles/feed-page.css";
 
 export function AppBootSkeleton() {
   return (
-    <div className="boot-skeleton center-page">
+    <div className="te-theme te-boot">
       <SkeletonGroup label="Загрузка приложения">
         <AppLogo size={48} />
-        <Skeleton width={160} height={22} radius={6} style={{ marginTop: "1rem" }} />
-        <Skeleton width={220} height={14} radius={6} style={{ marginTop: "0.5rem" }} />
-        <div className="boot-cards">
-          <Skeleton height={72} radius={12} />
-          <Skeleton height={72} radius={12} />
-        </div>
+        <Skeleton width={160} height={14} radius={6} style={{ marginTop: "1.25rem" }} />
       </SkeletonGroup>
-      <style>{`
-        .boot-skeleton {
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-        }
-        .boot-skeleton .skeleton-group {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          max-width: 280px;
-        }
-        .boot-cards {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.65rem;
-          width: 100%;
-          margin-top: 1.5rem;
-        }
-      `}</style>
     </div>
   );
 }
 
 function KanbanCardSkeleton() {
   return (
-    <div className="sk-kanban-card">
-      <div className="sk-row">
-        <Skeleton width={52} height={18} radius={5} />
-        <Skeleton width={40} height={18} radius={5} />
+    <div className="te-sk-card">
+      <div className="te-sk-row">
+        <Skeleton width={64} height={18} radius={999} />
+        <Skeleton width={44} height={18} radius={999} />
       </div>
-      <Skeleton width="88%" height={14} radius={5} style={{ marginTop: "0.55rem" }} />
-      <Skeleton width="65%" height={12} radius={5} style={{ marginTop: "0.35rem" }} />
-      <div className="sk-footer">
-        <Skeleton width={28} height={28} circle />
-        <Skeleton width={80} height={10} radius={4} />
+      <Skeleton width="88%" height={14} radius={5} style={{ marginTop: "0.7rem" }} />
+      <Skeleton width="60%" height={12} radius={5} style={{ marginTop: "0.4rem" }} />
+      <div className="te-sk-row" style={{ marginTop: "0.85rem" }}>
+        <Skeleton width={24} height={24} circle />
+        <Skeleton width={90} height={10} radius={4} />
+      </div>
+    </div>
+  );
+}
+
+function PageHeadSkeleton() {
+  return (
+    <div className="te-sk-head">
+      <Skeleton width={180} height={28} radius={8} />
+      <Skeleton width={360} height={12} radius={4} style={{ marginTop: "0.6rem", maxWidth: "80%" }} />
+      <div className="te-sk-row" style={{ marginTop: "1.5rem" }}>
+        <Skeleton width={280} height={40} radius={10} />
+        <Skeleton width={70} height={32} radius={999} />
+        <Skeleton width={110} height={32} radius={999} />
+        <Skeleton width={70} height={32} radius={999} />
       </div>
     </div>
   );
 }
 
 export function KanbanBoardSkeleton() {
-  const cols = [
-    { cards: 3 },
-    { cards: 2 },
-    { cards: 1 },
-    { cards: 1 },
-  ];
+  const cols = [3, 2, 1, 1];
   return (
-    <SkeletonGroup className="sk-board-wrap" label="Загрузка задач">
-      <div className="sk-board">
-        {cols.map((col, i) => (
-          <div key={i} className="sk-column">
-            <div className="sk-col-head">
-              <Skeleton width={12} height={12} circle />
-              <Skeleton width={64} height={12} radius={4} />
-              <Skeleton width={20} height={18} radius={999} style={{ marginLeft: "auto" }} />
+    <SkeletonGroup className="te-page" label="Загрузка задач">
+      <PageHeadSkeleton />
+      <div className="te-board">
+        {cols.map((count, i) => (
+          <div key={i} className="te-col">
+            <div className="te-sk-row" style={{ padding: "0.25rem 0.25rem 0.75rem" }}>
+              <Skeleton width={70} height={14} radius={4} />
+              <Skeleton width={22} height={18} radius={999} style={{ marginLeft: "auto" }} />
             </div>
-            <div className="sk-col-cards">
-              {Array.from({ length: col.cards }).map((_, j) => (
+            <div className="te-col__cards">
+              {Array.from({ length: count }).map((_, j) => (
                 <KanbanCardSkeleton key={j} />
               ))}
             </div>
           </div>
         ))}
       </div>
-      <style>{`
-        .sk-board-wrap { width: 100%; }
-        .sk-board {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(200px, 1fr));
-          gap: 0.85rem;
-          align-items: start;
-        }
-        .sk-column {
-          background: rgba(0, 0, 0, 0.15);
-          border-radius: 12px;
-          padding: 0.65rem;
-          border: 1px solid var(--border);
-        }
-        .sk-col-head {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          margin-bottom: 0.65rem;
-          padding: 0 0.15rem;
-        }
-        .sk-col-cards { display: flex; flex-direction: column; gap: 0.55rem; }
-        .sk-kanban-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 0.75rem 0.85rem;
-        }
-        .sk-row { display: flex; gap: 0.35rem; }
-        .sk-footer {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          margin-top: 0.65rem;
-          padding-top: 0.5rem;
-          border-top: 1px solid rgba(45, 58, 79, 0.5);
-        }
-        @media (max-width: 1100px) {
-          .sk-board { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 600px) {
-          .sk-board { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </SkeletonGroup>
   );
 }
 
 function FeedMessageSkeleton() {
   return (
-    <div className="sk-feed-msg">
-      <Skeleton width={48} height={48} circle style={{ flexShrink: 0 }} />
-      <div className="sk-feed-body">
-        <div className="sk-feed-row">
+    <div className="te-msg">
+      <Skeleton width={40} height={40} circle style={{ flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
+        <div className="te-sk-row">
           <Skeleton width={120} height={14} radius={5} />
-          <Skeleton width={72} height={22} radius={6} style={{ marginLeft: "auto" }} />
+          <Skeleton width={90} height={20} radius={999} style={{ marginLeft: "auto" }} />
         </div>
-        <Skeleton width="95%" height={12} radius={4} style={{ marginTop: "0.5rem" }} />
-        <Skeleton width="78%" height={12} radius={4} style={{ marginTop: "0.35rem" }} />
-        <Skeleton width="40%" height={12} radius={4} style={{ marginTop: "0.35rem" }} />
+        <Skeleton width="92%" height={12} radius={4} style={{ marginTop: "0.6rem" }} />
+        <Skeleton width="70%" height={12} radius={4} style={{ marginTop: "0.4rem" }} />
       </div>
     </div>
   );
@@ -149,22 +88,9 @@ function FeedMessageSkeleton() {
 export function FeedPageSkeleton() {
   const { messages: t } = useI18n();
   return (
-    <SkeletonGroup className="sk-feed-wrap" label={t.feed.loadingSkeleton}>
-      <div className="sk-feed-header">
-        <div className="sk-feed-header-main">
-          <Skeleton width={40} height={40} radius={10} />
-          <div style={{ flex: 1 }}>
-            <Skeleton width={160} height={18} radius={6} />
-            <Skeleton width={220} height={12} radius={4} style={{ marginTop: "0.4rem" }} />
-          </div>
-        </div>
-        <div className="sk-feed-stats">
-          <Skeleton width={84} height={52} radius={10} />
-          <Skeleton width={84} height={52} radius={10} />
-        </div>
-      </div>
-      <Skeleton height={44} radius={12} style={{ marginBottom: "1rem" }} />
-      <div className="sk-feed-list">
+    <SkeletonGroup className="te-page te-feed" label={t.feed.loadingSkeleton}>
+      <PageHeadSkeleton />
+      <div className="te-feed__list">
         {Array.from({ length: 4 }).map((_, i) => (
           <FeedMessageSkeleton key={i} />
         ))}
@@ -258,34 +184,19 @@ export function SettingsFormSkeleton({ fields = 3 }: { fields?: number }) {
 
 export function IntegrationsOverviewSkeleton() {
   return (
-    <SkeletonGroup className="sk-int-overview" label="Загрузка интеграций">
-      <Skeleton width={140} height={28} radius={999} style={{ marginBottom: "0.85rem" }} />
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="sk-int-row">
-          <Skeleton width={40} height={40} radius={10} />
-          <div style={{ flex: 1 }}>
-            <Skeleton width={`${40 + (i % 4) * 10}%`} height={14} radius={5} />
-            <Skeleton width="50%" height={10} radius={4} style={{ marginTop: "0.3rem" }} />
+    <SkeletonGroup className="te-stack" label="Загрузка интеграций">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="te-int">
+          <div className="te-int__trigger">
+            <Skeleton width={36} height={36} radius={10} />
+            <div style={{ flex: 1 }}>
+              <Skeleton width={`${30 + (i % 3) * 10}%`} height={14} radius={5} />
+              <Skeleton width="45%" height={10} radius={4} style={{ marginTop: "0.35rem" }} />
+            </div>
+            <Skeleton width={70} height={22} radius={999} />
           </div>
-          <Skeleton width={56} height={22} radius={6} />
         </div>
       ))}
-      <style>{`
-        .sk-int-overview {
-          padding: 1rem;
-          border-radius: 14px;
-          border: 1px solid var(--border);
-          background: var(--surface);
-        }
-        .sk-int-row {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.65rem 0;
-          border-bottom: 1px solid rgba(45, 58, 79, 0.4);
-        }
-        .sk-int-row:last-child { border-bottom: none; }
-      `}</style>
     </SkeletonGroup>
   );
 }

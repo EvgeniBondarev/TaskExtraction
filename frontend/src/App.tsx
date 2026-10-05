@@ -14,7 +14,9 @@ import { fetchGoogleAuthStatus, logoutGoogle, startGoogleLogin } from "./api/aut
 import type { GoogleUser } from "./api/auth";
 import { AppTopBar, NavBadges } from "./components/AppTopBar";
 import { IntegrationsOnboardingPrompt } from "./components/IntegrationsOnboardingPrompt";
-import "./styles/app-shell.css";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
+import "./styles/ui.css";
 import {
   clearIntegrationsPromptPending,
   dismissIntegrationsPrompt,
@@ -528,22 +530,19 @@ export default function App() {
     );
   }
 
-  if (gate === "setup") {
+  if (gate === "setup" || gate === "chats") {
     return (
       <>
         {panelSeo}
-        <div className="center-page">
-          <TelegramSettings onStatusChange={() => { void checkSetup(); }} />
-        </div>
-      </>
-    );
-  }
-
-  if (gate === "chats") {
-    return (
-      <>
-        {panelSeo}
-        <div className="app app--chats">
+        <div className="te-theme te-app">
+          <AppTopBar
+            page="settings"
+            hideNav
+            onNavigate={() => {}}
+            onHome={goHome}
+            user={currentUser}
+            onLogout={() => { void handleGoogleLogout(); }}
+          />
           <TelegramSettings onStatusChange={() => { void checkSetup(); }} />
         </div>
       </>
@@ -553,9 +552,7 @@ export default function App() {
   return (
     <>
       {panelSeo}
-    <div
-      className={`app${page === "settings" ? " app--settings" : ""}${page === "feed" ? " app--feed" : ""}`}
-    >
+    <div className={`te-theme te-app te-app--${page}`}>
       <MessageToasts items={toasts} onDismiss={dismissToast} onOpen={openToast} />
 
       <AppTopBar
@@ -582,14 +579,11 @@ export default function App() {
         />
       ) : loading ? (
         page === "feed" ? (
-          <main className="main-feed">
-            <FeedPageSkeleton />
-          </main>
+          <FeedPageSkeleton />
         ) : (
           <KanbanBoardSkeleton />
         )
       ) : page === "feed" ? (
-        <main className="main-feed">
         <MessageFeed
           messages={messages}
           tasks={tasks}
@@ -599,7 +593,6 @@ export default function App() {
             reloadMessages().catch(() => {});
           }}
         />
-        </main>
       ) : (
         <KanbanBoard
           columns={kanbanColumns}

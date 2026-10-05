@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="64" viewBox="0 0 360 64" fill="none">
   <title>TaskExtraction</title>
   <rect width="64" height="64" rx="16" fill="#18181B"/>
   <path d="M19 15h26a6 6 0 0 1 6 6v16a6 6 0 0 1-6 6H27.5l-8.7 7.1c-.98.8-2.45.1-2.45-1.16V42.6A6 6 0 0 1 13 37V21a6 6 0 0 1 6-6Z" fill="#FAFAF9"/>
   <path d="M23.5 29.5l5.5 5.5 11.5-11.5" stroke="#EA580C" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="80" y="42" fill="#18181B" font-family="Geist, 'Geist Variable', Inter, system-ui, sans-serif" font-size="30" font-weight="650" letter-spacing="-0.8">TaskExtraction</text>
 </svg>

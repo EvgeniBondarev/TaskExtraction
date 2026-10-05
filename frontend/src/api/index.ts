@@ -60,6 +60,7 @@ export interface Message {
   text: string | null;
   created_at: string;
   telegram_link: string | null;
+  chat_id?: string;
   chat_title?: string | null;
   chat_avatar_url?: string | null;
   sender_avatar_url?: string | null;

@@ -1,27 +1,39 @@
+import { ArrowSquareOut, CaretDown, ChatsCircle, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Message, reprocessMessage, Task } from "../api";
-import { useI18n } from "../i18n";
-import { MessageAvatar } from "./MessageAvatar";
 import { ChatItem, chatAvatarUrl } from "../api/chats";
-import { AttachmentList } from "./AttachmentList";
-import { MessageClassificationBadge } from "./MessageClassificationBadge";
-import { JiraLinkIcon } from "./JiraLinkIcon";
-import { GitHubLinkIcon } from "./GitHubLinkIcon";
-import { SlackLinkIcon } from "./SlackLinkIcon";
-import { TrelloLinkIcon } from "./TrelloLinkIcon";
+import { useI18n } from "../i18n";
 import { getMessageGitHubLink, githubLinksByMessageId } from "../utils/githubIntegration";
 import { getMessageJiraLink, jiraLinksByMessageId } from "../utils/jiraIntegration";
 import { getMessageSlackLink, slackLinksByMessageId } from "../utils/slackIntegration";
+import { formatShortTime } from "../utils/time";
 import { getMessageTrelloLink, trelloLinksByMessageId } from "../utils/trelloIntegration";
-import "../styles/feed-page.css";
+import { AttachmentList } from "./AttachmentList";
+import { GitHubLinkIcon } from "./GitHubLinkIcon";
+import { JiraLinkIcon } from "./JiraLinkIcon";
+import { classificationVariant, MessageClassificationBadge } from "./MessageClassificationBadge";
+import { MessageAvatar } from "./MessageAvatar";
+import { SlackLinkIcon } from "./SlackLinkIcon";
+import { TrelloLinkIcon } from "./TrelloLinkIcon";
 
+type FeedFilter = "all" | "tasks" | "candidates" | "other";
+const FILTERS: FeedFilter[] = ["all", "tasks", "candidates", "other"];
+
+/** Ручное создание доступно для любого сообщения, которое модель сочла задачей, но карточки ещё нет
+ * (бэкенд при ручном создании обходит порог уверенности). */
 function canCreateTask(c: Message["classification"]): boolean {
-  if (!c?.is_task || c.task_created) return false;
-  if (c.ai_confidence != null && c.threshold != null) {
-    return c.ai_confidence >= c.threshold;
-  }
+  return Boolean(c?.is_task && !c.task_created);
+}
+
+function matches(m: Message, filter: FeedFilter) {
+  const v = classificationVariant(m.classification);
+  if (filter === "tasks") return v === "created";
+  if (filter === "candidates") return v === "candidate";
+  if (filter === "other") return v === "not_task" || v === "skip";
   return true;
 }
+
+const pct = (n: number | null | undefined) => (n == null ? null : `${Math.round(n * 100)}%`);
 
 export function MessageFeed({
   messages,
@@ -36,30 +48,36 @@ export function MessageFeed({
 }) {
   const { locale, messages: t } = useI18n();
   const f = t.feed;
+  const pf = t.panel.feed;
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [filter, setFilter] = useState("");
-
-  const dateLocale = locale === "en" ? "en-US" : "ru-RU";
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<FeedFilter>("all");
+  const [chatId, setChatId] = useState<string | null>(null);
 
   const jiraByMessage = useMemo(() => jiraLinksByMessageId(tasks), [tasks]);
   const trelloByMessage = useMemo(() => trelloLinksByMessageId(tasks), [tasks]);
   const githubByMessage = useMemo(() => githubLinksByMessageId(tasks), [tasks]);
   const slackByMessage = useMemo(() => slackLinksByMessageId(tasks), [tasks]);
 
-  const q = filter.trim().toLowerCase();
-  const displayed = useMemo(() => {
-    if (!q) return messages;
-    return messages.filter(
-      (m) =>
-        (m.text || "").toLowerCase().includes(q) ||
-        (m.user_display_name || "").toLowerCase().includes(q) ||
-        (m.chat_title || "").toLowerCase().includes(q)
-    );
-  }, [messages, q]);
+  const counts = useMemo(() => {
+    const c: Record<FeedFilter, number> = { all: messages.length, tasks: 0, candidates: 0, other: 0 };
+    for (const m of messages) {
+      for (const k of ["tasks", "candidates", "other"] as const) if (matches(m, k)) c[k] += 1;
+    }
+    return c;
+  }, [messages]);
 
-  const taskCandidates = useMemo(
-    () => displayed.filter((m) => canCreateTask(m.classification)).length,
-    [displayed]
+  const selectedChat = chats.find((c) => c.id === chatId);
+  const q = query.trim().toLowerCase();
+  const displayed = useMemo(
+    () =>
+      messages.filter((m) => {
+        if (!matches(m, filter)) return false;
+        if (selectedChat && (m.chat_id ? m.chat_id !== selectedChat.id : m.chat_title !== selectedChat.title)) return false;
+        if (!q) return true;
+        return [m.text, m.user_display_name, m.chat_title].some((v) => (v || "").toLowerCase().includes(q));
+      }),
+    [messages, filter, selectedChat, q],
   );
 
   const handleCreate = async (messageId: string) => {
@@ -72,241 +90,246 @@ export function MessageFeed({
     }
   };
 
-  const complexityLabel: Record<string, string> = {
-    simple: "простая",
-    medium: "средняя",
-    complex: "сложная",
-  };
+  const filtered = filter !== "all" || q.length > 0 || chatId !== null;
 
   return (
-    <div className="feed-page">
-      <header className="feed-page__header">
-        <div className="feed-page__title">
-          <span className="feed-page__title-icon" aria-hidden>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          <div>
-            <h2>{f.pageTitle}</h2>
-            <p>{f.pageLead}</p>
-          </div>
-        </div>
-
-        <div className="feed-page__stats" aria-label={f.statsAria}>
-          <span className="feed-page__stat">
-            <span className="feed-page__stat-num">{messages.length}</span>
-            <span className="feed-page__stat-label">{f.statMessages}</span>
-          </span>
-          <span
-            className={`feed-page__stat feed-page__stat--accent${
-              taskCandidates === 0 ? " feed-page__stat--muted" : ""
-            }`}
-          >
-            <span className="feed-page__stat-num">{taskCandidates}</span>
-            <span className="feed-page__stat-label">{f.statCandidates}</span>
-          </span>
+    <main className="te-page te-feed">
+      <header className="te-page__head">
+        <div>
+          <h1>{f.pageTitle}</h1>
+          <p>{f.pageLead}</p>
         </div>
       </header>
 
-      {chats.length > 0 && (
-        <section className="feed-page__chats" aria-label={f.connectedChats}>
-          <div className="feed-page__chats-copy">
-            <strong>{f.connectedChats}</strong>
-            <span>{f.connectedChatsHint}</span>
-          </div>
-          <div className="feed-page__chat-list">
-            {chats.map((chat) => (
-              <div className="feed-page__chat" key={chat.id}>
-                <MessageAvatar
-                  chatUrl={chat.has_photo ? chatAvatarUrl(chat.id) : undefined}
-                  name={chat.title}
-                  size={36}
-                />
-                <span>{chat.title || `Chat ${chat.telegram_chat_id}`}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <div className="feed-page__toolbar">
-        <div className="feed-page__search">
-          <span className="feed-page__search-icon" aria-hidden>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-              <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </span>
+      <div className="te-toolbar">
+        <label className="te-search">
+          <MagnifyingGlass size={18} aria-hidden />
           <input
             type="search"
             placeholder={f.searchPlaceholder}
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             aria-label={f.searchAria}
           />
-          {filter && (
-            <button
-              type="button"
-              className="feed-page__search-clear"
-              onClick={() => setFilter("")}
-              aria-label={f.searchClear}
-            >
-              ×
+          {query && (
+            <button type="button" className="te-search__clear" onClick={() => setQuery("")} aria-label={f.searchClear}>
+              <X size={14} weight="bold" />
             </button>
           )}
+        </label>
+        <div className="te-chips" role="group" aria-label={pf.filtersAria}>
+          {FILTERS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className={`te-chip${filter === id ? " is-active" : ""}`}
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
+            >
+              {pf.filters[id]}
+              <span className="te-chip__count">{counts[id]}</span>
+            </button>
+          ))}
         </div>
-        <p className={`feed-page__search-meta${filter ? " is-visible" : ""}`} aria-live="polite">
-          {filter
-            ? f.searchMeta
-                .replace("{shown}", String(displayed.length))
-                .replace("{total}", String(messages.length))
-            : "\u00a0"}
-        </p>
       </div>
 
-      <div className="feed-page__list">
+      {chats.length > 0 && (
+        <div className="te-feed__chats" role="group" aria-label={f.connectedChats}>
+          <span className="te-feed__chats-label">{f.connectedChats}</span>
+          {chats.map((chat) => (
+            <button
+              key={chat.id}
+              type="button"
+              className={`te-chat-chip${chatId === chat.id ? " is-active" : ""}`}
+              aria-pressed={chatId === chat.id}
+              onClick={() => setChatId((cur) => (cur === chat.id ? null : chat.id))}
+            >
+              <MessageAvatar chatUrl={chat.has_photo ? chatAvatarUrl(chat.id) : undefined} name={chat.title} size={22} />
+              <span>{chat.title || `Chat ${chat.telegram_chat_id}`}</span>
+              {chatId === chat.id && <X size={12} weight="bold" aria-hidden />}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered && displayed.length > 0 && (
+        <p className="te-feed__meta" aria-live="polite">
+          {f.searchMeta.replace("{shown}", String(displayed.length)).replace("{total}", String(messages.length))}
+        </p>
+      )}
+
+      <div className="te-feed__list">
         {displayed.length === 0 ? (
-          <div className="feed-page__empty" role="status">
-            <div className="feed-page__empty-icon" aria-hidden />
+          <div className="te-empty" role="status">
+            <ChatsCircle size={32} aria-hidden />
             <strong>{messages.length === 0 ? f.emptyNoMessages : f.emptyNoResults}</strong>
             <p>
               {messages.length === 0
                 ? f.emptyNoMessagesHint
-                : f.emptyNoResultsHint.replace("{query}", filter)}
+                : q
+                  ? f.emptyNoResultsHint.replace("{query}", query)
+                  : t.panel.board.emptyFiltered}
             </p>
+            {filtered && messages.length > 0 && (
+              <button
+                type="button"
+                className="te-btn te-btn--ghost te-btn--sm"
+                onClick={() => {
+                  setFilter("all");
+                  setQuery("");
+                  setChatId(null);
+                }}
+              >
+                {t.panel.board.resetFilters}
+              </button>
+            )}
           </div>
         ) : (
-          displayed.map((m, index) => {
-            const jiraLink = getMessageJiraLink(m, jiraByMessage);
-            const trelloLink = getMessageTrelloLink(m, trelloByMessage);
-            const githubLink = getMessageGitHubLink(m, githubByMessage);
-            const slackLink = getMessageSlackLink(m, slackByMessage);
+          displayed.map((m) => {
+            const jira = getMessageJiraLink(m, jiraByMessage);
+            const trello = getMessageTrelloLink(m, trelloByMessage);
+            const github = getMessageGitHubLink(m, githubByMessage);
+            const slack = getMessageSlackLink(m, slackByMessage);
             const showCreate = canCreateTask(m.classification);
-            const isFirst = index === 0;
-            const hasIntegrations = Boolean(jiraLink || trelloLink || githubLink || slackLink);
+            const c = m.classification;
+            const d = c?.decision;
+            const variant = classificationVariant(c);
+            const hasDetails = Boolean(c && (c.reason || c.prefilter_reason || c.confidence != null || d));
 
             return (
-              <article
-                key={m.id}
-                className={`feed-msg${showCreate ? " feed-msg--actionable" : ""}${
-                  isFirst ? " feed-msg--latest" : ""
-                }`}
-              >
-                <div className="feed-msg__top">
-                  <div className="feed-msg__avatar">
-                    <MessageAvatar
-                      senderUrl={m.sender_avatar_url}
-                      chatUrl={m.chat_avatar_url}
-                      name={m.user_display_name || m.chat_title}
-                      size={48}
-                    />
+              <article key={m.id} className={`te-msg te-msg--${variant}`}>
+                <MessageAvatar
+                  senderUrl={m.sender_avatar_url}
+                  chatUrl={m.chat_avatar_url}
+                  name={m.user_display_name || m.chat_title}
+                  size={40}
+                />
+                <div className="te-msg__main">
+                  <div className="te-msg__head">
+                    <strong>{m.user_display_name || f.unknownUser}</strong>
+                    {m.chat_title && <span className="te-msg__chat">{m.chat_title}</span>}
+                    <time dateTime={m.created_at}>{formatShortTime(m.created_at, locale)}</time>
+                    <MessageClassificationBadge classification={c} />
                   </div>
-                  <div className="feed-msg__head">
-                    <div className="feed-msg__author-row">
-                      <strong>{m.user_display_name || f.unknownUser}</strong>
-                      {isFirst && !filter && <span className="feed-msg__new-pill">{f.newPill}</span>}
+
+                  {m.text ? (
+                    <p className="te-msg__text">{m.text}</p>
+                  ) : (
+                    !m.attachments?.length && <p className="te-msg__text is-muted">{f.mediaNoText}</p>
+                  )}
+
+                  {m.attachments && m.attachments.length > 0 && (
+                    <div className="te-msg__media">
+                      <AttachmentList attachments={m.attachments} compact />
                     </div>
-                    {m.chat_title && <span className="feed-msg__chat">{m.chat_title}</span>}
-                    <time className="feed-msg__time" dateTime={m.created_at}>
-                      {new Date(m.created_at).toLocaleString(dateLocale, {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </time>
-                  </div>
-                  <div className="feed-msg__badge-col">
-                    <MessageClassificationBadge classification={m.classification} />
-                  </div>
-                </div>
+                  )}
 
-                {(m.text || (!m.attachments?.length && !m.text)) && (
-                  <div className="feed-msg__body">
-                    {m.text ? (
-                      <p className="feed-msg__text">{m.text}</p>
-                    ) : (
-                      <p className="feed-msg__text feed-msg__text--placeholder">{f.mediaNoText}</p>
-                    )}
-                  </div>
-                )}
-
-                {m.classification?.decision && (() => {
-                  const d = m.classification.decision;
-                  return (
-                    <details className="feed-msg__decision">
-                      <summary>Результат анализа Jev</summary>
-                      <div className="feed-msg__decision-grid">
-                        <span>Задача <b>{Math.round(d.is_task_probability * 100)}%</b></span>
-                        <span>Тип <b>{d.task_type}</b></span>
-                        <span>Приоритет <b>{d.priority}</b></span>
-                        <span>Сложность <b>{complexityLabel[d.complexity] || d.complexity}</b></span>
-                        <span>Срочность <b>{d.urgency_score.toFixed(1)} / 2</b></span>
-                        <span>Влияние <b>{d.impact_score.toFixed(1)} / 2</b></span>
-                        <span>Дедлайн <b>{Math.round(d.has_deadline_probability * 100)}%</b></span>
-                        <span>Несколько задач <b>{d.task_count === "multiple" ? "да" : "нет"}</b></span>
-                      </div>
-                      <p>
-                        Уверенность: тип {Math.round(d.task_type_confidence * 100)}%, приоритет {Math.round(d.priority_confidence * 100)}%, сложность {Math.round(d.complexity_confidence * 100)}% · {d.latency_ms} мс
-                        {d.cost_usd != null ? ` · $${d.cost_usd.toFixed(6)}` : ""}
-                      </p>
-                      {m.classification.requires_review && <p className="feed-msg__decision-review">Нужна ручная проверка перед автосозданием.</p>}
+                  {hasDetails && c && (
+                    <details className="te-why">
+                      <summary>
+                        {pf.details}
+                        <CaretDown size={12} weight="bold" aria-hidden />
+                      </summary>
+                      <dl className="te-why__grid">
+                        {c.confidence != null && (
+                          <div>
+                            <dt>{pf.score}</dt>
+                            <dd>{pct(c.confidence)}</dd>
+                          </div>
+                        )}
+                        {c.threshold != null && (
+                          <div>
+                            <dt>{pf.threshold}</dt>
+                            <dd>{pct(c.threshold)}</dd>
+                          </div>
+                        )}
+                        {d && (
+                          <>
+                            <div>
+                              <dt>{pf.decision.probability}</dt>
+                              <dd>{pct(d.is_task_probability)}</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.type}</dt>
+                              <dd>{d.task_type}</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.priority}</dt>
+                              <dd>{d.priority}</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.complexity}</dt>
+                              <dd>{pf.decision.complexityLabels[d.complexity] ?? d.complexity}</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.urgency}</dt>
+                              <dd>{d.urgency_score.toFixed(1)} / 2</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.impact}</dt>
+                              <dd>{d.impact_score.toFixed(1)} / 2</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.deadline}</dt>
+                              <dd>{pct(d.has_deadline_probability)}</dd>
+                            </div>
+                            <div>
+                              <dt>{pf.decision.multiple}</dt>
+                              <dd>{d.task_count === "multiple" ? pf.decision.yes : pf.decision.no}</dd>
+                            </div>
+                          </>
+                        )}
+                      </dl>
+                      {c.reason && (
+                        <p>
+                          <b>{pf.reason}:</b> {c.reason}
+                        </p>
+                      )}
+                      {c.prefilter_reason && (
+                        <p>
+                          <b>{pf.filter}:</b> {c.prefilter_reason}
+                        </p>
+                      )}
+                      {c.is_task && !c.task_created && c.skip_reason === "ai_below_threshold" && <p>{pf.belowThreshold}</p>}
+                      {c.requires_review && <p className="te-why__warn">{pf.needsReview}</p>}
                     </details>
-                  );
-                })()}
+                  )}
 
-                {m.attachments && m.attachments.length > 0 && (
-                  <div className="feed-msg__attachments">
-                    <AttachmentList attachments={m.attachments} compact />
-                  </div>
-                )}
-
-                <footer className="feed-msg__footer">
-                  <div className="feed-msg__integrations">
-                    {hasIntegrations && (
-                      <>
-                        {jiraLink && <JiraLinkIcon link={jiraLink} />}
-                        {trelloLink && <TrelloLinkIcon link={trelloLink} />}
-                        {githubLink && <GitHubLinkIcon link={githubLink} />}
-                        {slackLink && <SlackLinkIcon link={slackLink} />}
-                      </>
-                    )}
-                  </div>
-                  <div className="feed-msg__actions">
-                    {m.telegram_link && (
-                      <a
-                        className="feed-msg__btn-outline"
-                        href={m.telegram_link}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {f.openTelegram}
-                      </a>
-                    )}
-                    {showCreate && (
-                      <button
-                        type="button"
-                        className="feed-msg__btn-primary"
-                        disabled={busyId === m.id}
-                        onClick={() => handleCreate(m.id)}
-                      >
-                        {busyId === m.id ? f.creatingTask : f.createTask}
-                      </button>
-                    )}
-                  </div>
-                </footer>
+                  {(m.telegram_link || showCreate || jira || trello || github || slack) && (
+                    <footer className="te-msg__foot">
+                      {(jira || trello || github || slack) && (
+                        <span className="te-msg__links">
+                          {jira && <JiraLinkIcon link={jira} size={16} />}
+                          {trello && <TrelloLinkIcon link={trello} size={16} />}
+                          {github && <GitHubLinkIcon link={github} size={16} />}
+                          {slack && <SlackLinkIcon link={slack} size={16} />}
+                        </span>
+                      )}
+                      {m.telegram_link && (
+                        <a className="te-btn te-btn--quiet te-btn--sm" href={m.telegram_link} target="_blank" rel="noreferrer">
+                          {f.openTelegram}
+                          <ArrowSquareOut size={14} aria-hidden />
+                        </a>
+                      )}
+                      {showCreate && (
+                        <button
+                          type="button"
+                          className="te-btn te-btn--primary te-btn--sm"
+                          disabled={busyId === m.id}
+                          onClick={() => handleCreate(m.id)}
+                        >
+                          <Plus size={14} weight="bold" aria-hidden />
+                          {busyId === m.id ? f.creatingTask : f.createTask}
+                        </button>
+                      )}
+                    </footer>
+                  )}
+                </div>
               </article>
             );
           })
         )}
       </div>
-    </div>
+    </main>
   );
 }

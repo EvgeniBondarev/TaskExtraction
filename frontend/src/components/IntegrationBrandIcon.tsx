@@ -22,9 +22,9 @@ const META: Record<
   },
   github: {
     label: "GitHub",
-    color: "#e6edf3",
-    bg: "rgba(230, 237, 243, 0.08)",
-    border: "rgba(230, 237, 243, 0.2)",
+    color: "var(--text, #18181b)",
+    bg: "var(--surface, #fdfdfc)",
+    border: "var(--border, #dfdfdb)",
   },
   slack: {
     label: "Slack",

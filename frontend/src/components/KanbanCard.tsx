@@ -1,187 +1,122 @@
+import { ArrowRight, Paperclip } from "@phosphor-icons/react";
 import { Task } from "../api";
-import { MessageAvatar } from "./MessageAvatar";
-import { JiraLinkIcon } from "./JiraLinkIcon";
-import { GitHubLinkIcon } from "./GitHubLinkIcon";
-import { SlackLinkIcon } from "./SlackLinkIcon";
-import { TrelloLinkIcon } from "./TrelloLinkIcon";
+import { useI18n } from "../i18n";
 import { getTaskGitHubLink } from "../utils/githubIntegration";
 import { getTaskJiraLink } from "../utils/jiraIntegration";
 import { getTaskSlackLink } from "../utils/slackIntegration";
 import { getTaskTrelloLink } from "../utils/trelloIntegration";
-import { hasAttachments, PRIORITY_LABELS, STATUS_COLORS, TYPE_LABELS } from "../utils/taskStatus";
+import { hasAttachments, nextStatus } from "../utils/taskStatus";
+import { formatShortTime } from "../utils/time";
+import { GitHubLinkIcon } from "./GitHubLinkIcon";
+import { JiraLinkIcon } from "./JiraLinkIcon";
+import { MessageAvatar } from "./MessageAvatar";
+import { SlackLinkIcon } from "./SlackLinkIcon";
+import { TrelloLinkIcon } from "./TrelloLinkIcon";
 
 interface Props {
   task: Task;
   onClick: () => void;
   onDragStart: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onMove?: (status: string) => void;
 }
 
-export function KanbanCard({
-  task,
-  onClick,
-  onDragStart,
-}: Props) {
-  const jiraLinkRaw = getTaskJiraLink(task);
-  const trelloLinkRaw = getTaskTrelloLink(task);
-  const githubLinkRaw = getTaskGitHubLink(task);
-  const slackLinkRaw = getTaskSlackLink(task);
-  // Показываем иконки по факту external_links на задаче (не зависим от статуса API интеграции)
-  const jiraLink = jiraLinkRaw;
-  const trelloLink = trelloLinkRaw;
-  const githubLink = githubLinkRaw;
-  const slackLink = slackLinkRaw;
-  const accent = STATUS_COLORS[task.status] || STATUS_COLORS.inbox;
-  const imageAtt = task.attachments?.find((a) => a.is_image && a.download_url);
+export function KanbanCard({ task, onClick, onDragStart, onDragEnd, onMove }: Props) {
+  const { locale, messages } = useI18n();
+  const p = messages.panel;
+  const labels = p.labels;
+  const jira = getTaskJiraLink(task);
+  const trello = getTaskTrelloLink(task);
+  const github = getTaskGitHubLink(task);
+  const slack = getTaskSlackLink(task);
+  const image = task.attachments?.find((a) => a.is_image && a.download_url);
+  const next = task.status === "archive" ? null : nextStatus(task.status);
+  const nextLabel = next ? labels.status[next as keyof typeof labels.status] : "";
+  const typeLabel = labels.type[task.type as keyof typeof labels.type] ?? task.type;
+  const priorityLabel = labels.priority[task.priority as keyof typeof labels.priority] ?? task.priority;
+  const when = formatShortTime(task.source_created_at || task.created_at, locale);
 
   return (
     <article
-      className={`kanban-card status-${task.status}`}
-      style={{ "--card-accent": accent } as React.CSSProperties}
-      onClick={onClick}
+      className={`te-card te-card--${task.status}`}
       draggable
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={task.title}
     >
-      <div className="card-top">
-        <span className={`pill type-${task.type}`}>{TYPE_LABELS[task.type] || task.type}</span>
-        <span className={`pill priority-${task.priority}`}>
-          {PRIORITY_LABELS[task.priority] || task.priority}
+      <div className="te-card__tags">
+        <span className={`te-prio te-prio--${task.priority}`} title={`${p.task.priority}: ${priorityLabel}`}>
+          <span className="te-prio__bars" aria-hidden>
+            <i />
+            <i />
+            <i />
+          </span>
+          {priorityLabel}
         </span>
-        <span className="card-integrations">
-          {jiraLink && <JiraLinkIcon link={jiraLink} className="card-jira" />}
-          {trelloLink && <TrelloLinkIcon link={trelloLink} className="card-trello" />}
-          {githubLink && <GitHubLinkIcon link={githubLink} className="card-github" />}
-          {slackLink && <SlackLinkIcon link={slackLink} className="card-slack" />}
-        </span>
+        <span className={`te-tag te-tag--${task.type}`}>{typeLabel}</span>
+        {(jira || trello || github || slack) && (
+          <span className="te-card__links">
+            {jira && <JiraLinkIcon link={jira} size={16} />}
+            {trello && <TrelloLinkIcon link={trello} size={16} />}
+            {github && <GitHubLinkIcon link={github} size={16} />}
+            {slack && <SlackLinkIcon link={slack} size={16} />}
+          </span>
+        )}
       </div>
 
-      <h3 className="card-title">{task.title}</h3>
+      <h3 className="te-card__title">{task.title}</h3>
+      {task.description && task.description.trim() !== task.title.trim() && (
+        <p className="te-card__desc">{task.description}</p>
+      )}
 
-      {task.description && <p className="card-desc">{task.description.slice(0, 120)}</p>}
-
-      {imageAtt && (
-        <div className="card-thumb">
-          <img
-            src={`${import.meta.env.VITE_API_URL || ""}${imageAtt.download_url}`}
-            alt=""
-            loading="lazy"
-          />
+      {image && (
+        <div className="te-card__thumb">
+          <img src={`${import.meta.env.VITE_API_URL || ""}${image.download_url}`} alt="" loading="lazy" />
         </div>
       )}
 
-      <footer className="card-footer">
+      <footer className="te-card__foot">
         <MessageAvatar
           senderUrl={task.source_sender_avatar_url}
           chatUrl={task.source_is_group ? task.source_chat_avatar_url : null}
           name={task.source_user_display_name || task.source_chat_title}
-          size={28}
+          size={24}
         />
-        <div className="card-meta">
-          <span className="author">{task.source_user_display_name || "Telegram"}</span>
+        <span className="te-card__who">
+          <span className="te-card__author">{task.source_user_display_name || "Telegram"}</span>
           {task.source_is_group && task.source_chat_title && (
-            <span className="chat">{task.source_chat_title}</span>
+            <span className="te-card__chat">{task.source_chat_title}</span>
           )}
-        </div>
-        {hasAttachments(task) && <span className="att-icon" title="Есть вложения">📎</span>}
+        </span>
+        {hasAttachments(task) && (
+          <Paperclip size={15} className="te-card__clip" aria-label={p.board.attachments} />
+        )}
+        {when && <time className="te-card__time">{when}</time>}
+        {next && onMove && (
+          <button
+            type="button"
+            className="te-card__move"
+            title={p.board.moveTo.replace("{status}", nextLabel)}
+            aria-label={p.board.moveTo.replace("{status}", nextLabel)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMove(next);
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <ArrowRight size={14} weight="bold" />
+          </button>
+        )}
       </footer>
-
-      <style>{`
-        .kanban-card {
-          --card-accent: #6366f1;
-          position: relative;
-          background: linear-gradient(145deg, #1e293b 0%, #172033 100%);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 12px;
-          padding: 0.75rem 0.85rem 0.7rem;
-          cursor: grab;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-          transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
-        }
-        .kanban-card::before {
-          content: "";
-          position: absolute;
-          left: 0; top: 10px; bottom: 10px;
-          width: 3px;
-          border-radius: 0 3px 3px 0;
-          background: var(--card-accent);
-        }
-        .kanban-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-          border-color: color-mix(in srgb, var(--card-accent) 45%, transparent);
-        }
-        .kanban-card:active { cursor: grabbing; }
-        .kanban-card.status-inbox { background: linear-gradient(145deg, #1a1f3a 0%, #151c2e 100%); }
-        .kanban-card.status-in_progress { background: linear-gradient(145deg, #2a2218 0%, #1c1810 100%); }
-        .kanban-card.status-done { background: linear-gradient(145deg, #14261c 0%, #121c16 100%); }
-        .kanban-card.status-archive { opacity: 0.85; }
-        .card-top {
-          display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;
-          margin-bottom: 0.45rem;
-        }
-        .card-integrations { margin-left: auto; display: flex; gap: 0.3rem; }
-        .pill {
-          font-size: 0.62rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
-          padding: 0.15rem 0.4rem;
-          border-radius: 5px;
-          background: rgba(255,255,255,0.06);
-          color: var(--muted);
-        }
-        .pill.type-bug { color: #fca5a5; background: rgba(248,113,113,0.12); }
-        .pill.type-feature { color: #93c5fd; background: rgba(59,130,246,0.12); }
-        .pill.priority-high { color: #fdba74; background: rgba(251,146,60,0.12); }
-        .card-title {
-          margin: 0 0 0.35rem;
-          font-size: 0.92rem;
-          font-weight: 600;
-          line-height: 1.35;
-          color: #f1f5f9;
-        }
-        .card-desc {
-          margin: 0 0 0.5rem;
-          font-size: 0.78rem;
-          color: var(--muted);
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .card-thumb {
-          margin: 0.35rem 0 0.5rem;
-          border-radius: 8px;
-          overflow: hidden;
-          border: 1px solid var(--border);
-        }
-        .card-thumb img { display: block; width: 100%; max-height: 88px; object-fit: cover; }
-        .card-footer {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          margin-top: 0.5rem;
-          padding-top: 0.45rem;
-          border-top: 1px solid rgba(255,255,255,0.05);
-        }
-        .card-meta { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-        .author {
-          font-size: 0.72rem;
-          font-weight: 500;
-          color: #cbd5e1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .chat {
-          font-size: 0.68rem;
-          color: var(--accent);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .att-icon { font-size: 0.8rem; opacity: 0.7; flex-shrink: 0; }
-      `}</style>
     </article>
   );
 }

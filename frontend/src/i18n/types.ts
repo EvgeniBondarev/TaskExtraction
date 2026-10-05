@@ -6,6 +6,7 @@ export type FaqItem = {
 };
 
 import type { landingRu } from "./locales/landing.ru";
+import type { panelRu } from "./locales/panel.ru";
 import type { settingsEn } from "./locales/settings.en";
 
 type DeepString<T> = T extends string
@@ -30,6 +31,8 @@ export type PlaygroundMessage = {
   priority?: string;
   due?: string;
 };
+
+export type PanelMessages = DeepString<typeof panelRu>;
 
 type LandingCopy = DeepString<typeof landingRu>;
 
@@ -80,6 +83,7 @@ export type Messages = {
     feedNew: string;
   };
   landing: LandingMessages;
+  panel: PanelMessages;
   faq: { items: FaqItem[] };
   app: {
     chatsTitle: string;

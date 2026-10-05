@@ -1,4 +1,6 @@
+import { ArrowSquareOut, Briefcase, ChatCircleDots, Lightbulb, UsersThree } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { apiFetch } from "../api/http";
 import {
   fetchTelegramConnections,
   fetchTelegramPreferences,
@@ -6,15 +8,18 @@ import {
   telegramGroupAvatarUrl,
   updateTelegramPreferences,
 } from "../api/telegram";
-import { apiFetch } from "../api/http";
-import type { TelegramConnections, TelegramSources } from "../api/telegram";
+import type { TelegramConnections, TelegramSources as Sources } from "../api/telegram";
+import { useI18n } from "../i18n";
+import { SettingsFormSkeleton } from "./PageSkeletons";
 
 export function TelegramSources() {
-  const [sources, setSources] = useState<TelegramSources | null>(null);
+  const { messages } = useI18n();
+  const t = messages.panel.settings.telegram;
+  const [sources, setSources] = useState<Sources | null>(null);
   const [links, setLinks] = useState<{ group: string; business: string } | null>(null);
   const [connections, setConnections] = useState<TelegramConnections | null>(null);
-  const [statusNotificationsEnabled, setStatusNotificationsEnabled] = useState(true);
-  const [savingNotifications, setSavingNotifications] = useState(false);
+  const [repliesOn, setRepliesOn] = useState(true);
+  const [savingReplies, setSavingReplies] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -26,106 +31,164 @@ export function TelegramSources() {
         if (!response.ok) throw new Error();
         return response.json() as Promise<{ group: string; business: string }>;
       }),
-    ]).then(([source, connected, preferences, connectLinks]) => {
-      setSources(source);
-      setConnections(connected);
-      setStatusNotificationsEnabled(preferences.status_notifications_enabled);
-      setLinks(connectLinks);
-    }).catch(() => setError("Не удалось загрузить настройки Telegram."));
-  }, []);
+    ])
+      .then(([source, connected, preferences, connectLinks]) => {
+        setSources(source);
+        setConnections(connected);
+        setRepliesOn(preferences.status_notifications_enabled);
+        setLinks(connectLinks);
+      })
+      .catch(() => setError(t.loadError));
+  }, [t.loadError]);
 
-  if (error) return <p className="wizard-error">{error}</p>;
-  if (!sources) return <p className="settings-toast">Загружаем подключение Telegram…</p>;
+  if (error && !sources) return <p className="te-alert te-alert--error">{error}</p>;
+  if (!sources) return <SettingsFormSkeleton fields={3} />;
 
-  async function toggleStatusNotifications(enabled: boolean) {
-    const previous = statusNotificationsEnabled;
-    setStatusNotificationsEnabled(enabled);
-    setSavingNotifications(true);
+  const bot = sources.bot_username || "bot";
+  const groups = connections?.groups ?? [];
+
+  async function toggleReplies(enabled: boolean) {
+    const previous = repliesOn;
+    setRepliesOn(enabled);
+    setSavingReplies(true);
+    setError("");
     try {
       const preferences = await updateTelegramPreferences(enabled);
-      setStatusNotificationsEnabled(preferences.status_notifications_enabled);
+      setRepliesOn(preferences.status_notifications_enabled);
     } catch {
-      setStatusNotificationsEnabled(previous);
-      setError("Не удалось сохранить настройку ответов бота.");
+      setRepliesOn(previous);
+      setError(t.saveError);
     } finally {
-      setSavingNotifications(false);
+      setSavingReplies(false);
     }
   }
 
   return (
-    <div className="tg-wizard">
-      <section className="wizard-panel">
-        <header className="panel-head">
-          <span className="panel-step">Шаг 1 · Рекомендуется</span>
-          <h3>Подключить рабочую группу</h3>
-          <p>Бот получает сообщения только из групп, в которые его добавили. QR-код, номер телефона и доступ к личному аккаунту не требуются.</p>
+    <div className="te-stack">
+      {error && <p className="te-alert te-alert--error">{error}</p>}
+
+      <section className="te-panel">
+        <header className="te-panel__head">
+          <span className="te-panel__icon" aria-hidden>
+            <UsersThree size={22} />
+          </span>
+          <div>
+            <h3>{t.groupTitle}</h3>
+            <p>{t.groupLead}</p>
+          </div>
         </header>
+
         {sources.bot_configured ? (
           <>
-            <p className="wizard-info">Бот @{sources.bot_username} готов к подключению.</p>
-            {links?.group && <a className="btn-primary" href={links.group}>Добавить бота в группу</a>}
-            <ol className="wizard-mini-steps">
-              <li>Выберите рабочую группу в Telegram.</li>
-              <li>Добавьте бота и отключите Privacy Mode через BotFather, либо выдайте боту права администратора.</li>
-              <li>Новые сообщения появятся в ленте автоматически.</li>
+            <ol className="te-steps">
+              {t.groupSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
             </ol>
-            {connections && connections.groups.length > 0 && (
-              <div className="wizard-info">
-                <strong>Подключённые группы:</strong>
-                <ul>
-                  {connections.groups.map((group) => (
-                    <li className="telegram-connected-group" key={group.source_id}>
+            <div className="te-panel__actions">
+              {links?.group && (
+                <a className="te-btn te-btn--primary" href={links.group}>
+                  {t.addToGroup}
+                  <ArrowSquareOut size={16} aria-hidden />
+                </a>
+              )}
+              <span className="te-muted">{t.botReady.replace("{bot}", bot)}</span>
+            </div>
+
+            <div className="te-example">
+              <Lightbulb size={18} weight="fill" aria-hidden />
+              <div>
+                <strong>{t.exampleTitle}</strong>
+                <p>{t.exampleText}</p>
+              </div>
+            </div>
+
+            <div className="te-subsection">
+              <h4>
+                {t.connectedGroups}
+                <span className="te-count">{groups.length}</span>
+              </h4>
+              {groups.length === 0 ? (
+                <p className="te-muted">{t.noGroups}</p>
+              ) : (
+                <ul className="te-groups">
+                  {groups.map((group) => (
+                    <li key={group.source_id}>
                       {group.has_avatar ? (
                         <img src={telegramGroupAvatarUrl(group.source_id)} alt="" />
                       ) : (
-                        <span className="telegram-group-placeholder" aria-hidden="true">
-                          {(group.title || "Г").slice(0, 1).toUpperCase()}
+                        <span className="te-groups__ph" aria-hidden>
+                          {(group.title || "G").slice(0, 1).toUpperCase()}
                         </span>
                       )}
-                      <span>{group.title || "Группа Telegram"}</span>
+                      <span>{group.title || t.groupFallback}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
+              )}
+            </div>
           </>
         ) : (
-          <p className="wizard-error">Задайте TELEGRAM_BOT_TOKEN и TELEGRAM_BOT_USERNAME в .env, затем перезапустите API.</p>
+          <p className="te-alert te-alert--warn">{t.botMissing}</p>
         )}
       </section>
 
-      <section className="wizard-panel">
-        <header className="panel-head">
-          <span className="panel-step">Шаг 2 · Для личных диалогов</span>
-          <h3>Подключить Telegram Business</h3>
-          <p>Подключите этого же бота в настройках Telegram Business и разрешите нужные чаты. Telegram передаст только сообщения разрешённых диалогов.</p>
+      <section className="te-panel">
+        <header className="te-panel__head">
+          <span className="te-panel__icon" aria-hidden>
+            <Briefcase size={22} />
+          </span>
+          <div>
+            <h3>{t.businessTitle}</h3>
+            <p>{t.businessLead}</p>
+          </div>
         </header>
-        <p>Сначала <a href={links?.business}>свяжите Business-аккаунт с рабочей областью</a>, затем в Telegram откройте <strong>Настройки → Telegram Business → Чат-боты</strong>.</p>
-        <ol className="wizard-mini-steps">
-          <li>Нажмите <strong>Добавить чат-бота</strong> и выберите @{sources.bot_username}.</li>
-          <li>Для первого теста разрешите <strong>существующие чаты</strong>, <strong>новые чаты</strong> и <strong>не контакты</strong>.</li>
-          <li>Добавьте исключения для личных диалогов, если это необходимо.</li>
-          <li>Разрешите чтение сообщений и ответы от вашего имени, затем сохраните.</li>
+        <ol className="te-steps">
+          {t.businessSteps.map((step) => (
+            <li key={step}>{step.replace("{bot}", bot)}</li>
+          ))}
         </ol>
-        <p>Сообщения из Business Connection автоматически попадут в ленту и канбан.</p>
+        {links?.business && (
+          <div className="te-panel__actions">
+            <a className="te-btn te-btn--ghost" href={links.business}>
+              {t.businessLink}
+              <ArrowSquareOut size={16} aria-hidden />
+            </a>
+          </div>
+        )}
       </section>
 
-      <section className="wizard-panel telegram-notifications-panel">
-        <header className="panel-head">
-          <span className="panel-step">Ответы бота</span>
-          <h3>Уведомления о статусе задач</h3>
-          <p>Когда задача перемещается на доске, бот отвечает на исходное сообщение в Telegram: «В работе», «Выполнено» или «Возвращено».</p>
+      <section className="te-panel">
+        <header className="te-panel__head">
+          <span className="te-panel__icon" aria-hidden>
+            <ChatCircleDots size={22} />
+          </span>
+          <div>
+            <h3>{t.repliesTitle}</h3>
+            <p>{t.repliesLead}</p>
+          </div>
         </header>
-        <label className="telegram-setting-toggle">
-          <input
-            type="checkbox"
-            checked={statusNotificationsEnabled}
-            disabled={savingNotifications}
-            onChange={(event) => void toggleStatusNotifications(event.target.checked)}
-          />
-          <span aria-hidden="true" className="telegram-setting-toggle__track" />
-          <span>{statusNotificationsEnabled ? "Отправлять ответы в Telegram" : "Ответы в Telegram отключены"}</span>
-        </label>
+        <div className="te-replies-row">
+          <label className="te-switch">
+            <input
+              type="checkbox"
+              checked={repliesOn}
+              disabled={savingReplies}
+              onChange={(e) => void toggleReplies(e.target.checked)}
+            />
+            <span className="te-switch__track" aria-hidden />
+            <span>{repliesOn ? t.repliesOn : t.repliesOff}</span>
+          </label>
+          <div className={`te-bot-preview${repliesOn ? "" : " is-off"}`} aria-label={t.repliesPreview}>
+            <small>{t.repliesPreview}</small>
+            {t.repliesSample.map((line) => (
+              <span key={line} className="te-bot-preview__bubble">
+                <b>@{bot}</b>
+                {line}
+              </span>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   );

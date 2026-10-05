@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { MagnifyingGlass, Tray, X } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
 import { Task } from "../api";
+import { useI18n } from "../i18n";
+import { hasAttachments } from "../utils/taskStatus";
 import { KanbanCard } from "./KanbanCard";
-import { STATUS_COLORS } from "../utils/taskStatus";
 
 interface Column {
   id: string;
   label: string;
-  color: string;
+  color?: string;
 }
 
 interface Props {
@@ -16,135 +18,178 @@ interface Props {
   onStatusChange: (task: Task, status: string) => void;
 }
 
-export function KanbanBoard({
-  columns,
-  tasks,
-  onSelect,
-  onStatusChange,
-}: Props) {
+type QuickFilter = "all" | "high" | "bug" | "feature" | "media";
+const FILTERS: QuickFilter[] = ["all", "high", "bug", "feature", "media"];
+
+function matchesFilter(task: Task, filter: QuickFilter) {
+  if (filter === "high") return task.priority === "high";
+  if (filter === "bug") return task.type === "bug";
+  if (filter === "feature") return task.type === "feature";
+  if (filter === "media") return hasAttachments(task);
+  return true;
+}
+
+export function KanbanBoard({ columns, tasks, onSelect, onStatusChange }: Props) {
+  const { messages } = useI18n();
+  const p = messages.panel;
+  const b = p.board;
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<QuickFilter>("all");
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const q = query.trim().toLowerCase();
+  const visible = useMemo(
+    () =>
+      tasks.filter((t) => {
+        if (!matchesFilter(t, filter)) return false;
+        if (!q) return true;
+        return [t.title, t.description, t.source_user_display_name, t.source_chat_title, t.assignee]
+          .filter(Boolean)
+          .some((v) => (v as string).toLowerCase().includes(q));
+      }),
+    [tasks, filter, q],
+  );
+  const filtered = filter !== "all" || q.length > 0;
 
   const handleDrop = (colId: string, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverCol(null);
+    setDraggingId(null);
     const id = e.dataTransfer.getData("taskId");
     const t = tasks.find((x) => x.id === id);
     if (t && t.status !== colId) onStatusChange(t, colId);
   };
 
+  const active = tasks.filter((t) => t.status !== "archive").length;
+
   return (
-    <div className="board">
-      {columns.map((col) => {
-        const colTasks = tasks.filter((t) => t.status === col.id);
-        const isOver = dragOverCol === col.id;
-        return (
-          <section
-            key={col.id}
-            className={`column${isOver ? " drag-over" : ""}`}
-            style={{ "--col-accent": col.color || STATUS_COLORS[col.id] } as React.CSSProperties}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "move";
-              setDragOverCol(col.id);
-            }}
-            onDragLeave={(e) => {
-              if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
-                setDragOverCol((c) => (c === col.id ? null : c));
-              }
-            }}
-            onDrop={(e) => handleDrop(col.id, e)}
-          >
-            <header className="col-header">
-              <span className="col-dot" />
-              <h2>{col.label}</h2>
-              <span className="count">{colTasks.length}</span>
-            </header>
-            <div className="cards">
-              {colTasks.map((task) => (
-                <KanbanCard
-                  key={task.id}
-                  task={task}
-                  onClick={() => onSelect(task)}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData("taskId", task.id);
-                    e.dataTransfer.effectAllowed = "move";
-                  }}
-                />
-              ))}
-              {colTasks.length === 0 && (
-                <p className="empty-col">Перетащите задачу сюда</p>
-              )}
-            </div>
-          </section>
-        );
-      })}
-      <style>{`
-        .board {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(240px, 1fr));
-          gap: 1rem;
-          align-items: start;
-          min-height: calc(100vh - 140px);
-        }
-        @media (max-width: 1100px) { .board { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
-        .column {
-          background: rgba(26, 35, 50, 0.65);
-          border: 1px solid rgba(255,255,255,0.05);
-          border-radius: 14px;
-          padding: 0.65rem;
-          min-height: 320px;
-          transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-        }
-        .column.drag-over {
-          background: color-mix(in srgb, var(--col-accent) 8%, rgba(26,35,50,0.9));
-          border-color: color-mix(in srgb, var(--col-accent) 40%, transparent);
-          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--col-accent) 25%, transparent);
-        }
-        .col-header {
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          margin-bottom: 0.75rem;
-          padding: 0.25rem 0.35rem;
-        }
-        .col-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--col-accent);
-          flex-shrink: 0;
-        }
-        .col-header h2 {
-          margin: 0;
-          flex: 1;
-          font-size: 0.82rem;
-          font-weight: 600;
-          letter-spacing: 0.02em;
-          color: #e2e8f0;
-        }
-        .count {
-          font-size: 0.72rem;
-          font-weight: 600;
-          color: var(--muted);
-          background: rgba(0,0,0,0.25);
-          padding: 0.12rem 0.45rem;
-          border-radius: 99px;
-        }
-        .cards {
-          display: flex;
-          flex-direction: column;
-          gap: 0.55rem;
-          min-height: 120px;
-        }
-        .empty-col {
-          margin: 1rem 0;
-          text-align: center;
-          font-size: 0.75rem;
-          color: var(--muted);
-          opacity: 0.7;
-        }
-      `}</style>
-    </div>
+    <main className="te-page te-board-page">
+      <header className="te-page__head te-board-head">
+        <div>
+          <h1>{b.title}</h1>
+          <p>{b.lead}</p>
+        </div>
+        <div className="te-board-head__count">
+          <strong>{active}</strong>
+          <span>{b.total}</span>
+        </div>
+      </header>
+
+      <div className="te-toolbar">
+        <label className="te-search">
+          <MagnifyingGlass size={18} aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={b.search}
+            aria-label={b.search}
+          />
+          {query && (
+            <button type="button" className="te-search__clear" onClick={() => setQuery("")} aria-label={b.clearSearch}>
+              <X size={14} weight="bold" />
+            </button>
+          )}
+        </label>
+        <div className="te-chips" role="group" aria-label={b.filtersAria}>
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`te-chip${filter === f ? " is-active" : ""}`}
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+            >
+              {b.filters[f]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="te-board">
+        {columns.map((col) => {
+          const colTasks = visible.filter((t) => t.status === col.id);
+          const totalInCol = tasks.filter((t) => t.status === col.id).length;
+          const isOver = dragOverCol === col.id;
+          const label = p.labels.status[col.id as keyof typeof p.labels.status] ?? col.label;
+          const hint = b.columnHints[col.id as keyof typeof b.columnHints];
+          return (
+            <section
+              key={col.id}
+              className={`te-col te-col--${col.id}${isOver ? " is-over" : ""}`}
+              aria-label={label}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOverCol !== col.id) setDragOverCol(col.id);
+              }}
+              onDragLeave={(e) => {
+                if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+                  setDragOverCol((c) => (c === col.id ? null : c));
+                }
+              }}
+              onDrop={(e) => handleDrop(col.id, e)}
+            >
+              <header className="te-col__head">
+                <span className="te-col__dot" aria-hidden />
+                <h2>{label}</h2>
+                <span className="te-col__count">
+                  {filtered && colTasks.length !== totalInCol ? `${colTasks.length}/${totalInCol}` : totalInCol}
+                </span>
+                {hint && <p className="te-col__hint">{hint}</p>}
+              </header>
+              <div className="te-col__cards">
+                {colTasks.map((task) => (
+                  <KanbanCard
+                    key={task.id}
+                    task={task}
+                    onClick={() => onSelect(task)}
+                    onMove={(status) => onStatusChange(task, status)}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("taskId", task.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      setDraggingId(task.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggingId(null);
+                      setDragOverCol(null);
+                    }}
+                  />
+                ))}
+                {colTasks.length === 0 && (
+                  <div className={`te-col__empty${draggingId ? " is-drop" : ""}`}>
+                    {draggingId ? (
+                      b.emptyColumn
+                    ) : filtered && totalInCol > 0 ? (
+                      <>
+                        {b.emptyFiltered}
+                        <button
+                          type="button"
+                          className="te-link"
+                          onClick={() => {
+                            setFilter("all");
+                            setQuery("");
+                          }}
+                        >
+                          {b.resetFilters}
+                        </button>
+                      </>
+                    ) : col.id === "inbox" ? (
+                      <>
+                        <Tray size={22} aria-hidden />
+                        {b.emptyInbox}
+                      </>
+                    ) : (
+                      b.emptyColumn
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </main>
   );
 }
