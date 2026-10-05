@@ -64,6 +64,12 @@ async def github_status():
     return _status_out(await github_settings.get_github_status())
 
 
+@router.delete("/settings", response_model=GitHubStatusOut)
+async def delete_github_settings():
+    await github_settings.delete_github_settings()
+    return _status_out(await github_settings.get_github_status())
+
+
 @router.put("/settings", response_model=GitHubStatusOut)
 async def update_github_settings(body: GitHubSettingsIn):
     try:

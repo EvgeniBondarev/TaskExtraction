@@ -45,6 +45,12 @@ async def slack_status():
     return _status_out(await slack_settings.get_slack_status())
 
 
+@router.delete("/settings", response_model=SlackStatusOut)
+async def delete_slack_settings():
+    await slack_settings.delete_slack_settings()
+    return _status_out(await slack_settings.get_slack_status())
+
+
 @router.put("/settings", response_model=SlackStatusOut)
 async def update_slack_settings(body: SlackSettingsIn):
     try:

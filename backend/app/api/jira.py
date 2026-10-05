@@ -69,6 +69,12 @@ async def jira_status():
     return _status_out(await jira_settings.get_jira_status())
 
 
+@router.delete("/settings", response_model=JiraStatusOut)
+async def delete_jira_settings():
+    await jira_settings.delete_jira_settings()
+    return _status_out(await jira_settings.get_jira_status())
+
+
 @router.put("/settings", response_model=JiraStatusOut)
 async def update_jira_settings(body: JiraSettingsIn):
     try:

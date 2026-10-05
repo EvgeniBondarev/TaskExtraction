@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from urllib.parse import quote
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.tenancy.registry import tenant_session
 from app.models.entities import TrelloConfig
@@ -153,3 +153,10 @@ async def save_trello_settings(
         await session.commit()
         await session.refresh(row)
         return row_to_dto(row)
+
+
+async def delete_trello_settings() -> None:
+    """Remove the Trello connection completely (tokens included). Existing task links stay."""
+    async with tenant_session() as session:
+        await session.execute(delete(TrelloConfig).where(TrelloConfig.id == CONFIG_ID))
+        await session.commit()

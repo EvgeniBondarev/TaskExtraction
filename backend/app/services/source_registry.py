@@ -26,6 +26,8 @@ def _connection() -> sqlite3.Connection:
         conn.execute("ALTER TABLE telegram_sources ADD COLUMN title TEXT")
     if "avatar_path" not in columns:
         conn.execute("ALTER TABLE telegram_sources ADD COLUMN avatar_path TEXT")
+    if "paused" not in columns:
+        conn.execute("ALTER TABLE telegram_sources ADD COLUMN paused INTEGER NOT NULL DEFAULT 0")
     conn.execute(
         """CREATE TABLE IF NOT EXISTS telegram_preferences (
             tenant_key TEXT NOT NULL PRIMARY KEY,
@@ -63,14 +65,41 @@ def tenant_for_source(source_id: str | int) -> str | None:
 def list_sources(tenant_key: str, kind: str) -> list[dict[str, str | None]]:
     with _connection() as conn:
         rows = conn.execute(
-            "SELECT source_id, title, avatar_path FROM telegram_sources "
+            "SELECT source_id, title, avatar_path, paused FROM telegram_sources "
             "WHERE tenant_key = ? AND kind = ? ORDER BY title, source_id",
             (tenant_key, kind),
         ).fetchall()
     return [
-        {"source_id": str(row[0]), "title": row[1], "avatar_path": row[2]}
+        {"source_id": str(row[0]), "title": row[1], "avatar_path": row[2], "paused": bool(row[3])}
         for row in rows
     ]
+
+
+def is_source_paused(source_id: str | int) -> bool:
+    with _connection() as conn:
+        row = conn.execute(
+            "SELECT paused FROM telegram_sources WHERE source_id = ?", (str(source_id),)
+        ).fetchone()
+    return bool(row[0]) if row else False
+
+
+def set_source_paused(tenant_key: str, kind: str, source_id: str, paused: bool) -> bool:
+    """Pause or resume a source owned by the workspace. Returns False when it does not exist."""
+    with _connection() as conn:
+        cur = conn.execute(
+            "UPDATE telegram_sources SET paused = ? WHERE tenant_key = ? AND kind = ? AND source_id = ?",
+            (int(paused), tenant_key, kind, source_id),
+        )
+    return cur.rowcount > 0
+
+
+def remove_source(tenant_key: str, kind: str, source_id: str) -> bool:
+    with _connection() as conn:
+        cur = conn.execute(
+            "DELETE FROM telegram_sources WHERE tenant_key = ? AND kind = ? AND source_id = ?",
+            (tenant_key, kind, source_id),
+        )
+    return cur.rowcount > 0
 
 
 def source_for(tenant_key: str, kind: str, source_id: str) -> dict[str, str | None] | None:

@@ -20,14 +20,14 @@ from app.utils.telegram_link import build_telegram_message_link
 logger = logging.getLogger(__name__)
 
 _STATUS_RU = {
-    "inbox": "Inbox",
+    "inbox": "Новые",
     "in_progress": "В работе",
     "done": "Готово",
     "archive": "Архив",
 }
 
 _STATUS_EVENT = {
-    "inbox": "📥 Добавлено в Inbox",
+    "inbox": "📥 Добавлено в новые",
     "in_progress": "🛠 В работе",
     "done": "✅ Выполнено",
     "archive": "🗄 Архивировано",
@@ -56,7 +56,7 @@ def build_status_change_text(task: Task, panel_url: str, previous_status: str | 
         if task.status == "in_progress":
             return "↩️ Возвращено в работу"
         if task.status == "inbox":
-            return "↩️ Возвращено в Inbox"
+            return "↩️ Возвращено в новые"
     return _STATUS_EVENT.get(task.status, "🔄 Статус задачи изменён")
 
 

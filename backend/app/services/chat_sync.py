@@ -198,6 +198,15 @@ async def register_bot_group(
         )
 
 
+async def set_bot_group_monitored(tenant_key: str, telegram_chat_id: int, monitored: bool) -> None:
+    """Show or hide a bot group in the panel (feed chips, chat lists) without deleting its history."""
+    async with tenant_session(tenant_key) as session:
+        result = await session.execute(select(Chat).where(Chat.telegram_chat_id == telegram_chat_id))
+        chat = result.scalar_one_or_none()
+        if chat:
+            chat.is_monitored = monitored
+
+
 async def set_monitored_chats(telegram_chat_ids: list[int]) -> list[Chat]:
     ids_set = {normalize_telegram_chat_id(i) for i in telegram_chat_ids}
     async with tenant_session() as session:

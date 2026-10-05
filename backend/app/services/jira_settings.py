@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.tenancy.registry import tenant_session
 from app.models.entities import JiraConfig
@@ -151,3 +151,10 @@ async def save_jira_settings(
         await session.commit()
         await session.refresh(row)
         return row_to_dto(row)
+
+
+async def delete_jira_settings() -> None:
+    """Remove the Jira connection completely (tokens included). Existing task links stay."""
+    async with tenant_session() as session:
+        await session.execute(delete(JiraConfig).where(JiraConfig.id == CONFIG_ID))
+        await session.commit()

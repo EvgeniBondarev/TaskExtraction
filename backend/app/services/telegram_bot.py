@@ -129,6 +129,21 @@ async def send_message(
     return data["result"]
 
 
+async def leave_chat(chat_id: int) -> bool:
+    """Make the bot leave a group. Returns False if Telegram refused (e.g. bot already removed)."""
+    settings = get_settings()
+    if not settings.telegram_bot_token:
+        return False
+    url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/leaveChat"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(url, json={"chat_id": chat_id})
+        data = response.json()
+    except (httpx.HTTPError, ValueError):
+        return False
+    return bool(response.is_success and data.get("ok"))
+
+
 async def cache_group_avatar(chat_id: int) -> str | None:
     """Download a group's small Telegram photo into local application storage."""
     settings = get_settings()

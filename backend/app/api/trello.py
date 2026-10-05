@@ -58,6 +58,12 @@ async def trello_status():
     return _status_out(await trello_settings.get_trello_status())
 
 
+@router.delete("/settings", response_model=TrelloStatusOut)
+async def delete_trello_settings():
+    await trello_settings.delete_trello_settings()
+    return _status_out(await trello_settings.get_trello_status())
+
+
 @router.put("/settings", response_model=TrelloStatusOut)
 async def update_trello_settings(body: TrelloSettingsIn):
     try:

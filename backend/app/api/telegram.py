@@ -16,13 +16,24 @@ from app.schemas.telegram import (
     TelegramCredentialsIn,
     TelegramCredentialsOut,
     TelegramStatusOut,
+    TelegramConnectionUpdateIn,
     TelegramNotificationPreferencesIn,
 )
 from app.services import chat_sync, telegram_auth
-from app.services.telegram_bot import cache_group_avatar, message_from_update, pairing_payload, send_message, tenant_from_pairing_payload
+from app.services.telegram_bot import (
+    cache_group_avatar,
+    leave_chat,
+    message_from_update,
+    pairing_payload,
+    send_message,
+    tenant_from_pairing_payload,
+)
 from app.services.source_registry import (
+    is_source_paused,
     list_sources,
+    remove_source,
     set_source,
+    set_source_paused,
     set_status_notifications_enabled,
     source_for,
     status_notifications_enabled,
@@ -107,10 +118,53 @@ async def telegram_connections(request: Request):
             group["avatar_path"] = avatar_path
     return {
         "groups": [
-            {"source_id": group["source_id"], "title": group["title"], "has_avatar": bool(group.get("avatar_path"))}
+            {
+                "source_id": group["source_id"],
+                "title": group["title"],
+                "has_avatar": bool(group.get("avatar_path")),
+                "paused": bool(group.get("paused")),
+            }
             for group in groups
         ]
     }
+
+
+def _group_chat_id(source_id: str) -> int:
+    try:
+        return int(source_id.removeprefix("chat:"))
+    except ValueError as exc:
+        raise HTTPException(400, "Некорректный идентификатор группы") from exc
+
+
+@router.patch("/connections/{source_id}")
+async def update_telegram_connection(source_id: str, payload: TelegramConnectionUpdateIn, request: Request):
+    """Pause or resume a connected group. Paused groups are ignored by the webhook."""
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    chat_id = _group_chat_id(source_id)
+    if not set_source_paused(tenant, "group", source_id, payload.paused):
+        raise HTTPException(404, "Группа не найдена")
+    await chat_sync.set_bot_group_monitored(tenant, chat_id, not payload.paused)
+    return {"source_id": source_id, "paused": payload.paused}
+
+
+@router.delete("/connections/{source_id}")
+async def delete_telegram_connection(source_id: str, request: Request, leave: bool = True):
+    """Disconnect a group from the workspace; by default the bot also leaves the chat.
+
+    Tasks and messages already collected from the group stay in the workspace.
+    """
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    chat_id = _group_chat_id(source_id)
+    if source_for(tenant, "group", source_id) is None:
+        raise HTTPException(404, "Группа не найдена")
+    remove_source(tenant, "group", source_id)
+    await chat_sync.set_bot_group_monitored(tenant, chat_id, False)
+    left = await leave_chat(chat_id) if leave else False
+    return {"source_id": source_id, "deleted": True, "bot_left": left}
 
 
 @router.get("/connections/group-avatar")
@@ -167,7 +221,7 @@ async def telegram_webhook(request: Request):
     connection_id = message.raw.get("business_connection_id")
     source_key = f"business:{connection_id}" if connection_id else f"chat:{message.chat_id}"
     tenant = tenant_for_source(source_key)
-    if not tenant:
+    if not tenant or is_source_paused(source_key):
         return {"ok": True, "ignored": True}
     if not connection_id:
         avatar_path = await cache_group_avatar(message.chat_id)

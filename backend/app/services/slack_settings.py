@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.tenancy.registry import tenant_session
 from app.models.entities import SlackConfig
@@ -136,3 +136,10 @@ async def save_slack_settings(
         await session.commit()
         await session.refresh(row)
         return row_to_dto(row)
+
+
+async def delete_slack_settings() -> None:
+    """Remove the Slack connection completely (tokens included). Existing task links stay."""
+    async with tenant_session() as session:
+        await session.execute(delete(SlackConfig).where(SlackConfig.id == CONFIG_ID))
+        await session.commit()

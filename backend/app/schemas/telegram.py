@@ -88,3 +88,7 @@ class PhoneVerifyOut(BaseModel):
 
 class TelegramNotificationPreferencesIn(BaseModel):
     status_notifications_enabled: bool
+
+
+class TelegramConnectionUpdateIn(BaseModel):
+    paused: bool
