@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -51,10 +52,33 @@ def migrate_all_tenant_databases() -> None:
         cfg = Config(str(ini_path))
         cfg.set_main_option("sqlalchemy.url", tenant_db_url(key))
         try:
-            command.upgrade(cfg, "head")
-            logger.info("Alembic upgrade head for tenant api_id=%s", key)
-        except Exception as exc:
-            logger.warning("Alembic upgrade failed for tenant %s: %s", key, exc)
+            # БД, созданные через create_all (run_tenant_migrations), не имеют
+            # alembic_version: upgrade попытался бы накатить 001 поверх таблиц.
+            # Схема create_all соответствует текущим моделям, поэтому stamp head.
+            action = command.stamp if _needs_stamp(key) else command.upgrade
+            # env.py вызывает asyncio.run(), а мы внутри работающего event loop
+            # (lifespan) — выполняем в отдельном потоке со своим loop.
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pool.submit(action, cfg, "head").result()
+            logger.info("Alembic %s head for tenant api_id=%s", action.__name__, key)
+        except Exception:
+            logger.exception("Alembic migration failed for tenant %s", key)
+
+
+def _needs_stamp(tenant_key: str) -> bool:
+    from sqlalchemy import create_engine, inspect, text
+
+    engine = create_engine(tenant_db_url_sync(tenant_key))
+    try:
+        tables = set(inspect(engine).get_table_names())
+        if "chats" not in tables:
+            return False
+        if "alembic_version" not in tables:
+            return True
+        with engine.connect() as conn:
+            return conn.execute(text("SELECT 1 FROM alembic_version")).first() is None
+    finally:
+        engine.dispose()
 
 
 def run_tenant_migrations(tenant_key: str) -> None:
