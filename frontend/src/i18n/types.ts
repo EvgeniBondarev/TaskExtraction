@@ -1,44 +1,11 @@
 export type Locale = "ru" | "en";
 
-export type GuideStep = {
-  step: number;
-  title: string;
-  time: string;
-  body: string;
-  tip: string;
-  link?: string;
-  linkLabel?: string;
-};
-
-export type FlowStep = {
-  title: string;
-  sub: string;
-};
-
-export type CaseStep = {
-  num: string;
-  title: string;
-  body: string;
-  quote?: string;
-  outcome?: string;
-  bullets?: string[];
-};
-
 export type FaqItem = {
   question: string;
   answer: string;
 };
 
-export type HeroDiagramMessage = {
-  text: string;
-  time: string;
-};
-
-export type HeroDiagramIntegration = {
-  name: string;
-  sub: string;
-};
-
+import type { landingRu } from "./locales/landing.ru";
 import type { settingsEn } from "./locales/settings.en";
 
 type DeepString<T> = T extends string
@@ -50,6 +17,27 @@ type DeepString<T> = T extends string
       : T;
 
 export type SettingsMessages = DeepString<typeof settingsEn>;
+
+export type PlaygroundVerdict = "task" | "question" | "noise";
+
+export type PlaygroundMessage = {
+  author: string;
+  time: string;
+  text: string;
+  verdict: PlaygroundVerdict;
+  title?: string;
+  type?: string;
+  priority?: string;
+  due?: string;
+};
+
+type LandingCopy = DeepString<typeof landingRu>;
+
+export type LandingMessages = Omit<LandingCopy, "playground"> & {
+  playground: Omit<LandingCopy["playground"], "messages"> & {
+    messages: readonly PlaygroundMessage[];
+  };
+};
 
 export type Messages = {
   meta: {
@@ -91,75 +79,7 @@ export type Messages = {
     tasksNew: string;
     feedNew: string;
   };
-  landing: {
-    heroSlogan: string;
-    heroTitle: string;
-    heroTitleAccent: string;
-    heroLead: string;
-    try: string;
-    guideLink: string;
-    howBadge: string;
-    howTitle: string;
-    howLead: string;
-    demoAria: string;
-    demoBadge: string;
-    demoTitle: string;
-    demoLead: string;
-    demoVideoAria: string;
-    statsAiSub: string;
-    statsChats: string;
-    statsIntegrations: string;
-    statsStartSub: string;
-    caseBadge: string;
-    caseTitle: string;
-    caseLead: string;
-    caseQuoteLabel: string;
-    guideBadge: string;
-    guideTitle: string;
-    guideLead: string;
-    guideCtaText: string;
-    guideCtaButton: string;
-    faqBadge: string;
-    faqTitle: string;
-    faqLead: string;
-    contactTitle: string;
-    contactLead: string;
-    contactTelegramSmall: string;
-    footerTitle: string;
-    footerLead: string;
-    footerNote: string;
-    footerNav: string;
-  };
-  heroDiagram: {
-    aria: string;
-    telegram: {
-      title: string;
-      user: string;
-      messages: HeroDiagramMessage[];
-    };
-    service: {
-      title: string;
-      sub: string;
-      step1Title: string;
-      step2Title: string;
-      step3Title: string;
-      step3Text: string;
-      tags: string[];
-      kanbanCols: string[];
-    };
-    integrations: {
-      jira: HeroDiagramIntegration;
-      trello: HeroDiagramIntegration;
-      github: HeroDiagramIntegration;
-      slack: HeroDiagramIntegration;
-    };
-  };
-  guide: { steps: GuideStep[] };
-  flow: { steps: FlowStep[]; aria: string; stepLabel: string; integrations: string };
-  case: {
-    steps: CaseStep[];
-    flow: { aria: string; panelCaption: string; aiLabel: string; taskBadge: string; steps: string[] };
-  };
+  landing: LandingMessages;
   faq: { items: FaqItem[] };
   app: {
     chatsTitle: string;

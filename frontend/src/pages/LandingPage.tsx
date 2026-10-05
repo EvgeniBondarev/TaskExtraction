@@ -1,22 +1,26 @@
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
+import { MotionConfig } from "motion/react";
 import { useEffect } from "react";
-import { AppBrandName } from "../components/AppBrandName";
 import { AppLogo } from "../components/AppLogo";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { SeoHead } from "../components/SeoHead";
-import { BeginnerGuide } from "../components/landing/BeginnerGuide";
+import { BRAND_NAMES, BrandMark, type Brand } from "../components/landing/BrandMark";
+import { FeatureBento } from "../components/landing/FeatureBento";
 import { LandingFaq } from "../components/landing/LandingFaq";
+import { LandingHero } from "../components/landing/LandingHero";
+import { MessagePlayground } from "../components/landing/MessagePlayground";
+import { PrivacySplit } from "../components/landing/PrivacySplit";
+import { Reveal } from "../components/landing/Reveal";
+import { SetupSteps } from "../components/landing/SetupSteps";
 import { JsonLdFaq } from "../components/seo/JsonLdFaq";
-import { FlowDiagram } from "../components/landing/FlowDiagram";
-import { HeroIllustration } from "../components/landing/LandingIllustrations";
-import { LandingProductCase } from "../components/landing/LandingProductCase";
-import { LandingScrollVideo } from "../components/landing/LandingScrollVideo";
-import { LandingStats } from "../components/landing/LandingStats";
-import { ScrollReveal } from "../components/landing/ScrollReveal";
 import { SITE } from "../config/site";
 import { useI18n } from "../i18n";
 import "../styles/landing.css";
 
 const WELCOME_SEEN_KEY = "te_seen_welcome";
+const CONTACT_URL = "https://t.me/Burn1ngSnow";
+const STRIP: Brand[] = ["telegram", "jira", "trello", "github", "slack"];
 
 export function markWelcomeSeen() {
   try {
@@ -36,185 +40,131 @@ export function hasSeenWelcome(): boolean {
 
 interface Props {
   onTry: () => void;
+  /** Оставлен для совместимости с App: на лендинге один CTA «Открыть панель». */
   onSkip?: () => void;
   onHome?: () => void;
 }
 
-export function LandingPage({ onTry, onSkip, onHome }: Props) {
-  const { messages: t } = useI18n();
-  const lp = t.landing;
-  const nav = t.nav;
+function scrollToId(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+export function LandingPage({ onTry, onHome }: Props) {
+  const { messages } = useI18n();
+  const t = messages.landing;
 
   useEffect(() => {
-    if (window.location.hash === "#guide") {
-      document.getElementById("guide")?.scrollIntoView({ behavior: "smooth" });
-    }
+    // /guide и старые ссылки /welcome#guide ведут к разделу подключения
+    const hash = window.location.hash.replace("#", "");
+    const target = hash === "guide" || window.location.pathname === "/guide" ? "setup" : hash;
+    if (target) document.getElementById(target)?.scrollIntoView();
   }, []);
 
-  const handleTry = () => {
+  const open = () => {
     markWelcomeSeen();
     onTry();
   };
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
+  const navLinks = [
+    { id: "example", label: t.nav.example },
+    { id: "setup", label: t.nav.setup },
+    { id: "faq", label: t.nav.faq },
+  ];
 
   return (
-    <div className="lp-page">
-      <SeoHead path={SITE.welcomePath} />
-      <JsonLdFaq />
+    <MotionConfig reducedMotion="user">
+      <div className="lnd">
+        <SeoHead path={SITE.welcomePath} />
+        <JsonLdFaq />
 
-      <header className="lp-nav">
-        <a
-          href="/"
-          className="lp-nav-brand"
-          onClick={(e) => {
-            e.preventDefault();
-            onHome?.();
-          }}
-          title={nav.homeTitle}
-        >
-          <AppLogo size={28} />
-          <AppBrandName />
-        </a>
-        <nav className="lp-nav-links" aria-label={nav.mainNav}>
-          <LanguageSwitcher />
-          <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo("features"); }}>
-            {nav.features}
-          </a>
-          <a href="#how" onClick={(e) => { e.preventDefault(); scrollTo("how"); }}>
-            {nav.how}
-          </a>
-          <a href="#guide" onClick={(e) => { e.preventDefault(); scrollTo("guide"); }}>
-            {nav.guide}
-          </a>
-          <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
-            {nav.faq}
-          </a>
-          <a
-            href="https://t.me/Burn1ngSnow"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lp-nav-tg"
-          >
-            {nav.contact}
-          </a>
-          {onSkip && (
-            <button type="button" className="lp-btn lp-btn--ghost lp-btn--sm" onClick={onSkip}>
-              {nav.toApp}
-            </button>
-          )}
-          <button type="button" className="lp-btn lp-btn--primary lp-btn--sm" onClick={handleTry}>
-            {nav.try}
-          </button>
-        </nav>
-      </header>
-
-      <section className="lp-hero">
-        <ScrollReveal className="lp-hero-copy" immediate direction="up">
-          <p className="lp-hero-slogan">{lp.heroSlogan}</p>
-          <h1>
-            {lp.heroTitle} <span>{lp.heroTitleAccent}</span>
-          </h1>
-          <p className="lp-hero-lead">{lp.heroLead}</p>
-          <div className="lp-hero-actions">
-            <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={handleTry}>
-              {lp.try}
-            </button>
-            <button
-              type="button"
-              className="lp-btn lp-btn--ghost lp-btn--lg"
-              onClick={() => scrollTo("guide")}
+        <header className="lnd-nav">
+          <div className="lnd-nav__inner lnd-wrap">
+            <a
+              href="/"
+              className="lnd-nav__brand"
+              title={t.nav.homeTitle}
+              onClick={(e) => {
+                e.preventDefault();
+                onHome?.();
+              }}
             >
-              {lp.guideLink}
-            </button>
+              <AppLogo size={26} />
+              <span className="lnd-nav__name">TaskExtraction</span>
+            </a>
+            <nav className="lnd-nav__links" aria-label={t.nav.aria}>
+              {navLinks.map((link) => (
+                <a
+                  key={link.id}
+                  href={`#${link.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToId(link.id);
+                  }}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+            <div className="lnd-nav__end">
+              <LanguageSwitcher />
+              <button type="button" className="lnd-btn lnd-btn--primary lnd-btn--sm" onClick={open}>
+                {t.cta.open}
+              </button>
+            </div>
           </div>
-        </ScrollReveal>
-        <ScrollReveal className="lp-hero-visual" immediate direction="scale" delay={120}>
-          <HeroIllustration />
-        </ScrollReveal>
-      </section>
+        </header>
 
-      <LandingStats />
+        <main>
+          <LandingHero onOpen={open} onExample={() => scrollToId("example")} />
 
-      <section className="lp-section lp-section--how" id="how">
-        <ScrollReveal className="lp-section-head lp-section-head--center">
-          <span className="lp-badge">{lp.howBadge}</span>
-          <h2>{lp.howTitle}</h2>
-          <p className="lp-section-lead">{lp.howLead}</p>
-        </ScrollReveal>
-        <ScrollReveal delay={80}>
-          <FlowDiagram />
-        </ScrollReveal>
-      </section>
-
-      <BeginnerGuide onTry={handleTry} />
-
-      <LandingScrollVideo />
-
-      <section className="lp-section lp-section--case" id="features">
-        <LandingProductCase />
-      </section>
-
-      <LandingFaq />
-
-      <ScrollReveal as="section" className="lp-contact" id="contact" direction="up">
-        <div className="lp-contact-inner">
-          <div className="lp-contact-text">
-            <h2>{lp.contactTitle}</h2>
-            <p>{lp.contactLead}</p>
+          <div className="lnd-strip lnd-wrap">
+            <span className="lnd-strip__label">{t.strip.label}</span>
+            <ul className="lnd-strip__logos">
+              {STRIP.map((brand) => (
+                <li key={brand} title={BRAND_NAMES[brand]}>
+                  <BrandMark brand={brand} size={26} />
+                </li>
+              ))}
+            </ul>
           </div>
-          <a
-            href="https://t.me/Burn1ngSnow"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lp-contact-tg"
-          >
-            <TelegramMark />
-            <span>
-              <strong>@Burn1ngSnow</strong>
-              <small>{lp.contactTelegramSmall}</small>
-            </span>
-          </a>
-        </div>
-      </ScrollReveal>
 
-      <ScrollReveal as="footer" className="lp-footer-cta" direction="scale">
-        <h2>{lp.footerTitle}</h2>
-        <p>{lp.footerLead}</p>
-        <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={handleTry}>
-          {lp.try}
-        </button>
-        <nav className="lp-footer-links" aria-label={lp.footerNav}>
-          <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo("features"); }}>
-            {nav.features}
-          </a>
-          <a href="#how" onClick={(e) => { e.preventDefault(); scrollTo("how"); }}>
-            {nav.how}
-          </a>
-          <a href="#guide" onClick={(e) => { e.preventDefault(); scrollTo("guide"); }}>
-            {nav.guide}
-          </a>
-          <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo("faq"); }}>
-            {nav.faq}
-          </a>
-          <a href="/privacy">Политика конфиденциальности</a>
-        </nav>
-        <p className="lp-footer-note">{lp.footerNote}</p>
-      </ScrollReveal>
-    </div>
-  );
-}
+          <section className="lnd-example lnd-wrap" id="example" aria-labelledby="lnd-example-title">
+            <Reveal className="lnd-example__head">
+              <h2 id="lnd-example-title">{t.playground.title}</h2>
+              <p>{t.playground.lead}</p>
+            </Reveal>
+            <MessagePlayground />
+          </section>
 
-function TelegramMark() {
-  return (
-    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="12" fill="#229ED9" />
-      <path
-        d="M5.5 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.5-.4.6-.8.4l-2.2-1.6-1.1 1.1c-.1.1-.3.2-.5.2l.2-3.1 8.1-7.3c.1-.1 0-.2-.1-.1L9.6 13.5l-3.3 1.1c-.4.1-.4.4.1.5l.8.3 1.6.5 3.8 1.2c.5.2 1 .1.8-.9z"
-        fill="#fff"
-      />
-    </svg>
+          <SetupSteps />
+          <FeatureBento />
+          <PrivacySplit />
+          <LandingFaq />
+
+          <section className="lnd-closing lnd-wrap" aria-labelledby="lnd-closing-title">
+            <Reveal className="lnd-closing__inner">
+              <h2 id="lnd-closing-title">{t.closing.title}</h2>
+              <p>{t.closing.lead}</p>
+              <button type="button" className="lnd-btn lnd-btn--primary" onClick={open}>
+                {t.cta.open}
+              </button>
+              <p className="lnd-closing__contact">
+                {t.closing.contact}{" "}
+                <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer">
+                  @Burn1ngSnow
+                </a>
+              </p>
+            </Reveal>
+          </section>
+        </main>
+
+        <footer className="lnd-footer lnd-wrap">
+          <span>
+            © {new Date().getFullYear()} {t.footer.rights}
+          </span>
+          <a href="/privacy">{t.footer.privacy}</a>
+        </footer>
+      </div>
+    </MotionConfig>
   );
 }

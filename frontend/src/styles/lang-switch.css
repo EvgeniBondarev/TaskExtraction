@@ -44,10 +44,6 @@
   outline-offset: 1px;
 }
 
-.lp-nav .lang-switch {
-  margin-right: 0.1rem;
-}
-
 /* Компактный переключатель в шапке приложения (как на welcome) */
 .lang-switch--compact {
   padding: 1px;

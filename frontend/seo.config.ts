@@ -9,18 +9,18 @@ export const SEO = {
   themeColor: "#0f1419",
 
   /** Заголовок вкладки браузера */
-  title: "TaskExtraction — AI-менеджер задач из Telegram",
+  title: "TaskExtraction: задачи из Telegram на одной доске",
 
   /** Meta description для поисковиков */
   description:
-    "AI-система для извлечения задач из Telegram-чатов без тегов и спецслов: канбан, лента сообщений, интеграции с Jira, Trello, GitHub Issues и Slack.",
+    "Бот читает рабочие группы Telegram, находит поручения без тегов и команд и ведёт их на канбан-доске. Выгрузка в Jira, Trello, GitHub Issues и Slack.",
 
   /** Короткий заголовок карточки ссылки в мессенджерах */
-  shareTitle: "TaskExtraction — задачи из Telegram в одной панели",
+  shareTitle: "TaskExtraction: задачи из Telegram на одной доске",
 
   /** Описание карточки ссылки (до ~200 символов — Telegram обрезает длиннее) */
   shareDescription:
-    "Пиши в Telegram — выполняй везде. AI находит поручения в переписке без хештегов. Канбан, лента и выгрузка в Jira, Trello, GitHub и Slack. Старт за 5 минут.",
+    "Бот находит поручения в рабочих чатах Telegram и заводит карточки на доске. Ответы о статусе в чат, выгрузка в Jira, Trello, GitHub и Slack.",
 
   keywords:
     "telegram задачи, извлечение задач, kanban, jira, trello, slack, github issues, llm, поддержка, taskextraction, ai task manager",
@@ -29,7 +29,7 @@ export const SEO = {
   ogImagePath: "/og-image.png",
   ogImageWidth: 1200,
   ogImageHeight: 630,
-  ogImageAlt: "TaskExtraction — Пиши в Telegram, выполняй везде",
+  ogImageAlt: "TaskExtraction: задачи из Telegram на одной доске",
 
   twitterCard: "summary_large_image" as const,
 } as const;
@@ -42,38 +42,4 @@ export const SITEMAP_PATHS: ReadonlyArray<{
 }> = [
   { path: "/welcome", changefreq: "weekly", priority: 1.0 },
   { path: "/", changefreq: "weekly", priority: 0.9 },
-];
-
-/** FAQ для лендинга и JSON-LD (FAQPage). */
-export const FAQ_ITEMS: ReadonlyArray<{ question: string; answer: string }> = [
-  {
-    question: "Что такое TaskExtraction?",
-    answer:
-      "Это веб-панель, которая подключается к рабочим чатам Telegram, находит поручения в обычных сообщениях с помощью LLM и ведёт их в канбане. Задачи можно выгружать в Jira, Trello, GitHub Issues и Slack.",
-  },
-  {
-    question: "Нужны ли хештеги или специальные команды в чате?",
-    answer:
-      "Нет. Система анализирует обычный текст: «сделайте до пятницы», «не работает оплата», «добавьте кнопку» — без #task и без ботов в чате.",
-  },
-  {
-    question: "Какие интеграции поддерживаются?",
-    answer:
-      "Jira, Trello, GitHub Issues и Slack. После создания задачи в панели её можно отправить во внешнюю систему или включить автоматическую выгрузку.",
-  },
-  {
-    question: "Где хранятся данные?",
-    answer:
-      "При развёртывании через Docker данные (БД, медиа, сессия Telegram) остаются на вашем сервере в подключённом volume. Ключи API и токены шифруются.",
-  },
-  {
-    question: "Сколько времени занимает запуск?",
-    answer:
-      "Около 5–15 минут: ключи my.telegram.org, вход в Telegram, выбор чатов и настройка LLM. Подробный гайд есть на странице «Гайд для новичков».",
-  },
-  {
-    question: "Подходит ли сервис для команды поддержки?",
-    answer:
-      "Да. Несколько операторов могут работать с одной панелью; каждый пользователь входит со своими ключами Telegram API. Сообщения из выбранных чатов попадают в ленту и Inbox.",
-  },
 ];
