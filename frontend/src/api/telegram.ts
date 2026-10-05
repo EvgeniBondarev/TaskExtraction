@@ -26,6 +26,56 @@ export async function fetchTelegramStatus(): Promise<TelegramStatus> {
   return r.json();
 }
 
+export type TelegramSources = {
+  bot_configured: boolean;
+  bot_username: string | null;
+  bot_add_url: string | null;
+  webhook_path: string;
+  modes: ("bot_groups" | "telegram_business")[];
+};
+
+export async function fetchTelegramSources(): Promise<TelegramSources> {
+  const r = await apiFetch(`${API}/api/telegram/sources`);
+  if (!r.ok) throw new Error("Failed to load Telegram sources");
+  return r.json();
+}
+
+export type TelegramConnections = {
+  groups: { source_id: string; title: string | null; has_avatar: boolean }[]
+};
+
+export async function fetchTelegramConnections(): Promise<TelegramConnections> {
+  const r = await apiFetch(`${API}/api/telegram/connections`);
+  if (!r.ok) throw new Error("Failed to load Telegram connections");
+  return r.json();
+}
+
+export type TelegramPreferences = {
+  status_notifications_enabled: boolean;
+};
+
+export async function fetchTelegramPreferences(): Promise<TelegramPreferences> {
+  const r = await apiFetch(`${API}/api/telegram/preferences`);
+  if (!r.ok) throw new Error("Failed to load Telegram preferences");
+  return r.json();
+}
+
+export async function updateTelegramPreferences(
+  statusNotificationsEnabled: boolean,
+): Promise<TelegramPreferences> {
+  const r = await apiFetch(`${API}/api/telegram/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status_notifications_enabled: statusNotificationsEnabled }),
+  });
+  if (!r.ok) throw new Error("Failed to update Telegram preferences");
+  return r.json();
+}
+
+export function telegramGroupAvatarUrl(sourceId: string): string {
+  return `${API}/api/telegram/connections/group-avatar?source_id=${encodeURIComponent(sourceId)}`;
+}
+
 export interface TelegramSetupRequired {
   required: boolean;
   step: string;

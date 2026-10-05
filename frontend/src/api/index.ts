@@ -27,7 +27,30 @@ export interface MessageClassification {
   reason: string | null;
   prefilter_reason: string | null;
   skip_reason?: string | null;
+  requires_review?: boolean;
+  decision?: JevDecision | null;
   task_created: boolean;
+}
+
+export interface JevDecision {
+  provider: "typesafe_jev";
+  model: string;
+  is_task_probability: number;
+  task_type: string;
+  task_type_confidence: number;
+  priority: string;
+  priority_confidence: number;
+  complexity: "simple" | "medium" | "complex";
+  complexity_confidence: number;
+  urgency_score: number;
+  urgency_confidence: number;
+  impact_score: number;
+  impact_confidence: number;
+  needs_review_probability: number;
+  has_deadline_probability: number;
+  task_count: "none" | "one" | "multiple";
+  latency_ms: number;
+  cost_usd: number | null;
 }
 
 export interface Message {

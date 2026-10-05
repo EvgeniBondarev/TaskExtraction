@@ -11,6 +11,8 @@ from app.integrations.registry import get_adapter
 from app.models.entities import ExternalLink, Message, Task, TaskComment, TaskFeedback, TaskStatus, TelegramProfile
 from app.schemas.tasks import ExternalLinkOut, TaskList, TaskOut, TaskUpdate, TelegramReplyIn, TelegramReplyOut
 from app.services.telegram_reply import build_default_reply_text, build_task_panel_url, send_task_reply
+from app.services.telegram_reply import notify_status_change
+from app.config import get_settings
 from app.utils.task_enrich import enrich_task_out
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -86,9 +88,13 @@ async def update_task(
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(404, "Task not found")
+    previous_status = task.status
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
     await session.flush()
+    if body.status is not None and task.status != previous_status:
+        settings = get_settings()
+        await notify_status_change(task, settings.task_panel_url or settings.public_web_url, previous_status)
     await session.refresh(task)
     profiles = await _load_profiles(
         session,
@@ -118,7 +124,9 @@ async def dismiss_task(task_id: UUID, session: AsyncSession = Depends(get_sessio
 
 @router.post("/reprocess/{message_id}", response_model=TaskOut | None)
 async def reprocess_message(message_id: UUID, session: AsyncSession = Depends(get_session)):
-    task = await process_message(session, message_id)
+    # A user explicitly pressed "Создать задачу" in the feed: let that decision
+    # override the automatic confidence/review gate while retaining Jev metadata.
+    task = await process_message(session, message_id, force_create=True)
     if not task or not hasattr(task, "source_message_id"):
         return None
     result = await session.execute(

@@ -83,6 +83,16 @@ export function MessageClassificationBadge({
       : null,
     c.prefilter_reason ? `Фильтр: ${c.prefilter_reason}` : null,
     c.reason && c.status === "classified" ? `Причина: ${c.reason}` : null,
+    c.requires_review ? "Требуется ручная проверка" : null,
+    c.decision ? "" : null,
+    c.decision ? `Jev: задача ${pct(c.decision.is_task_probability)}` : null,
+    c.decision ? `Тип: ${c.decision.task_type} (${pct(c.decision.task_type_confidence)})` : null,
+    c.decision ? `Приоритет: ${c.decision.priority} (${pct(c.decision.priority_confidence)})` : null,
+    c.decision ? `Сложность: ${c.decision.complexity} (${pct(c.decision.complexity_confidence)})` : null,
+    c.decision ? `Срочность: ${c.decision.urgency_score.toFixed(2)} / 2` : null,
+    c.decision ? `Влияние: ${c.decision.impact_score.toFixed(2)} / 2` : null,
+    c.decision ? `Проверка: ${pct(c.decision.needs_review_probability)}` : null,
+    c.decision ? `Jev: ${c.decision.latency_ms} мс` : null,
   ].filter(Boolean) as string[];
 
   return (

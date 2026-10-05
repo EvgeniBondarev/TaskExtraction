@@ -15,7 +15,7 @@ from app.tenancy.registry import tenant_session
 from app.extraction.pipeline import process_message
 from app.models.entities import Chat, Message, Task, TelegramProfile
 from app.services import chat_sync, telegram_auth
-from app.services.avatars import ensure_chat_avatar, ensure_user_profile
+from app.services.avatars import ensure_business_user_profile, ensure_chat_avatar, ensure_user_profile
 from app.services.message_attachments import persist_attachments
 from app.services.task_broadcast import load_task_for_broadcast
 from app.utils.message_media import chat_avatar_url, sender_avatar_url
@@ -90,20 +90,33 @@ async def ensure_chat(session: AsyncSession, telegram_chat_id: int, tg_message=N
     chat = result.scalar_one_or_none()
     if chat:
         if tg_message:
-            await _enrich_chat_from_telegram(session, chat, tg_message)
+            if hasattr(tg_message, "chat_title"):
+                chat.title = tg_message.chat_title or chat.title
+                chat.chat_type = tg_message.chat_type or chat.chat_type
+            else:
+                await _enrich_chat_from_telegram(session, chat, tg_message)
         return chat
     result = await session.execute(select(Chat).where(Chat.telegram_chat_id == telegram_chat_id))
     chat = result.scalar_one_or_none()
     if chat:
         chat.is_monitored = True
         if tg_message:
-            await _enrich_chat_from_telegram(session, chat, tg_message)
+            if hasattr(tg_message, "chat_title"):
+                chat.title = tg_message.chat_title or chat.title
+                chat.chat_type = tg_message.chat_type or chat.chat_type
+            else:
+                await _enrich_chat_from_telegram(session, chat, tg_message)
         await session.flush()
         return chat
-    chat = Chat(telegram_chat_id=telegram_chat_id, title=f"Chat {telegram_chat_id}", is_monitored=True)
+    chat = Chat(
+        telegram_chat_id=telegram_chat_id,
+        title=getattr(tg_message, "chat_title", None) or f"Chat {telegram_chat_id}",
+        chat_type=getattr(tg_message, "chat_type", None),
+        is_monitored=True,
+    )
     session.add(chat)
     await session.flush()
-    if tg_message:
+    if tg_message and not hasattr(tg_message, "chat_title"):
         await _enrich_chat_from_telegram(session, chat, tg_message)
     return chat
 
@@ -120,12 +133,19 @@ async def store_message(
     if existing.scalar_one_or_none():
         return None, None
 
-    client = await telegram_auth.get_client()
-    await ensure_chat_avatar(session, client, chat, chat.telegram_chat_id)
+    is_bot_message = hasattr(tg_message, "sender_name")
+    client = None if is_bot_message else await telegram_auth.get_client()
+    if client:
+        await ensure_chat_avatar(session, client, chat, chat.telegram_chat_id)
 
     profile = None
     user_display = None
-    if tg_message.sender_id:
+    if is_bot_message:
+        profile = await ensure_business_user_profile(
+            session, tg_message.sender_id, getattr(tg_message, "sender_name", None)
+        )
+        user_display = profile.display_name if profile else None
+    elif tg_message.sender_id and client:
         profile = await ensure_user_profile(session, client, tg_message.sender_id)
         if profile and profile.display_name:
             user_display = profile.display_name
@@ -137,8 +157,8 @@ async def store_message(
             except Exception:
                 pass
 
-    reply_to = None
-    if tg_message.reply_to and tg_message.reply_to.reply_to_msg_id:
+    reply_to = getattr(tg_message, "reply_to_id", None)
+    if not is_bot_message and tg_message.reply_to and tg_message.reply_to.reply_to_msg_id:
         reply_to = tg_message.reply_to.reply_to_msg_id
 
     media_dir = effective_media_dir()
@@ -148,7 +168,7 @@ async def store_message(
         chat_id=chat.id,
         telegram_message_id=tg_message.id,
         user_id=tg_message.sender_id,
-        user_display_name=user_display,
+        user_display_name=getattr(tg_message, "sender_name", None) or user_display,
         text=tg_message.text,
         reply_to_telegram_id=reply_to,
         media_path=None,
@@ -156,6 +176,7 @@ async def store_message(
             "message_id": tg_message.id,
             "chat_id": tg_message.chat_id,
             "classification": {"status": "processing"},
+            **getattr(tg_message, "raw", {}),
         },
         created_at=tg_message.date or datetime.now(timezone.utc),
     )
@@ -163,6 +184,8 @@ async def store_message(
     await session.flush()
 
     try:
+        if not client:
+            return msg, profile
         prepared = await download_message_attachments(client, tg_message, media_dir)
         if prepared:
             rows = persist_attachments(session, msg, prepared)
@@ -231,7 +254,11 @@ async def _mark_classification_error(message_id: UUID, reason: str) -> None:
 async def handle_new_message(tg_message):
     telegram_chat_id = normalize_telegram_chat_id(tg_message.chat_id)
     monitored = await get_monitored_chat_ids()
-    if monitored:
+    is_business_message = (getattr(tg_message, "raw", {}) or {}).get("source") == "telegram_business"
+    # Business Connection already limits delivery to chats the account owner has
+    # explicitly allowed in Telegram. Do not let an unrelated monitored group
+    # block a newly allowed private Business chat before it is first persisted.
+    if monitored and not is_business_message:
         monitored_set = {normalize_telegram_chat_id(i) for i in monitored}
         if not chat_id_matches(telegram_chat_id, monitored_set):
             logger.debug(

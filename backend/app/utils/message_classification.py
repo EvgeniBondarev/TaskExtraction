@@ -25,6 +25,8 @@ def build_classification_out(msg: Message, default_threshold: float = 0.75) -> M
             status="error",
             reason=data.get("reason"),
             task_created=task_created,
+            requires_review=bool(data.get("requires_review")),
+            decision=data.get("decision"),
         )
 
     if data.get("status") == "prefilter_skip":
@@ -62,4 +64,6 @@ def build_classification_out(msg: Message, default_threshold: float = 0.75) -> M
         task_created=task_created,
         prefilter_reason=None,
         skip_reason=data.get("skip_reason"),
+        requires_review=bool(data.get("requires_review")),
+        decision=data.get("decision"),
     )

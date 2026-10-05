@@ -4,6 +4,27 @@
 
 Панель для команд поддержки: **сообщения из Telegram → классификация LLM → задачи на канбане → синхронизация с Jira, Trello, GitHub Issues и Slack**.
 
+## Подключение Telegram и вход
+
+В панель входят через **Google OAuth**. Telegram-аккаунт пользователя, его телефон и QR-сессия не запрашиваются.
+
+- **TaskExtraction Bot** принимает новые сообщения только из рабочих групп, добавленных через персональную ссылку из «Настройки → Telegram».
+- **Telegram Business** принимает только чаты, разрешённые в Business Connection. Сначала откройте ссылку привязки в настройках панели, затем подключите бота в Telegram Business.
+
+Для запуска нужны переменные в `.env`:
+
+```dotenv
+GOOGLE_CLIENT_ID=...                 # OAuth Web application из Google Cloud
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=https://example.com/api/auth/google/callback
+PUBLIC_WEB_URL=https://example.com
+TELEGRAM_BOT_TOKEN=123:abc
+TELEGRAM_BOT_USERNAME=TaskExtractionBot
+TELEGRAM_WEBHOOK_SECRET=<случайный секрет>
+```
+
+В Google Cloud Console redirect URI должен **в точности** совпасть с `GOOGLE_REDIRECT_URI`. После развёртывания установите webhook бота на `https://example.com/api/telegram/webhook` и передайте тот же `TELEGRAM_WEBHOOK_SECRET` как `secret_token`.
+
 Один Docker-образ (`nginx` + `FastAPI`), SQLite на диске, настройка через веб-интерфейс без правки кода.
 
 **Изоляция данных:** у каждого владельца своих `api_id` / `api_hash` с [my.telegram.org](https://my.telegram.org/apps) — отдельная БД, медиа и сессия панели (cookie). Пользователи не видят чужие задачи и чаты.

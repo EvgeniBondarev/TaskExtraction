@@ -3,6 +3,8 @@
 import asyncio
 import logging
 
+import httpx
+
 from telethon import events
 
 from app.services import telegram_auth
@@ -155,6 +157,45 @@ async def run_ingest_loop() -> None:
             _last_error = str(exc)[:200]
             logger.exception("Ingest loop error, retry in 15s")
             await _wait_wakeup(15)
+
+
+async def run_bot_polling_loop() -> None:
+    """Local development fallback when Telegram cannot reach localhost by webhook."""
+    from app.config import get_settings
+
+    settings = get_settings()
+    token = settings.telegram_bot_token
+    if not token:
+        return
+    offset: int | None = None
+    api_url = f"https://api.telegram.org/bot{token}/getUpdates"
+    headers = {"X-Telegram-Bot-Api-Secret-Token": settings.telegram_webhook_secret}
+    logger.info("Telegram Bot API long polling enabled for local development")
+    async with httpx.AsyncClient(timeout=35) as client:
+        while True:
+            try:
+                params: dict = {
+                    "timeout": 25,
+                    "allowed_updates": ["message", "business_message", "business_connection"],
+                }
+                if offset is not None:
+                    params["offset"] = offset
+                response = await client.get(api_url, params=params)
+                response.raise_for_status()
+                for update in response.json().get("result", []):
+                    update_id = update.get("update_id")
+                    if isinstance(update_id, int):
+                        offset = update_id + 1
+                    await client.post(
+                        "http://127.0.0.1:8000/api/telegram/webhook",
+                        json=update,
+                        headers=headers,
+                    )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.warning("Telegram Bot polling failed: %s", exc)
+                await asyncio.sleep(3)
 
 
 async def _wait_wakeup(timeout: float) -> None:

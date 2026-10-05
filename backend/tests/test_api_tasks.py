@@ -46,3 +46,21 @@ async def test_reply_preview(authed_client: AsyncClient, seeded_task):
     assert "text" in data
     assert "panel_url" in data
     assert "Отчёт" in data["text"] or task_id in data["panel_url"]
+
+
+@pytest.mark.asyncio
+async def test_telegram_status_notification_preference(authed_client: AsyncClient):
+    current = await authed_client.get("/api/telegram/preferences")
+    assert current.status_code == 200
+    assert current.json()["status_notifications_enabled"] is True
+
+    disabled = await authed_client.put(
+        "/api/telegram/preferences",
+        json={"status_notifications_enabled": False},
+    )
+    assert disabled.status_code == 200
+    assert disabled.json()["status_notifications_enabled"] is False
+
+    persisted = await authed_client.get("/api/telegram/preferences")
+    assert persisted.status_code == 200
+    assert persisted.json()["status_notifications_enabled"] is False

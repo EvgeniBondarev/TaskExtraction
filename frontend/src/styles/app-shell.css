@@ -118,6 +118,52 @@
   flex-shrink: 0;
 }
 
+.app-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.app-user__avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #1d4ed8;
+}
+
+.app-user__avatar--initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.app-user__identity {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.app-user__identity strong,
+.app-user__identity small {
+  overflow: hidden;
+  max-width: 11rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-user__identity strong { font-size: 0.76rem; }
+.app-user__identity small { color: var(--muted); font-size: 0.66rem; }
+
 .app-top-bar__logout {
   padding: 0.35rem 0.55rem;
   font-size: 0.8rem;
@@ -222,4 +268,6 @@
   .app-title .app-brand-title {
     font-size: 1.05rem;
   }
+
+  .app-user__identity { display: none; }
 }

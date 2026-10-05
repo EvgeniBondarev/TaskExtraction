@@ -81,3 +81,32 @@ async def ensure_user_profile(
     profile.updated_at = datetime.now(timezone.utc)
     await session.flush()
     return profile
+
+
+async def ensure_business_user_profile(
+    session: AsyncSession, user_id: int | None, display_name: str | None
+) -> TelegramProfile | None:
+    """Persist the profile data that Bot API exposes for a Business message."""
+    if not user_id:
+        return None
+
+    result = await session.execute(
+        select(TelegramProfile).where(TelegramProfile.telegram_user_id == user_id)
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        profile = TelegramProfile(telegram_user_id=user_id, display_name=display_name)
+        session.add(profile)
+    elif display_name:
+        profile.display_name = display_name
+
+    if not profile.photo_path or not os.path.isfile(profile.photo_path):
+        from app.services.telegram_bot import cache_business_user_avatar
+
+        photo_path = await cache_business_user_avatar(user_id)
+        if photo_path:
+            profile.photo_path = photo_path
+
+    profile.updated_at = datetime.now(timezone.utc)
+    await session.flush()
+    return profile

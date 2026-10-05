@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_session
 from app.schemas.chats import ChatList, ChatOut, ChatSelectionIn, ChatStatusOut, ChatSyncOut
 from app.services import chat_sync
+from app.services.source_registry import list_sources
+from app.tenancy.context import require_current_tenant
 from app.telegram.listener import wake_ingest
 
 router = APIRouter(prefix="/chats", tags=["chats"])
@@ -30,6 +32,15 @@ def _to_out(chat) -> ChatOut:
 
 @router.get("/status", response_model=ChatStatusOut)
 async def chats_status():
+    # Groups connected before this version existed only in the Bot API registry.
+    # Materialize them here so an existing connection immediately unlocks the board.
+    tenant = require_current_tenant()
+    for source in list_sources(tenant, "group"):
+        try:
+            chat_id = int(str(source["source_id"]).removeprefix("chat:"))
+        except ValueError:
+            continue
+        await chat_sync.register_bot_group(tenant, chat_id, source["title"], source.get("avatar_path"))
     s = await chat_sync.get_chat_status()
     return ChatStatusOut(**s)
 

@@ -9,9 +9,9 @@ import {
   wsPayloadToMessage,
   WsMessagePayload,
 } from "./api";
-import { fetchChatsStatus } from "./api/chats";
-import { logoutPanel } from "./api/session";
-import { fetchTelegramStatus } from "./api/telegram";
+import { ChatItem, fetchChats, fetchChatsStatus } from "./api/chats";
+import { fetchGoogleAuthStatus, logoutGoogle, startGoogleLogin } from "./api/auth";
+import type { GoogleUser } from "./api/auth";
 import { AppTopBar, NavBadges } from "./components/AppTopBar";
 import { IntegrationsOnboardingPrompt } from "./components/IntegrationsOnboardingPrompt";
 import "./styles/app-shell.css";
@@ -22,18 +22,14 @@ import {
   hasAnyIntegrationConfigured,
   isIntegrationsPromptDismissed,
   isIntegrationsPromptPending,
-  markIntegrationsPromptPending,
 } from "./hooks/useIntegrationsStatus";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { MessageFeed } from "./components/MessageFeed";
 import { AppBootSkeleton, FeedPageSkeleton, KanbanBoardSkeleton } from "./components/PageSkeletons";
 import { MessageToasts, ToastItem } from "./components/MessageToasts";
 import { TaskModal } from "./components/TaskModal";
-import { ChatSelection } from "./pages/ChatSelection";
 import { LandingPage, markWelcomeSeen } from "./pages/LandingPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
-import { TelegramAuth } from "./pages/TelegramAuth";
-import type { TelegramStatus } from "./api/telegram";
 import { TelegramSettings } from "./pages/TelegramSettings";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
 import { useGitHubIntegration } from "./hooks/useGitHubIntegration";
@@ -85,11 +81,6 @@ function isPrivacyPath(path: string): boolean {
   return path === "/privacy";
 }
 
-function isPanelAuthed(status: TelegramStatus): boolean {
-  if (status.hosted_app) return status.is_authorized;
-  return status.has_credentials || status.is_authorized;
-}
-
 function goToWelcomeUrl(replace = false): void {
   if (isWelcomePath(window.location.pathname)) return;
   const state = {};
@@ -108,18 +99,20 @@ export default function App() {
 
   const [view, setView] = useState<"welcome" | "app">("welcome");
   const [panelAuthed, setPanelAuthed] = useState(false);
+  const [currentUser, setCurrentUser] = useState<GoogleUser | null>(null);
   const [gate, setGate] = useState<Gate>("loading");
   const [page, setPage] = useState<MainPage>(() => pathToPage(window.location.pathname));
   const [tasks, setTasks] = useState<Task[]>([]);
   const [messages, setMessages] = useState<Awaited<ReturnType<typeof fetchMessages>>["items"]>([]);
+  const [connectedChats, setConnectedChats] = useState<ChatItem[]>([]);
   const [selected, setSelected] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [integrationsPromptOpen, setIntegrationsPromptOpen] = useState(false);
-  const [integrationsPromptTick, setIntegrationsPromptTick] = useState(0);
+  const [integrationsPromptTick] = useState(0);
   const [navBadges, setNavBadges] = useState<NavBadges>({ tasks: 0, feed: 0 });
   const [livePollSeedReady, setLivePollSeedReady] = useState(false);
-  const [liveSessionKey, setLiveSessionKey] = useState(0);
+  const [liveSessionKey] = useState(0);
   const seenMessages = useRef<Set<string>>(new Set());
   const pageRef = useRef(page);
   const feedBadgeIds = useRef(new Set<string>());
@@ -135,25 +128,17 @@ export default function App() {
   const { enabled: slackEnabled } = useSlackIntegration(gate === "ready");
 
   const checkSetup = useCallback(async () => {
-    const s = await fetchTelegramStatus();
-    const authed = isPanelAuthed(s);
-    setPanelAuthed(authed);
-
-    if (!authed) {
+    const auth = await fetchGoogleAuthStatus();
+    setPanelAuthed(auth.authenticated);
+    setCurrentUser(auth.user);
+    if (!auth.authenticated) {
       setView("welcome");
       setGate("loading");
-      goToWelcomeUrl(true);
-      return s;
+      return;
     }
-
-    setView("app");
-    if (!s.setup_complete) {
-      setGate("setup");
-      return s;
-    }
-    const cs = await fetchChatsStatus();
-    setGate(cs.has_monitored ? "ready" : "chats");
-    return s;
+    if (!isWelcomePath(window.location.pathname)) setView("app");
+    const chats = await fetchChatsStatus();
+    setGate(chats.has_monitored ? "ready" : "setup");
   }, []);
 
   const navigate = useCallback((next: MainPage) => {
@@ -174,11 +159,6 @@ export default function App() {
   const skipIntegrationsPrompt = useCallback(() => {
     dismissIntegrationsPrompt();
     setIntegrationsPromptOpen(false);
-  }, []);
-
-  const queueIntegrationsPrompt = useCallback(() => {
-    markIntegrationsPromptPending();
-    setIntegrationsPromptTick((n) => n + 1);
   }, []);
 
   const tryShowIntegrationsPrompt = useCallback(
@@ -225,9 +205,10 @@ export default function App() {
   const reload = useCallback(async () => {
     if (gate !== "ready") return;
     try {
-      const [t, m] = await Promise.all([fetchTasks(), fetchMessages()]);
+      const [t, m, chats] = await Promise.all([fetchTasks(), fetchMessages(), fetchChats(true)]);
       setTasks(t.items);
       setMessages(m.items);
+      setConnectedChats(chats.items);
       m.items.forEach((msg) => seenMessages.current.add(msg.id));
     } catch (err) {
       console.error("Failed to reload tasks/messages", err);
@@ -249,10 +230,11 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const [t, m] = await Promise.all([fetchTasks(), fetchMessages(40, 0)]);
+        const [t, m, chats] = await Promise.all([fetchTasks(), fetchMessages(40, 0), fetchChats(true)]);
         if (cancelled) return;
         setTasks(t.items);
         setMessages(m.items);
+        setConnectedChats(chats.items);
         m.items.forEach((msg) => seenMessages.current.add(msg.id));
         setLivePollSeedReady(true);
       } catch (err) {
@@ -316,50 +298,20 @@ export default function App() {
     }
   }, []);
 
-  const goToTasks = useCallback(() => {
-    setPage("tasks");
-    const path = pageToPath("tasks");
-    if (window.location.pathname !== path) {
-      window.history.replaceState({}, "", path);
-    }
-  }, []);
-
-  const finishSetupAndOpenIntegrations = useCallback(async () => {
-    queueIntegrationsPrompt();
-    goToTasks();
-    window.setTimeout(() => {
-      void tryShowIntegrationsPrompt({ force: true });
-    }, 0);
-  }, [queueIntegrationsPrompt, goToTasks, tryShowIntegrationsPrompt]);
-
   const enterApp = useCallback(() => {
     markWelcomeSeen();
-    setView("app");
-    setGate("setup");
-    setPage("tasks");
-    window.history.replaceState({}, "", "/");
+    startGoogleLogin();
   }, []);
 
-  const handlePanelLogout = useCallback(async () => {
-    try {
-      await logoutPanel();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleGoogleLogout = useCallback(async () => {
+    await logoutGoogle();
+    setCurrentUser(null);
+    setPanelAuthed(false);
     setTasks([]);
     setMessages([]);
     setSelected(null);
-    setToasts([]);
-    setNavBadges({ tasks: 0, feed: 0 });
-    setLivePollSeedReady(false);
-    setLiveSessionKey((k) => k + 1);
-    feedBadgeIds.current.clear();
-    taskBadgeIds.current.clear();
-    seenMessages.current.clear();
-    setPanelAuthed(false);
     setView("welcome");
     setGate("loading");
-    setPage("tasks");
     goToWelcomeUrl();
   }, []);
 
@@ -553,22 +505,6 @@ export default function App() {
     [dismissToast, navigate]
   );
 
-  const onSetupComplete = async () => {
-    const s = await checkSetup();
-    if (!s?.setup_complete) return;
-    const cs = await fetchChatsStatus().catch(() => null);
-    if (cs?.has_monitored) {
-      await finishSetupAndOpenIntegrations();
-    } else {
-      queueIntegrationsPrompt();
-    }
-  };
-
-  const onChatsSelected = async () => {
-    await checkSetup();
-    await finishSetupAndOpenIntegrations();
-  };
-
   if (isPrivacyPath(window.location.pathname)) {
     return <PrivacyPage />;
   }
@@ -597,7 +533,7 @@ export default function App() {
       <>
         {panelSeo}
         <div className="center-page">
-          <TelegramAuth embedded wizard onComplete={onSetupComplete} />
+          <TelegramSettings onStatusChange={() => { void checkSetup(); }} />
         </div>
       </>
     );
@@ -608,7 +544,7 @@ export default function App() {
       <>
         {panelSeo}
         <div className="app app--chats">
-          <ChatSelection onComplete={onChatsSelected} />
+          <TelegramSettings onStatusChange={() => { void checkSetup(); }} />
         </div>
       </>
     );
@@ -627,7 +563,8 @@ export default function App() {
         badges={navBadges}
         onNavigate={navigate}
         onHome={goHome}
-        onLogout={handlePanelLogout}
+        user={currentUser}
+        onLogout={() => { void handleGoogleLogout(); }}
       />
 
       {integrationsPromptOpen && (
@@ -640,8 +577,7 @@ export default function App() {
       {page === "settings" ? (
         <TelegramSettings
           onStatusChange={async () => {
-            const s = await checkSetup();
-            if (!s.setup_complete) setGate("setup");
+            await checkSetup();
           }}
         />
       ) : loading ? (
@@ -657,6 +593,7 @@ export default function App() {
         <MessageFeed
           messages={messages}
           tasks={tasks}
+          chats={connectedChats}
           onTaskCreated={(task) => {
             setTasks((prev) => (prev.some((x) => x.id === task.id) ? prev : [task, ...prev]));
             reloadMessages().catch(() => {});

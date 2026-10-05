@@ -16,6 +16,8 @@ class MessageClassificationOut(BaseModel):
     reason: str | None = None
     prefilter_reason: str | None = None
     skip_reason: str | None = None
+    requires_review: bool = False
+    decision: dict | None = None
     task_created: bool = False
 
 

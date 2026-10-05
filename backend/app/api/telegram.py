@@ -1,6 +1,10 @@
+import hmac
 import logging
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 
 from app.schemas.telegram import (
     PhoneSendIn,
@@ -12,8 +16,20 @@ from app.schemas.telegram import (
     TelegramCredentialsIn,
     TelegramCredentialsOut,
     TelegramStatusOut,
+    TelegramNotificationPreferencesIn,
 )
-from app.services import telegram_auth
+from app.services import chat_sync, telegram_auth
+from app.services.telegram_bot import cache_group_avatar, message_from_update, pairing_payload, send_message, tenant_from_pairing_payload
+from app.services.source_registry import (
+    list_sources,
+    set_source,
+    set_status_notifications_enabled,
+    source_for,
+    status_notifications_enabled,
+    tenant_for_source,
+)
+from app.config import get_settings
+from app.telegram.ingest import handle_new_message
 from app.services.hosted_telegram import is_hosted_mode
 from app.telegram.listener import wake_ingest
 from app.tenancy import ensure_tenant, set_session_tenant
@@ -23,6 +39,147 @@ from app.utils.crypto import encryption_configured
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
+
+
+@router.get("/sources")
+async def telegram_sources():
+    """Public setup data; credentials intentionally stay server-side."""
+    settings = get_settings()
+    username = settings.telegram_bot_username.lstrip("@")
+    return {
+        "bot_configured": bool(settings.telegram_bot_token),
+        "bot_username": username or None,
+        "bot_add_url": f"https://t.me/{username}?startgroup=true" if username else None,
+        "webhook_path": "/api/telegram/webhook",
+        "modes": ["bot_groups", "telegram_business"],
+    }
+
+
+@router.get("/connect-links")
+async def telegram_connect_links(request: Request):
+    """Workspace-specific deep links. Their signed payload prevents chat hijacking."""
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    settings = get_settings()
+    username = settings.telegram_bot_username.lstrip("@")
+    if not username:
+        raise HTTPException(503, "TELEGRAM_BOT_USERNAME is not configured")
+    return {
+        "group": f"https://t.me/{username}?startgroup={pairing_payload(tenant, 'group')}",
+        "business": f"https://t.me/{username}?start={pairing_payload(tenant, 'business')}",
+    }
+
+
+@router.get("/preferences")
+async def telegram_preferences(request: Request):
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    return {"status_notifications_enabled": status_notifications_enabled(tenant)}
+
+
+@router.put("/preferences")
+async def update_telegram_preferences(payload: TelegramNotificationPreferencesIn, request: Request):
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    enabled = set_status_notifications_enabled(tenant, payload.status_notifications_enabled)
+    return {"status_notifications_enabled": enabled}
+
+
+@router.get("/connections")
+async def telegram_connections(request: Request):
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    groups = list_sources(tenant, "group")
+    for group in groups:
+        if group.get("avatar_path"):
+            continue
+        try:
+            chat_id = int(str(group["source_id"]).removeprefix("chat:"))
+        except ValueError:
+            continue
+        avatar_path = await cache_group_avatar(chat_id)
+        if avatar_path:
+            set_source("group", group["source_id"], tenant, avatar_path=avatar_path)
+            group["avatar_path"] = avatar_path
+    return {
+        "groups": [
+            {"source_id": group["source_id"], "title": group["title"], "has_avatar": bool(group.get("avatar_path"))}
+            for group in groups
+        ]
+    }
+
+
+@router.get("/connections/group-avatar")
+async def telegram_group_avatar(source_id: str, request: Request):
+    from app.tenancy import require_session_tenant
+
+    tenant = require_session_tenant(request)
+    group = source_for(tenant, "group", source_id)
+    path = Path(group["avatar_path"]) if group and group.get("avatar_path") else None
+    if path is None or not path.is_file():
+        raise HTTPException(404, "Аватар группы пока недоступен")
+    return FileResponse(path, media_type="image/jpeg", filename="telegram-group.jpg")
+
+
+@router.post("/webhook")
+async def telegram_webhook(request: Request):
+    """Receive updates from TaskExtraction Bot and Connected Business Bot."""
+    settings = get_settings()
+    if not settings.telegram_bot_token:
+        raise HTTPException(503, "TELEGRAM_BOT_TOKEN is not configured")
+    secret = settings.telegram_webhook_secret
+    received = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if secret and not hmac.compare_digest(received, secret):
+        raise HTTPException(403, "Invalid Telegram webhook secret")
+    update = await request.json()
+    if not isinstance(update, dict):
+        raise HTTPException(400, "Invalid Telegram update")
+    connection = update.get("business_connection")
+    if isinstance(connection, dict):
+        owner = (connection.get("user") or {}).get("id")
+        connection_id = connection.get("id")
+        tenant = tenant_for_source(f"business-user:{owner}") if owner else None
+        if tenant and connection_id:
+            set_source("business_connection", f"business:{connection_id}", tenant)
+        return {"ok": True, "ignored": tenant is None}
+
+    message = message_from_update(update)
+    if message is None:
+        return {"ok": True, "ignored": True}
+
+    pairing = tenant_from_pairing_payload(message.text)
+    if pairing:
+        tenant, mode = pairing
+        if mode == "group" and message.chat_type in {"group", "supergroup"}:
+            avatar_path = await cache_group_avatar(message.chat_id)
+            set_source("group", f"chat:{message.chat_id}", tenant, title=message.chat_title, avatar_path=avatar_path)
+            await chat_sync.register_bot_group(tenant, message.chat_id, message.chat_title, avatar_path)
+            await send_message(message.chat_id, "✅ Группа подключена к TaskExtraction. Новые сообщения будут анализироваться автоматически.")
+        elif mode == "business" and message.chat_type == "private" and message.sender_id:
+            set_source("business_user", f"business-user:{message.sender_id}", tenant)
+            await send_message(message.chat_id, "✅ Telegram Business готов к подключению. Вернитесь в TaskExtraction и настройте Business Connection.")
+        return {"ok": True, "paired": True}
+
+    connection_id = message.raw.get("business_connection_id")
+    source_key = f"business:{connection_id}" if connection_id else f"chat:{message.chat_id}"
+    tenant = tenant_for_source(source_key)
+    if not tenant:
+        return {"ok": True, "ignored": True}
+    if not connection_id:
+        avatar_path = await cache_group_avatar(message.chat_id)
+        set_source("group", source_key, tenant, title=message.chat_title, avatar_path=avatar_path)
+        await chat_sync.register_bot_group(tenant, message.chat_id, message.chat_title, avatar_path)
+    ensure_tenant(tenant)
+    token = set_current_tenant(tenant)
+    try:
+        await handle_new_message(message)
+    finally:
+        reset_current_tenant(token)
+    return {"ok": True}
 
 
 def _bind_tenant_session(request: Request, user_id: int | None) -> None:

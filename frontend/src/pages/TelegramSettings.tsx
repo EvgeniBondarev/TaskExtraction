@@ -1,13 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import { fetchChatsStatus } from "../api/chats";
-import { fetchTelegramStatus, TelegramStatus } from "../api/telegram";
-import { SetupStepper } from "../components/SetupStepper";
-import { getTelegramWizardStep, getTelegramWizardSteps } from "../utils/telegramWizardSteps";
-import { ChatPicker } from "../components/ChatPicker";
+import { useEffect, useState } from "react";
 import { IntegrationsSettingsHub } from "../components/integrations/IntegrationsSettingsHub";
 import { LlmSettings } from "../components/LlmSettings";
 import { PromptSettings } from "../components/PromptSettings";
-import { TelegramSetupWizard } from "../components/TelegramSetupWizard";
+import { TelegramSources } from "../components/TelegramSources";
 import { useI18n } from "../i18n";
 import "../styles/settings-page.css";
 
@@ -28,8 +23,6 @@ export function TelegramSettings({ onStatusChange }: Props) {
   const { messages: t } = useI18n();
   const s = t.settings;
   const [tab, setTab] = useState<SettingsTab>(tabFromHash);
-  const [status, setStatus] = useState<TelegramStatus | null>(null);
-  const [hasMonitored, setHasMonitored] = useState(false);
   const [info, setInfo] = useState("");
 
   const selectTab = (next: SettingsTab) => {
@@ -48,27 +41,11 @@ export function TelegramSettings({ onStatusChange }: Props) {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  const reload = useCallback(async () => {
-    const st = await fetchTelegramStatus();
-    setStatus(st);
-    if (st.is_authorized) {
-      const cs = await fetchChatsStatus().catch(() => null);
-      setHasMonitored(Boolean(cs?.has_monitored));
-    } else {
-      setHasMonitored(false);
-    }
+  useEffect(() => {
     onStatusChange?.();
   }, [onStatusChange]);
 
-  const wizardStep = getTelegramWizardStep(status, hasMonitored, Boolean(status?.hosted_app));
-  const wizardSteps = getTelegramWizardSteps(s);
-
-  useEffect(() => {
-    reload().catch(() => {});
-  }, [reload]);
-
   const tabs: SettingsTab[] = ["telegram", "llm", "prompts"];
-  if (status?.is_authorized) tabs.push("chats");
   tabs.push("integrations");
 
   const meta = { label: s.tabs[tab], lead: s.tabLeads[tab] };
@@ -122,20 +99,7 @@ export function TelegramSettings({ onStatusChange }: Props) {
 
           <div className={bodyClass}>
             {tab === "telegram" && (
-              <>
-                <div className="settings-steps-inline" aria-label={s.telegramStepsAria}>
-                  <SetupStepper
-                    steps={wizardSteps}
-                    currentIndex={wizardStep.current}
-                    completedThrough={wizardStep.completed}
-                  />
-                </div>
-                <TelegramSetupWizard
-                  hideStepper
-                  onStatusChange={reload}
-                  onGoToChatsTab={() => selectTab("chats")}
-                />
-              </>
+              <TelegramSources />
             )}
 
             {tab === "integrations" && <IntegrationsSettingsHub />}
@@ -144,17 +108,6 @@ export function TelegramSettings({ onStatusChange }: Props) {
 
             {tab === "prompts" && <PromptSettings embedded />}
 
-            {tab === "chats" && status?.is_authorized && (
-              <div className="settings-chats">
-                <ChatPicker
-                  onSaved={() => {
-                    setInfo(s.chatsUpdated);
-                    reload();
-                  }}
-                  submitLabel={s.saveChats}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -171,6 +171,33 @@ async def get_chat_status() -> dict:
     }
 
 
+async def register_bot_group(
+    tenant_key: str,
+    telegram_chat_id: int,
+    title: str | None,
+    photo_path: str | None = None,
+) -> None:
+    """Make a Bot API group available to the board without a user Telegram session."""
+    async with tenant_session(tenant_key) as session:
+        result = await session.execute(select(Chat).where(Chat.telegram_chat_id == telegram_chat_id))
+        chat = result.scalar_one_or_none()
+        if chat:
+            chat.is_monitored = True
+            chat.title = title or chat.title
+            chat.photo_path = photo_path or chat.photo_path
+            chat.chat_type = "supergroup" if str(telegram_chat_id).startswith("-100") else "group"
+            return
+        session.add(
+            Chat(
+                telegram_chat_id=telegram_chat_id,
+                title=title or f"Chat {telegram_chat_id}",
+                chat_type="supergroup" if str(telegram_chat_id).startswith("-100") else "group",
+                photo_path=photo_path,
+                is_monitored=True,
+            )
+        )
+
+
 async def set_monitored_chats(telegram_chat_ids: list[int]) -> list[Chat]:
     ids_set = {normalize_telegram_chat_id(i) for i in telegram_chat_ids}
     async with tenant_session() as session:

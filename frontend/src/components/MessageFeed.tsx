@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Message, reprocessMessage, Task } from "../api";
 import { useI18n } from "../i18n";
 import { MessageAvatar } from "./MessageAvatar";
+import { ChatItem, chatAvatarUrl } from "../api/chats";
 import { AttachmentList } from "./AttachmentList";
 import { MessageClassificationBadge } from "./MessageClassificationBadge";
 import { JiraLinkIcon } from "./JiraLinkIcon";
@@ -25,10 +26,12 @@ function canCreateTask(c: Message["classification"]): boolean {
 export function MessageFeed({
   messages,
   tasks = [],
+  chats = [],
   onTaskCreated,
 }: {
   messages: Message[];
   tasks?: Task[];
+  chats?: ChatItem[];
   onTaskCreated?: (task: Task) => void;
 }) {
   const { locale, messages: t } = useI18n();
@@ -69,6 +72,12 @@ export function MessageFeed({
     }
   };
 
+  const complexityLabel: Record<string, string> = {
+    simple: "простая",
+    medium: "средняя",
+    complex: "сложная",
+  };
+
   return (
     <div className="feed-page">
       <header className="feed-page__header">
@@ -105,6 +114,27 @@ export function MessageFeed({
           </span>
         </div>
       </header>
+
+      {chats.length > 0 && (
+        <section className="feed-page__chats" aria-label={f.connectedChats}>
+          <div className="feed-page__chats-copy">
+            <strong>{f.connectedChats}</strong>
+            <span>{f.connectedChatsHint}</span>
+          </div>
+          <div className="feed-page__chat-list">
+            {chats.map((chat) => (
+              <div className="feed-page__chat" key={chat.id}>
+                <MessageAvatar
+                  chatUrl={chat.has_photo ? chatAvatarUrl(chat.id) : undefined}
+                  name={chat.title}
+                  size={36}
+                />
+                <span>{chat.title || `Chat ${chat.telegram_chat_id}`}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="feed-page__toolbar">
         <div className="feed-page__search">
@@ -207,6 +237,30 @@ export function MessageFeed({
                     )}
                   </div>
                 )}
+
+                {m.classification?.decision && (() => {
+                  const d = m.classification.decision;
+                  return (
+                    <details className="feed-msg__decision">
+                      <summary>Результат анализа Jev</summary>
+                      <div className="feed-msg__decision-grid">
+                        <span>Задача <b>{Math.round(d.is_task_probability * 100)}%</b></span>
+                        <span>Тип <b>{d.task_type}</b></span>
+                        <span>Приоритет <b>{d.priority}</b></span>
+                        <span>Сложность <b>{complexityLabel[d.complexity] || d.complexity}</b></span>
+                        <span>Срочность <b>{d.urgency_score.toFixed(1)} / 2</b></span>
+                        <span>Влияние <b>{d.impact_score.toFixed(1)} / 2</b></span>
+                        <span>Дедлайн <b>{Math.round(d.has_deadline_probability * 100)}%</b></span>
+                        <span>Несколько задач <b>{d.task_count === "multiple" ? "да" : "нет"}</b></span>
+                      </div>
+                      <p>
+                        Уверенность: тип {Math.round(d.task_type_confidence * 100)}%, приоритет {Math.round(d.priority_confidence * 100)}%, сложность {Math.round(d.complexity_confidence * 100)}% · {d.latency_ms} мс
+                        {d.cost_usd != null ? ` · $${d.cost_usd.toFixed(6)}` : ""}
+                      </p>
+                      {m.classification.requires_review && <p className="feed-msg__decision-review">Нужна ручная проверка перед автосозданием.</p>}
+                    </details>
+                  );
+                })()}
 
                 {m.attachments && m.attachments.length > 0 && (
                   <div className="feed-msg__attachments">

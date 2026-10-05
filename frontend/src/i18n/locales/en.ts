@@ -292,6 +292,8 @@ const messages: Messages = {
     statsAria: "Feed statistics",
     statMessages: "messages",
     statCandidates: "can become tasks",
+    connectedChats: "Connected chats",
+    connectedChatsHint: "Messages from these chats will appear here automatically.",
     searchPlaceholder: "Search text, author, chat…",
     searchAria: "Search feed",
     searchClear: "Clear search",

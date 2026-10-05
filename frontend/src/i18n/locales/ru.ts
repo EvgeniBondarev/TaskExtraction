@@ -293,6 +293,8 @@ const messages: Messages = {
     statsAria: "Статистика ленты",
     statMessages: "сообщений",
     statCandidates: "можно в задачи",
+    connectedChats: "Подключённые чаты",
+    connectedChatsHint: "Сообщения из этих чатов появятся в ленте автоматически.",
     searchPlaceholder: "Поиск по тексту, автору, чату…",
     searchAria: "Поиск в ленте",
     searchClear: "Очистить поиск",

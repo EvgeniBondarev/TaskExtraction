@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 from pathlib import Path
@@ -22,6 +23,12 @@ def normalize_tenant_key(api_id: int | str) -> str:
     if not _TENANT_KEY_RE.match(key):
         raise ValueError("Некорректный Telegram api_id")
     return key
+
+
+def tenant_key_from_google_subject(subject: str) -> str:
+    """Stable numeric key compatible with existing per-tenant database paths."""
+    digest = hashlib.sha256(subject.encode("utf-8")).hexdigest()
+    return str(int(digest[:15], 16) % 10**15).zfill(15)
 
 
 def tenant_dir(tenant_key: str) -> Path:

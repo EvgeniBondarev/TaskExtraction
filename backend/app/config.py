@@ -34,11 +34,24 @@ class Settings(BaseSettings):
     telegram_api_hash: str = ""
     telegram_chat_id: int = 0
     telegram_session_path: str = "/data/session"
+    # Bot API is the primary Telegram intake.  The legacy MTProto settings above
+    # remain only for existing installations during their migration.
+    telegram_bot_token: str = ""
+    telegram_bot_username: str = ""
+    telegram_webhook_secret: str = ""
+    telegram_bot_polling: bool = False
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    public_web_url: str = "http://localhost:5173"
+    task_panel_url: str = ""
     encryption_key: str = ""
 
     database_url: str = "sqlite+aiosqlite:///./data/taskextraction.db"
 
     llm_confidence_threshold: float = 0.7
+    jev_openrouter_api_key: str = ""
+    jev_openrouter_model: str = "~typesafe/jev-latest"
 
     assignees: str = "Оператор,Разработчик"
     cors_origins: str = "http://localhost:5173"

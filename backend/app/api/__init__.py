@@ -6,6 +6,7 @@ from app.api import (
     attachments,
     chats,
     github,
+    google_auth,
     health,
     jira,
     llm,
@@ -23,6 +24,7 @@ api_router.include_router(analytics.router)
 api_router.include_router(admin.router)
 api_router.include_router(health.router)
 api_router.include_router(session.router)
+api_router.include_router(google_auth.router)
 api_router.include_router(telegram.router)
 api_router.include_router(llm.router)
 api_router.include_router(jira.router)

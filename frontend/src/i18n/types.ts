@@ -191,6 +191,8 @@ export type Messages = {
     statsAria: string;
     statMessages: string;
     statCandidates: string;
+    connectedChats: string;
+    connectedChatsHint: string;
     searchPlaceholder: string;
     searchAria: string;
     searchClear: string;

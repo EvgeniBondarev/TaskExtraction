@@ -4,6 +4,7 @@ from app.models.entities import Task
 from app.services.telegram_reply import (
     build_default_reply_text,
     build_task_panel_url,
+    build_status_change_text,
     _normalize_reply_text,
 )
 from fastapi import HTTPException
@@ -28,6 +29,20 @@ def test_build_default_reply_text():
     assert "В работе" in text
     assert "Иван" in text
     assert "https://x.test/?task=1" in text
+
+
+def test_build_status_change_text():
+    task = Task(source_message_id=uuid4(), title="Задача", status="done")
+    text = build_status_change_text(task, "https://x.test/?task=1")
+    assert "Выполнено" in text
+    assert "http" not in text
+
+
+def test_build_status_change_text_for_returned_task():
+    task = Task(source_message_id=uuid4(), title="Задача", status="in_progress")
+    text = build_status_change_text(task, "https://x.test", "done")
+    assert "Возвращено в работу" in text
+    assert "Задача" not in text
 
 
 def test_normalize_reply_text():

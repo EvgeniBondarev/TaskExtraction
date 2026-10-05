@@ -2,6 +2,7 @@ import { AppBrandName } from "./AppBrandName";
 import { AppLogo } from "./AppLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useI18n } from "../i18n";
+import type { GoogleUser } from "../api/auth";
 
 export type AppMainPage = "tasks" | "feed" | "settings";
 
@@ -15,7 +16,8 @@ interface Props {
   badges?: NavBadges;
   onNavigate: (page: AppMainPage) => void;
   onHome: () => void;
-  onLogout: () => void;
+  onLogout?: () => void;
+  user?: GoogleUser | null;
 }
 
 function formatBadgeCount(n: number): string {
@@ -32,7 +34,7 @@ function NavBadge({ count }: { count: number }) {
   );
 }
 
-export function AppTopBar({ page, badges, onNavigate, onHome, onLogout }: Props) {
+export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user }: Props) {
   const { messages: t } = useI18n();
   const nav = t.nav;
   const tasksUnread = badges?.tasks ?? 0;
@@ -89,14 +91,27 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onLogout }: Props)
 
         <div className="app-top-bar__tools">
           <LanguageSwitcher className="lang-switch--compact" />
-          <button
+          {user && <div className="app-user" title={user.email || undefined}>
+            {user.picture ? (
+              <img className="app-user__avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="app-user__avatar app-user__avatar--initials" aria-hidden>
+                {(user.name || user.email || "?").slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span className="app-user__identity">
+              <strong>{user.name || user.email}</strong>
+              {user.name && user.email && <small>{user.email}</small>}
+            </span>
+          </div>}
+          {onLogout && <button
             type="button"
             className="app-top-bar__logout"
             onClick={onLogout}
             title={nav.logoutPanelTitle}
           >
             {nav.logout}
-          </button>
+          </button>}
         </div>
       </div>
     </header>

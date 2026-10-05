@@ -19,6 +19,9 @@ _PUBLIC_PREFIXES = (
 _PUBLIC_EXACT = (
     "/api/telegram/status",
     "/api/telegram/setup-required",
+    "/api/telegram/sources",
+    "/api/telegram/connect-links",
+    "/api/telegram/webhook",
 )
 
 _PUBLIC_TELEGRAM_AUTH_PREFIX = "/api/telegram/auth/"
@@ -28,6 +31,7 @@ _PUBLIC_TELEGRAM_AUTH_PREFIX = "/api/telegram/auth/"
 _PUBLIC_PREFIXES_EXTRA = (
     "/api/analytics/",
     "/api/admin/",
+    "/api/auth/google/",
 )
 
 
@@ -75,16 +79,16 @@ def resolve_request_tenant(request: Request) -> str | None:
 
 
 def bind_request_tenant(request: Request) -> str | None:
-    """Текущий tenant из cookie; cookie выставляется только при явном входе (credentials)."""
+    """Tenant selected by the authenticated browser session."""
     return get_session_tenant(request)
 
 
 def require_session_tenant(request: Request) -> str:
-    tenant = get_session_tenant(request)
+    tenant = bind_request_tenant(request)
     if not tenant:
         raise HTTPException(
             status_code=401,
-            detail="Сессия не найдена. Войдите через Telegram (QR-код).",
+            detail="Рабочая область не настроена. Укажите TELEGRAM_BOT_TOKEN.",
         )
     return tenant
 

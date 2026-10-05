@@ -62,7 +62,14 @@ async def lifespan(app: FastAPI):
     await init_analytics_db()
     set_ws_broadcast(_broadcast_ws)
     ingest_task = None
-    if os.environ.get("TE_DISABLE_INGEST") == "1":
+    if get_settings().telegram_bot_token:
+        if get_settings().telegram_bot_polling:
+            from app.telegram.listener import run_bot_polling_loop
+
+            ingest_task = asyncio.create_task(run_bot_polling_loop())
+        else:
+            logger.info("Telegram Bot API intake enabled; webhook receives updates directly")
+    elif os.environ.get("TE_DISABLE_INGEST") == "1":
         logger.warning(
             "TE_DISABLE_INGEST=1 — фоновый приём сообщений из Telegram ВЫКЛЮЧЕН. "
             "Уберите переменную и перезапустите API."

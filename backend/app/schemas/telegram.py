@@ -84,3 +84,7 @@ class PhoneVerifyOut(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     message: str | None = None
+
+
+class TelegramNotificationPreferencesIn(BaseModel):
+    status_notifications_enabled: bool

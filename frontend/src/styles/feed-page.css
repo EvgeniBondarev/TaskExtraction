@@ -103,6 +103,58 @@
   margin-top: 0.12rem;
 }
 
+.feed-page__chats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.feed-page__chats-copy {
+  display: grid;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.feed-page__chats-copy strong { font-size: 0.87rem; }
+
+.feed-page__chats-copy span {
+  max-width: 17rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.feed-page__chat-list {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feed-page__chat {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.45rem;
+  padding: 0.35rem 0.55rem 0.35rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.06);
+  font-size: 0.82rem;
+}
+
+.feed-page__chat > span:last-child {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Поиск */
 .feed-page__toolbar {
   margin-bottom: 1rem;
@@ -321,6 +373,43 @@
   margin-bottom: 0.5rem;
 }
 
+.feed-msg__decision {
+  margin: 0.7rem 0 0;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  border-radius: 9px;
+  background: rgba(59, 130, 246, 0.055);
+}
+
+.feed-msg__decision summary {
+  cursor: pointer;
+  padding: 0.55rem 0.7rem;
+  color: #bfdbfe;
+  font-size: 0.79rem;
+  font-weight: 600;
+}
+
+.feed-msg__decision-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0 0.7rem 0.55rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.feed-msg__decision-grid span { display: grid; gap: 0.1rem; }
+.feed-msg__decision-grid b { color: var(--text); font-weight: 600; }
+
+.feed-msg__decision p {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border-top: 1px solid rgba(96, 165, 250, 0.16);
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.feed-msg__decision p.feed-msg__decision-review { color: #fbbf24; }
+
 .feed-msg__footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -471,6 +560,8 @@
     justify-content: flex-start;
     padding-left: calc(48px + 0.75rem);
   }
+
+  .feed-msg__decision-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .feed-msg__footer {
     grid-template-columns: 1fr;
