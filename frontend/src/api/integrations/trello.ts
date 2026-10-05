@@ -98,3 +98,10 @@ export async function fetchTrelloLists(
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
+
+/** Полностью удалить подключение Trello: токен и настройки. Ссылки в задачах остаются. */
+export async function deleteTrelloSettings(): Promise<TrelloStatus> {
+  const r = await apiFetch(`${API}/api/integrations/trello/settings`, { method: "DELETE" });
+  if (!r.ok) throw new Error(await parseError(r));
+  return r.json();
+}

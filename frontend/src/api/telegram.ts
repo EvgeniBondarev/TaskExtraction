@@ -41,12 +41,31 @@ export async function fetchTelegramSources(): Promise<TelegramSources> {
 }
 
 export type TelegramConnections = {
-  groups: { source_id: string; title: string | null; has_avatar: boolean }[]
+  groups: { source_id: string; title: string | null; has_avatar: boolean; paused: boolean }[]
 };
 
 export async function fetchTelegramConnections(): Promise<TelegramConnections> {
   const r = await apiFetch(`${API}/api/telegram/connections`);
   if (!r.ok) throw new Error("Failed to load Telegram connections");
+  return r.json();
+}
+
+/** Поставить группу на паузу (бот перестаёт обрабатывать её сообщения) или возобновить. */
+export async function setTelegramGroupPaused(sourceId: string, paused: boolean): Promise<void> {
+  const r = await apiFetch(`${API}/api/telegram/connections/${encodeURIComponent(sourceId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paused }),
+  });
+  if (!r.ok) throw new Error("Failed to update group");
+}
+
+/** Отключить группу от рабочей области; бот выходит из чата. История задач остаётся. */
+export async function deleteTelegramGroup(sourceId: string): Promise<{ bot_left: boolean }> {
+  const r = await apiFetch(`${API}/api/telegram/connections/${encodeURIComponent(sourceId)}`, {
+    method: "DELETE",
+  });
+  if (!r.ok) throw new Error("Failed to delete group");
   return r.json();
 }
 

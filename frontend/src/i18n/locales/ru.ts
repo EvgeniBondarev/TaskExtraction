@@ -112,7 +112,7 @@ const messages: Messages = {
     intSkip: "Позже",
   },
   kanban: {
-    inbox: "Inbox",
+    inbox: "Новые",
     inProgress: "В работе",
     done: "Готово",
     archive: "Архив",

@@ -101,7 +101,7 @@ export const settingsEn = {
     title: "Prompts and thresholds",
     defaultsBadge: "defaults",
     hint:
-      "Two-step pipeline: classifier first (few tokens), then task card extraction. Confidence threshold is the minimum score to create a task in Inbox.",
+      "Two-step pipeline: classifier first (few tokens), then task card extraction. Confidence threshold is the minimum score to create a task in the New column.",
     confidenceLabel: "Auto-create threshold (confidence)",
     reviewLabel: "Review threshold (reserved)",
     classifierLabel: "Classifier (system)",

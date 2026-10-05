@@ -4,6 +4,7 @@ import type { GoogleUser } from "../api/auth";
 import { useI18n } from "../i18n";
 import { AppLogo } from "./AppLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ThemeSwitch } from "./ThemeSwitch";
 
 export type AppMainPage = "tasks" | "feed" | "settings";
 
@@ -94,6 +95,7 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user, hi
       )}
 
       <div className="te-topbar__end">
+        <ThemeSwitch className="te-topbar__theme" />
         <LanguageSwitcher className="lang-switch--compact" />
         {user && (
           <div className="te-account" ref={menuRef}>
@@ -118,6 +120,14 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user, hi
                 <div className="te-account__who">
                   <strong>{userName}</strong>
                   {user.name && user.email && <small>{user.email}</small>}
+                </div>
+                <div className="te-account__row">
+                  <span>{messages.panel.theme.label}</span>
+                  <ThemeSwitch />
+                </div>
+                <div className="te-account__row te-account__row--mobile">
+                  <span>{messages.lang.label}</span>
+                  <LanguageSwitcher className="lang-switch--compact" />
                 </div>
                 {onLogout && (
                   <button

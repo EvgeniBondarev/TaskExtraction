@@ -78,3 +78,10 @@ export async function fetchGitHubLabels(creds?: GitHubCredentials): Promise<GitH
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
+
+/** Полностью удалить подключение GitHub: токен и настройки. Ссылки в задачах остаются. */
+export async function deleteGitHubSettings(): Promise<GitHubStatus> {
+  const r = await apiFetch(`${API}/api/integrations/github/settings`, { method: "DELETE" });
+  if (!r.ok) throw new Error(await parseError(r));
+  return r.json();
+}

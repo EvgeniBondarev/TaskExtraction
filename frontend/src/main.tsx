@@ -3,10 +3,13 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { AdminApp } from "./pages/AdminApp";
 import { I18nProvider } from "./i18n";
+import { applyThemePref, readThemePref } from "./utils/theme";
 import "./index.css";
 import "./styles/brand.css";
 import "./styles/lang-switch.css";
 import "./styles/taste-retheme.css";
+
+applyThemePref(readThemePref());
 
 const isAdminRoute =
   window.location.pathname === "/admin" ||

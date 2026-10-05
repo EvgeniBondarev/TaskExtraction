@@ -1,18 +1,16 @@
-import { Brain, PlugsConnected, SlidersHorizontal, TelegramLogo } from "@phosphor-icons/react";
+import { PuzzlePiece, SlidersHorizontal, TelegramLogo } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { IntegrationsSettingsHub } from "../components/integrations/IntegrationsSettingsHub";
-import { LlmSettings } from "../components/LlmSettings";
 import { PromptSettings } from "../components/PromptSettings";
 import { TelegramSources } from "../components/TelegramSources";
 import { useI18n } from "../i18n";
 
-type SettingsTab = "telegram" | "llm" | "prompts" | "integrations";
+type SettingsTab = "telegram" | "prompts" | "integrations";
 
 const TABS: { id: SettingsTab; icon: typeof TelegramLogo }[] = [
   { id: "telegram", icon: TelegramLogo },
-  { id: "llm", icon: Brain },
   { id: "prompts", icon: SlidersHorizontal },
-  { id: "integrations", icon: PlugsConnected },
+  { id: "integrations", icon: PuzzlePiece },
 ];
 
 interface Props {
@@ -21,7 +19,7 @@ interface Props {
 
 function tabFromHash(): SettingsTab {
   const h = window.location.hash.replace("#", "");
-  if (h === "llm" || h === "prompts" || h === "integrations" || h === "telegram") return h;
+  if (h === "prompts" || h === "integrations" || h === "telegram") return h;
   return "telegram";
 }
 
@@ -82,7 +80,6 @@ export function TelegramSettings({ onStatusChange }: Props) {
         <section className="te-settings__main" aria-label={current.title}>
           <h2 className="te-settings__heading">{current.title}</h2>
           {tab === "telegram" && <TelegramSources />}
-          {tab === "llm" && <LlmSettings embedded />}
           {tab === "prompts" && <PromptSettings embedded />}
           {tab === "integrations" && <IntegrationsSettingsHub />}
         </section>

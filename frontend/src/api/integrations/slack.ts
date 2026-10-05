@@ -79,3 +79,10 @@ export async function fetchSlackChannels(creds?: SlackCredentials): Promise<Slac
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
+
+/** Полностью удалить подключение Slack: токен и настройки. Ссылки в задачах остаются. */
+export async function deleteSlackSettings(): Promise<SlackStatus> {
+  const r = await apiFetch(`${API}/api/integrations/slack/settings`, { method: "DELETE" });
+  if (!r.ok) throw new Error(await parseError(r));
+  return r.json();
+}

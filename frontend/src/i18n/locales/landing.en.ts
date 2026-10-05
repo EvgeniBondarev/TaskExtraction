@@ -33,7 +33,7 @@ export const landingEn: LandingMessages = {
       noise: "Off-topic",
     },
     verdictNote: {
-      task: "Card created in Inbox",
+      task: "Card added to New",
       question: "No task created, the message stays in the feed",
       noise: "Skipped, marked as noise in the feed",
     },
@@ -44,7 +44,7 @@ export const landingEn: LandingMessages = {
       due: "Due",
     },
     columns: {
-      inbox: "Inbox",
+      inbox: "New",
       progress: "In progress",
       done: "Done",
     },
@@ -146,7 +146,7 @@ export const landingEn: LandingMessages = {
       body: "Write a reply in the task and it goes to the original chat with a link to the card.",
     },
     board: {
-      title: "Board: Inbox, In progress, Done, Archive",
+      title: "Board: new, in progress, done, archive",
       body: "Drag cards between columns. The model sets priority and type for you.",
       alt: "In progress and Done columns with task cards",
     },

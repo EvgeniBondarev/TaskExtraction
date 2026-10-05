@@ -3,7 +3,7 @@ import { Task } from "../api";
 export const STATUS_ORDER = ["inbox", "in_progress", "done", "archive"] as const;
 
 export const STATUS_LABELS: Record<string, string> = {
-  inbox: "Inbox",
+  inbox: "Новые",
   in_progress: "В работе",
   done: "Готово",
   archive: "Архив",
@@ -39,7 +39,7 @@ export function primaryAction(status: string): { label: string; next: string } |
 }
 
 export function backActionLabel(status: string): string | null {
-  if (status === "in_progress") return "Вернуть в Inbox";
+  if (status === "in_progress") return "Вернуть в новые";
   if (status === "done") return "Вернуть в работу";
   if (status === "archive") return "Вернуть в Готово";
   return null;

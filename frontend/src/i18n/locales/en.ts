@@ -111,7 +111,7 @@ const messages: Messages = {
     intSkip: "Later",
   },
   kanban: {
-    inbox: "Inbox",
+    inbox: "New",
     inProgress: "In progress",
     done: "Done",
     archive: "Archive",

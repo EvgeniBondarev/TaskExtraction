@@ -56,7 +56,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .te-theme {
+  :root:not([data-theme="light"]) .te-theme {
     --bg: #111113;
     --surface: #18181b;
     --surface-2: #202024;
@@ -92,17 +92,59 @@
   }
 }
 
+:root[data-theme="dark"] .te-theme {
+  --bg: #111113;
+  --surface: #18181b;
+  --surface-2: #202024;
+  --surface-3: #2a2a2f;
+  --border: #2c2c31;
+  --line-strong: #3f3f46;
+  --text: #ececee;
+  --text-2: #d4d4d8;
+  --muted: #a1a1aa;
+  --faint: #75757d;
+  --accent: #f2804f;
+  --accent-hover: #f59e70;
+  --accent-soft: rgb(242 128 79 / 0.14);
+  --on-ink: #18181b;
+  --ok: #4ade80;
+  --ok-soft: rgb(74 222 128 / 0.12);
+  --warn: #facc15;
+  --warn-soft: rgb(250 204 21 / 0.12);
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --st-inbox: #a1a1aa;
+  --st-progress: #f2804f;
+  --st-done: #4ade80;
+  --st-archive: #5c5c63;
+
+  --glass-bg: rgb(28 28 31 / 0.66);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-edge: rgb(0 0 0 / 0.4);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -10px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 2px 6px rgb(0 0 0 / 0.3), 0 24px 56px -16px rgb(0 0 0 / 0.7);
+}
+
+
 body:has(.te-app),
 body:has(.te-boot) {
   background: #f6f6f4;
 }
 
 @media (prefers-color-scheme: dark) {
-  body:has(.te-app),
-  body:has(.te-boot) {
+  :root:not([data-theme="light"]) body:has(.te-app),
+  :root:not([data-theme="light"]) body:has(.te-boot) {
     background: #111113;
   }
 }
+
+:root[data-theme="dark"] body:has(.te-app),
+:root[data-theme="dark"] body:has(.te-boot) {
+  background: #111113;
+}
+
 
 .te-theme *,
 .te-theme *::before,
@@ -157,11 +199,17 @@ body:has(.te-boot) {
 }
 
 @media (prefers-color-scheme: dark) {
-  .te-theme .app-logo-mark {
+  :root:not([data-theme="light"]) .te-theme .app-logo-mark {
     border-radius: 25%;
     box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
   }
 }
+
+:root[data-theme="dark"] .te-theme .app-logo-mark {
+  border-radius: 25%;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
 
 /* ---------- Glass (лёгкое стекло) ---------- */
 .te-glass {
@@ -227,10 +275,15 @@ body:has(.te-boot) {
 }
 
 @media (prefers-color-scheme: dark) {
-  .te-btn--primary:hover:not(:disabled) {
+  :root:not([data-theme="light"]) .te-btn--primary:hover:not(:disabled) {
     color: #18181b;
   }
 }
+
+:root[data-theme="dark"] .te-btn--primary:hover:not(:disabled) {
+  color: #18181b;
+}
+
 
 .te-btn--ghost {
   border-color: var(--border);
@@ -258,6 +311,15 @@ body:has(.te-boot) {
 .te-btn--quiet:hover {
   color: var(--text);
   background: var(--surface-2);
+}
+
+.te-btn--danger {
+  background: var(--danger);
+  color: var(--on-ink);
+}
+
+.te-btn--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 .te-btn--danger-ghost {
@@ -776,8 +838,53 @@ body:has(.te-boot) {
   color: var(--text);
 }
 
+/* Переключатель темы: глобальный, работает и на лендинге (переменные с запасными значениями) */
+.te-theme-switch {
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--border, #dfdfdb);
+}
+
+.te-theme-switch button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted, #5c5c63);
+  cursor: pointer;
+  transition: background-color 0.18s, color 0.18s;
+}
+
+.te-theme-switch button:hover {
+  color: var(--text, #18181b);
+}
+
+.te-theme-switch button.is-active {
+  background: var(--surface-3, rgb(24 24 27 / 0.08));
+  color: var(--text, #18181b);
+}
+
 .te-account {
   position: relative;
+}
+
+.te-account__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.te-account__row--mobile {
+  display: none;
 }
 
 .te-account__trigger {
@@ -1990,6 +2097,66 @@ body:has(.te-boot) {
   font-weight: 550;
 }
 
+.te-group-list {
+  display: grid;
+  gap: 6px;
+}
+
+.te-group-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 8px 8px 8px 10px;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+
+.te-group-list li.is-paused img,
+.te-group-list li.is-paused .te-groups__ph {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.te-group-list img,
+.te-group-list .te-groups__ph {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.te-group-list__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.te-group-list__name strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.te-group-list__actions {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.te-dialog--sm {
+  width: min(420px, 100%);
+}
+
+.te-dialog--sm h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
 .te-groups img,
 .te-groups__ph {
   width: 28px;
@@ -2380,6 +2547,151 @@ body:has(.te-boot) {
 .te-int__panel {
   padding: 4px 18px 18px;
   border-top: 1px solid var(--border);
+}
+
+.te-settings__lead {
+  margin-top: -0.5rem;
+  color: var(--muted);
+  max-width: 64ch;
+}
+
+.te-int-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.te-int-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 16px;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.te-int-tile:hover {
+  border-color: var(--line-strong);
+}
+
+.te-int-tile--idle {
+  background: color-mix(in srgb, var(--surface) 60%, var(--surface-2));
+}
+
+.te-int-tile__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.te-int-tile__head .integration-brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+}
+
+.te-int-tile__title {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.te-int-tile__title strong {
+  font-weight: 650;
+}
+
+.te-int-tile__title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.te-int-tile__mode {
+  flex: 1;
+  color: var(--text-2);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.te-int-tile--idle .te-int-tile__mode {
+  color: var(--muted);
+}
+
+.te-int-tile__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.te-int-tile__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.te-switch--sm {
+  gap: 0.55rem;
+  font-size: 0.86rem;
+}
+
+.te-switch--sm .te-switch__track {
+  width: 34px;
+  height: 20px;
+}
+
+.te-switch--sm .te-switch__track::after {
+  width: 14px;
+  height: 14px;
+}
+
+.te-switch--sm input:checked + .te-switch__track::after {
+  transform: translateX(14px);
+}
+
+.te-icon-btn--danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.te-back {
+  justify-self: start;
+  margin-top: -0.5rem;
+}
+
+.te-int-detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.te-int-detail__head .integration-brand-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+
+.te-int-detail__head > div {
+  flex: 1;
+  min-width: 160px;
+}
+
+.te-int-detail__head h3 {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.te-int-detail__head p {
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 /* Формы интеграций (Jira/Trello/GitHub/Slack): общая стилизация по их разметке */
@@ -2809,6 +3121,10 @@ body:has(.te-boot) {
   .te-steps--row {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .te-int-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 767px) {
@@ -2832,8 +3148,13 @@ body:has(.te-boot) {
     display: none;
   }
 
-  .te-topbar__end .lang-switch {
+  .te-topbar__end > .lang-switch,
+  .te-topbar__theme {
     display: none;
+  }
+
+  .te-account__row--mobile {
+    display: flex;
   }
 
   .te-page__head {
@@ -2909,6 +3230,15 @@ body:has(.te-boot) {
 
   .te-field--inline {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .te-group-list li {
+    flex-wrap: wrap;
+  }
+
+  .te-group-list__actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 

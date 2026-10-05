@@ -4,6 +4,7 @@ import { MotionConfig } from "motion/react";
 import { useEffect } from "react";
 import { AppLogo } from "../components/AppLogo";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { ThemeSwitch } from "../components/ThemeSwitch";
 import { SeoHead } from "../components/SeoHead";
 import { BRAND_NAMES, BrandMark, type Brand } from "../components/landing/BrandMark";
 import { FeatureBento } from "../components/landing/FeatureBento";
@@ -106,6 +107,7 @@ export function LandingPage({ onTry, onHome }: Props) {
               ))}
             </nav>
             <div className="lnd-nav__end">
+              <ThemeSwitch className="lnd-theme" />
               <LanguageSwitcher />
               <button type="button" className="lnd-btn lnd-btn--primary lnd-btn--sm" onClick={open}>
                 {t.cta.open}

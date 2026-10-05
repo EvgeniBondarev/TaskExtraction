@@ -1,8 +1,10 @@
-import { ArrowSquareOut, Briefcase, ChatCircleDots, Lightbulb, UsersThree } from "@phosphor-icons/react";
+import { ArrowSquareOut, Briefcase, ChatCircleDots, Lightbulb, Pause, Play, Trash, UsersThree } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api/http";
 import {
+  deleteTelegramGroup,
   fetchTelegramConnections,
+  setTelegramGroupPaused,
   fetchTelegramPreferences,
   fetchTelegramSources,
   telegramGroupAvatarUrl,
@@ -10,6 +12,7 @@ import {
 } from "../api/telegram";
 import type { TelegramConnections, TelegramSources as Sources } from "../api/telegram";
 import { useI18n } from "../i18n";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { SettingsFormSkeleton } from "./PageSkeletons";
 
 export function TelegramSources() {
@@ -21,6 +24,9 @@ export function TelegramSources() {
   const [repliesOn, setRepliesOn] = useState(true);
   const [savingReplies, setSavingReplies] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busyGroup, setBusyGroup] = useState<string | null>(null);
+  const [confirmGroup, setConfirmGroup] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -47,6 +53,36 @@ export function TelegramSources() {
   const bot = sources.bot_username || "bot";
   const groups = connections?.groups ?? [];
 
+  async function togglePause(sourceId: string, paused: boolean) {
+    setBusyGroup(sourceId);
+    setError("");
+    try {
+      await setTelegramGroupPaused(sourceId, paused);
+      setConnections((prev) =>
+        prev ? { groups: prev.groups.map((g) => (g.source_id === sourceId ? { ...g, paused } : g)) } : prev,
+      );
+    } catch {
+      setError(t.groupError);
+    } finally {
+      setBusyGroup(null);
+    }
+  }
+
+  async function removeGroup(sourceId: string, name: string) {
+    setBusyGroup(sourceId);
+    setError("");
+    try {
+      await deleteTelegramGroup(sourceId);
+      setConnections((prev) => (prev ? { groups: prev.groups.filter((g) => g.source_id !== sourceId) } : prev));
+      setNotice(t.groupDeleted.replace("{name}", name));
+      setConfirmGroup(null);
+    } catch {
+      setError(t.groupError);
+    } finally {
+      setBusyGroup(null);
+    }
+  }
+
   async function toggleReplies(enabled: boolean) {
     const previous = repliesOn;
     setRepliesOn(enabled);
@@ -66,6 +102,19 @@ export function TelegramSources() {
   return (
     <div className="te-stack">
       {error && <p className="te-alert te-alert--error">{error}</p>}
+      {notice && !error && <p className="te-alert te-alert--ok" role="status">{notice}</p>}
+      {confirmGroup && (
+        <ConfirmDialog
+          title={t.deleteGroupTitle.replace("{name}", confirmGroup.name)}
+          text={t.deleteGroupText}
+          confirmLabel={t.deleteGroupConfirm}
+          cancelLabel={messages.panel.settings.integrations.cancel}
+          danger
+          busy={busyGroup === confirmGroup.id}
+          onConfirm={() => void removeGroup(confirmGroup.id, confirmGroup.name)}
+          onCancel={() => setConfirmGroup(null)}
+        />
+      )}
 
       <section className="te-panel">
         <header className="te-panel__head">
@@ -111,20 +160,52 @@ export function TelegramSources() {
               {groups.length === 0 ? (
                 <p className="te-muted">{t.noGroups}</p>
               ) : (
-                <ul className="te-groups">
-                  {groups.map((group) => (
-                    <li key={group.source_id}>
-                      {group.has_avatar ? (
-                        <img src={telegramGroupAvatarUrl(group.source_id)} alt="" />
-                      ) : (
-                        <span className="te-groups__ph" aria-hidden>
-                          {(group.title || "G").slice(0, 1).toUpperCase()}
-                        </span>
-                      )}
-                      <span>{group.title || t.groupFallback}</span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="te-group-list">
+                    {groups.map((group) => {
+                      const name = group.title || t.groupFallback;
+                      const busy = busyGroup === group.source_id;
+                      return (
+                        <li key={group.source_id} className={group.paused ? "is-paused" : ""}>
+                          {group.has_avatar ? (
+                            <img src={telegramGroupAvatarUrl(group.source_id)} alt="" />
+                          ) : (
+                            <span className="te-groups__ph" aria-hidden>
+                              {name.slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="te-group-list__name">
+                            <strong>{name}</strong>
+                            <span className={`te-status ${group.paused ? "te-status--pending" : "te-status--created"}`}>
+                              {group.paused ? t.groupPaused : t.groupActive}
+                            </span>
+                          </span>
+                          <span className="te-group-list__actions">
+                            <button
+                              type="button"
+                              className="te-btn te-btn--ghost te-btn--sm"
+                              disabled={busy}
+                              onClick={() => void togglePause(group.source_id, !group.paused)}
+                            >
+                              {group.paused ? <Play size={14} weight="fill" aria-hidden /> : <Pause size={14} weight="fill" aria-hidden />}
+                              {group.paused ? t.groupResume : t.groupPause}
+                            </button>
+                            <button
+                              type="button"
+                              className="te-btn te-btn--danger-ghost te-btn--sm"
+                              disabled={busy}
+                              onClick={() => setConfirmGroup({ id: group.source_id, name })}
+                            >
+                              <Trash size={14} aria-hidden />
+                              {t.groupDelete}
+                            </button>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p className="te-field__hint">{t.groupPauseHint}</p>
+                </>
               )}
             </div>
           </>

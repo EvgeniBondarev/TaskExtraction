@@ -100,3 +100,10 @@ export async function fetchJiraIssueTypes(
   if (!r.ok) throw new Error(await parseError(r));
   return r.json();
 }
+
+/** Полностью удалить подключение Jira: токен и настройки. Ссылки в задачах остаются. */
+export async function deleteJiraSettings(): Promise<JiraStatus> {
+  const r = await apiFetch(`${API}/api/integrations/jira/settings`, { method: "DELETE" });
+  if (!r.ok) throw new Error(await parseError(r));
+  return r.json();
+}
