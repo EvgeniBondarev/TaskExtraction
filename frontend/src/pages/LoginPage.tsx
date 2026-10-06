@@ -77,7 +77,7 @@ export function LoginPage({ onHome }: Props) {
             <motion.div className="te-login__story-mark" {...item(0)}>
               <AppIcon3D size={74} />
               <div className="te-login__workflow" aria-hidden="true">
-                <img src="/landing/premium/login-workflow.png" alt="" width="1152" height="1536" />
+                <img src="/landing/premium/login-workflow.webp" alt="" width="1152" height="1536" />
                 <span className="te-login__workflow-icon te-login__workflow-icon--google"><GoogleLogo size={15} weight="bold" /></span>
                 <span className="te-login__workflow-icon te-login__workflow-icon--telegram"><TelegramLogo size={15} weight="fill" /></span>
                 <span className="te-login__workflow-icon te-login__workflow-icon--kanban"><Kanban size={15} weight="bold" /></span>
