@@ -1,0 +1,31 @@
+name: Deploy to ThinkPad
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taskextraction-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ !contains(github.event.head_commit.message, '[skip deploy]') }}
+    runs-on: [self-hosted, linux, x64, taskextraction]
+    timeout-minutes: 30
+    steps:
+      - name: Check out the pushed revision
+        uses: actions/checkout@v4
+
+      - name: Build and deploy
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+          TASKEXTRACTION_ENV_FILE: /home/evg/taskextraction/.env
+          TASKEXTRACTION_DATA_DIR: /home/evg/taskextraction-data
+          TASKEXTRACTION_BIND_IP: 10.8.0.7
+        run: ./scripts/deploy-thinkpad.sh
