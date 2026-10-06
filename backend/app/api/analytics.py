@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 
 from app.analytics.service import record_event, record_visit
 from app.schemas.analytics import EventIn, VisitIn
+from app.tenancy import get_session_tenant
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -17,10 +18,12 @@ def _client_ip(request: Request) -> str | None:
 
 @router.post("/visit")
 async def track_visit(body: VisitIn, request: Request):
-    await record_visit(
+    recorded = await record_visit(
         visitor_id=body.visitor_id,
         session_id=body.session_id,
-        tenant_api_id=body.tenant_api_id,
+        # Attribution to a workspace comes only from the signed server session,
+        # never from a value a browser can forge.
+        tenant_api_id=get_session_tenant(request),
         utm_source=body.utm_source,
         utm_medium=body.utm_medium,
         utm_campaign=body.utm_campaign,
@@ -30,20 +33,20 @@ async def track_visit(body: VisitIn, request: Request):
         ip_address=_client_ip(request),
         user_agent=(request.headers.get("user-agent") or "")[:500] or None,
     )
-    return {"ok": True}
+    return {"ok": True, "recorded": recorded}
 
 
 @router.post("/event")
-async def track_event(body: EventIn):
+async def track_event(body: EventIn, request: Request):
     if body.event_type not in ("registration", "login", "setup_complete", "page_view"):
         return {"ok": False, "detail": "unknown event_type"}
-    await record_event(
+    recorded = await record_event(
         event_type=body.event_type,
         visitor_id=body.visitor_id,
-        tenant_api_id=body.tenant_api_id,
+        tenant_api_id=get_session_tenant(request),
         utm_source=body.utm_source,
         utm_medium=body.utm_medium,
         utm_campaign=body.utm_campaign,
         utm_content=body.utm_content,
     )
-    return {"ok": True}
+    return {"ok": True, "recorded": recorded}

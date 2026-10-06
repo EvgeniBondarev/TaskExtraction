@@ -29,9 +29,20 @@ async def record_visit(
     landing_path: str | None = None,
     ip_address: str | None = None,
     user_agent: str | None = None,
-) -> None:
+) -> bool:
+    """Store one visit per browser session.
+
+    The client may retry a request or reload the application, neither of which
+    represents a new visit.  ``session_id`` is generated per browser tab, so it
+    is the appropriate idempotency key for the visits metric.
+    """
     factory = get_analytics_session_factory()
     async with factory() as session:
+        existing = await session.scalar(
+            select(AnalyticsVisit.id).where(AnalyticsVisit.session_id == session_id[:64]).limit(1)
+        )
+        if existing is not None:
+            return False
         session.add(
             AnalyticsVisit(
                 visitor_id=visitor_id[:64],
@@ -48,6 +59,7 @@ async def record_visit(
             )
         )
         await session.commit()
+    return True
 
 
 async def record_event(
@@ -59,9 +71,26 @@ async def record_event(
     utm_medium: str | None = None,
     utm_campaign: str | None = None,
     utm_content: str | None = None,
-) -> None:
+) -> bool:
+    """Store an analytics event, keeping workspace registration idempotent."""
     factory = get_analytics_session_factory()
     async with factory() as session:
+        # A workspace can be opened many times after it has been created.  A
+        # registration, however, is a one-time conversion and must not grow on
+        # every status refresh.
+        if event_type == "registration" and (tenant_api_id or visitor_id):
+            identity_column = AnalyticsEvent.tenant_api_id if tenant_api_id else AnalyticsEvent.visitor_id
+            identity = tenant_api_id or visitor_id
+            existing = await session.scalar(
+                select(AnalyticsEvent.id)
+                .where(
+                    AnalyticsEvent.event_type == "registration",
+                    identity_column == identity,
+                )
+                .limit(1)
+            )
+            if existing is not None:
+                return False
         session.add(
             AnalyticsEvent(
                 event_type=event_type[:32],
@@ -74,6 +103,7 @@ async def record_event(
             )
         )
         await session.commit()
+    return True
 
 
 def _trim(value: str | None, max_len: int) -> str | None:

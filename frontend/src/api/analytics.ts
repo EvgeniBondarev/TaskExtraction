@@ -4,6 +4,7 @@ import { getStoredUtm, getVisitSessionId, getVisitorId } from "../utils/utm";
 const API = import.meta.env.VITE_API_URL || "";
 
 let visitSent = false;
+const EVENT_SENT_PREFIX = "te_analytics_event_sent:";
 
 export async function trackVisit(landingPath?: string): Promise<void> {
   if (visitSent) return;
@@ -28,20 +29,30 @@ export async function trackVisit(landingPath?: string): Promise<void> {
 
 export async function trackAnalyticsEvent(
   eventType: "registration" | "login" | "setup_complete",
-  tenantApiId?: string | number | null
 ): Promise<void> {
+  const eventKey = `${EVENT_SENT_PREFIX}${eventType}`;
+  try {
+    // Status is read more than once during a normal UI session.  Marking the
+    // event after a successful request prevents that read from becoming a new
+    // login/registration in the analytics dashboard.
+    if (sessionStorage.getItem(eventKey)) return;
+  } catch {
+    // Tracking is best-effort; the backend keeps registrations idempotent too.
+  }
   const utm = getStoredUtm();
   try {
-    await apiFetch(`${API}/api/analytics/event`, {
+    const response = await apiFetch(`${API}/api/analytics/event`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         event_type: eventType,
         visitor_id: getVisitorId(),
-        tenant_api_id: tenantApiId != null ? String(tenantApiId) : null,
         ...utm,
       }),
     });
+    if (response.ok) {
+      try { sessionStorage.setItem(eventKey, "1"); } catch { /* ignore */ }
+    }
   } catch {
     /* ignore */
   }

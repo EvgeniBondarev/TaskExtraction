@@ -53,12 +53,15 @@ export function AnalyticsDashboard() {
   useEffect(() => { void load(); }, [load]);
 
   const chartData = useMemo(() => {
+    const visitsByDate = new Map(visits.map((point) => [point.date, point.count]));
     const registrationsByDate = new Map(registrations.map((point) => [point.date, point.count]));
-    return visits.map((point) => ({
-      date: point.date.slice(5),
-      visits: point.count,
-      registrations: registrationsByDate.get(point.date) ?? 0,
-    }));
+    return [...new Set([...visitsByDate.keys(), ...registrationsByDate.keys()])]
+      .sort()
+      .map((date) => ({
+        date: date.slice(5),
+        visits: visitsByDate.get(date) ?? 0,
+        registrations: registrationsByDate.get(date) ?? 0,
+      }));
   }, [registrations, visits]);
 
   return (

@@ -63,16 +63,16 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
     setStatus(s);
     if (s.is_authorized && !trackedLoginRef.current) {
       trackedLoginRef.current = true;
-      void trackAnalyticsEvent("login", s.user_id ?? s.api_id);
+      void trackAnalyticsEvent("login");
       if (s.hosted_app) {
-        void trackAnalyticsEvent("registration", s.user_id ?? undefined);
+        void trackAnalyticsEvent("registration");
       }
     }
     if (s.setup_complete) {
       setStep("done");
       if (!trackedSetupRef.current) {
         trackedSetupRef.current = true;
-        void trackAnalyticsEvent("setup_complete", s.user_id ?? s.api_id);
+        void trackAnalyticsEvent("setup_complete");
       }
       if (!wasCompleteRef.current) {
         wasCompleteRef.current = true;
@@ -194,13 +194,12 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
     }
     setLoading(true);
     try {
-      const savedApiId = Number(apiId);
       await saveTelegramCredentials({
-        api_id: savedApiId,
+        api_id: Number(apiId),
         api_hash: apiHash.trim(),
         app_title: appTitle || undefined,
       });
-      void trackAnalyticsEvent("registration", savedApiId);
+      void trackAnalyticsEvent("registration");
       await refresh();
       setStep("auth");
     } catch (err) {
