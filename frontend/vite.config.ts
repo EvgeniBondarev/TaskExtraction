@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEO, SITEMAP_PATHS } from "./seo.config";
+import { PRICING_FAQ, PRICING_PAGE, PRICING_PLANS } from "./src/content/pricing";
 import { SEO_PAGES, isArticlePath, relatedSeoPages, seoBreadcrumbs, type SeoPage } from "./src/content/seoPages";
 
 const STATIC_LANDING = `<!--seo-static-start-->
@@ -15,7 +16,7 @@ const STATIC_LANDING = `<!--seo-static-start-->
   <section><h2>Интеграции с рабочими инструментами</h2><p>Выгружайте задачи в Jira, Trello, GitHub Issues и Slack автоматически или вручную — без изменения привычного процесса команды.</p></section>
   <section><h2>Как работает TaskExtraction</h2><ol><li>Подключите рабочую группу или разрешённые диалоги Telegram.</li><li>ИИ анализирует входящие сообщения и выделяет поручения.</li><li>Команда ведёт задачи на доске и получает обновления в чате.</li></ol></section>
   <section><h2>Частые вопросы</h2><p>Для работы не нужны хештеги и команды боту. Данные каждой рабочей области изолированы, а интеграции подключаются только по вашему выбору.</p></section>
-  <nav aria-label="Разделы сайта"><h2>Материалы и интеграции</h2><ul><li><a href="/features/">Возможности</a></li><li><a href="/telegram-task-manager/">Таск-менеджер для Telegram</a></li><li><a href="/integrations/">Интеграции</a></li><li><a href="/integrations/telegram-jira/">Telegram + Jira</a></li><li><a href="/integrations/telegram-trello/">Telegram + Trello</a></li><li><a href="/integrations/telegram-github/">Telegram + GitHub</a></li><li><a href="/integrations/telegram-slack/">Telegram + Slack</a></li><li><a href="/blog/">Блог</a></li><li><a href="/privacy/">Политика конфиденциальности</a></li></ul></nav>
+  <nav aria-label="Разделы сайта"><h2>Материалы и интеграции</h2><ul><li><a href="/features/">Возможности</a></li><li><a href="/telegram-task-manager/">Таск-менеджер для Telegram</a></li><li><a href="/pricing/">Цены: сервис бесплатный</a></li><li><a href="/integrations/">Интеграции</a></li><li><a href="/integrations/telegram-jira/">Telegram + Jira</a></li><li><a href="/integrations/telegram-trello/">Telegram + Trello</a></li><li><a href="/integrations/telegram-github/">Telegram + GitHub</a></li><li><a href="/integrations/telegram-slack/">Telegram + Slack</a></li><li><a href="/blog/">Блог</a></li><li><a href="/privacy/">Политика конфиденциальности</a></li></ul></nav>
 </main><!--seo-static-end-->`;
 
 const STATIC_PRIVACY = `<!--seo-static-start--><main class="seo-static"><h1>Политика конфиденциальности TaskExtraction</h1><p>Здесь описано, какие данные использует сервис и как защищаются рабочие области пользователей.</p><p>TaskExtraction обрабатывает только данные, необходимые для работы с подключёнными чатами и интеграциями.</p></main><!--seo-static-end-->`;
@@ -75,7 +76,7 @@ function homeJsonLd(base: string, description: string, url: string, image: strin
       url,
       image,
       inLanguage: "ru",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "RUB" },
     },
     { "@context": "https://schema.org", "@type": "Organization", name: "TaskExtraction", url: base, logo: `${base}/brand/logo-mark-512.png` },
     { "@context": "https://schema.org", "@type": "WebSite", name: "TaskExtraction", url: base, inLanguage: "ru" },
@@ -104,6 +105,31 @@ function pageJsonLd(base: string, page: SeoPage, image: string, lastmod: string)
       }
     : { "@context": "https://schema.org", "@type": "WebPage", name: page.title, description: page.description, url, inLanguage: "ru", isPartOf: { "@type": "WebSite", name: "TaskExtraction", url: base } };
   return jsonLdScript([main, crumbs]);
+}
+
+function staticPricingPage(): string {
+  const plans = PRICING_PLANS.map((plan) => `<section><h2>${escapeHtml(plan.name)} — ${escapeHtml(plan.price)}</h2><p>${escapeHtml(plan.tagline)}. ${escapeHtml(plan.priceNote)}.</p><h3>${escapeHtml(plan.featuresTitle)}</h3><ul>${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join("")}</ul><a href="${plan.ctaHref}">${escapeHtml(plan.cta)}</a></section>`).join("");
+  const faq = PRICING_FAQ.map((item) => `<h3>${escapeHtml(item.q)}</h3><p>${escapeHtml(item.a)}</p>`).join("");
+  return `<!--seo-static-start--><main class="seo-static"><h1>${escapeHtml(PRICING_PAGE.h1)}</h1><p>${escapeHtml(PRICING_PAGE.lead)}</p>${plans}<section><h2>Частые вопросы о цене</h2>${faq}</section><nav><a href="/">TaskExtraction</a> · <a href="/features/">Возможности</a> · <a href="/integrations/">Интеграции</a> · <a href="/blog/">Блог</a></nav></main><!--seo-static-end-->`;
+}
+
+function pricingJsonLd(base: string, image: string): string {
+  const url = `${base}${PRICING_PAGE.path}`;
+  return jsonLdScript([
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "TaskExtraction",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url,
+      image,
+      inLanguage: "ru",
+      offers: PRICING_PLANS.map((plan) => ({ "@type": "Offer", name: plan.name, price: "0", priceCurrency: "RUB", url: `${base}/login` })),
+    },
+    { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: PRICING_FAQ.map((item) => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "TaskExtraction", item: base }, { "@type": "ListItem", position: 2, name: "Цены", item: url }] },
+  ]);
 }
 
 function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
@@ -240,6 +266,17 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
         const pageHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), pageVars, staticSeoPage(page)));
         writeFileSync(resolve(dir, "index.html"), pageHtml, { encoding: "utf-8", flag: "w" });
       }
+      const pricingDir = resolve(dist, "pricing");
+      mkdirSync(pricingDir, { recursive: true });
+      writeFileSync(resolve(pricingDir, "index.html"), withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), {
+        ...vars,
+        __SEO_TITLE__: escapeHtml(PRICING_PAGE.title),
+        __SEO_DESCRIPTION__: escapeHtml(PRICING_PAGE.description),
+        __SEO_SHARE_TITLE__: escapeHtml(PRICING_PAGE.title),
+        __SEO_SHARE_DESCRIPTION__: escapeHtml(PRICING_PAGE.description),
+        __SEO_CANONICAL__: `${base}${PRICING_PAGE.path}`,
+        __SEO_JSONLD__: pricingJsonLd(base, `${base}${SEO.ogImagePath}`),
+      }, staticPricingPage())), { encoding: "utf-8" });
       const notFoundHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), {
         ...vars,
         __SEO_TITLE__: "Страница не найдена · TaskExtraction",
