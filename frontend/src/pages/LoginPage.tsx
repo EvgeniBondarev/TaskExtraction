@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle, GoogleLogo, ShieldCheck } from "@phosphor-icons/react";
+import { ArrowLeft, CheckCircle, GoogleLogo, Kanban, ShieldCheck, TelegramLogo } from "@phosphor-icons/react";
 import { motion, MotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 import { fetchGoogleAuthStatus, startGoogleLogin } from "../api/auth";
@@ -74,8 +74,14 @@ export function LoginPage({ onHome }: Props) {
 
         <main className="te-login__main">
           <section className="te-login__story">
-            <motion.div {...item(0)}>
-              <AppIcon3D size={150} />
+            <motion.div className="te-login__story-mark" {...item(0)}>
+              <AppIcon3D size={74} />
+              <div className="te-login__workflow" aria-hidden="true">
+                <img src="/landing/premium/login-workflow.png" alt="" width="1152" height="1536" />
+                <span className="te-login__workflow-icon te-login__workflow-icon--google"><GoogleLogo size={15} weight="bold" /></span>
+                <span className="te-login__workflow-icon te-login__workflow-icon--telegram"><TelegramLogo size={15} weight="fill" /></span>
+                <span className="te-login__workflow-icon te-login__workflow-icon--kanban"><Kanban size={15} weight="bold" /></span>
+              </div>
             </motion.div>
             <motion.h1 {...item(1)}>{t.title}</motion.h1>
             <motion.p className="te-login__lead" {...item(2)}>
@@ -89,7 +95,10 @@ export function LoginPage({ onHome }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.1, ease: EASE }}
           >
-            <h2>{t.cardTitle}</h2>
+            <div className="te-login__card-title">
+              <span className="te-login__card-mark" aria-hidden="true"><ShieldCheck size={19} weight="fill" /></span>
+              <h2>{t.cardTitle}</h2>
+            </div>
 
             {error && (
               <p className="te-alert te-alert--error" role="alert">

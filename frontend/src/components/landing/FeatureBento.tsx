@@ -23,12 +23,14 @@ export function FeatureBento() {
         </Reveal>
 
         <Reveal className="lnd-cell lnd-cell--replies" delay={0.05}>
+          <img className="lnd-cell__accent lnd-cell__accent--ai" src="/landing/premium/ai-analysis.webp" alt="" width={1254} height={1254} loading="eager" decoding="async" />
           <ReplySequence bot={bot} lines={[replies.progress, replies.done]} />
           <h3>{t.replies.title}</h3>
           <p>{t.replies.body}</p>
         </Reveal>
 
         <Reveal className="lnd-cell lnd-cell--answer" delay={0.1}>
+          <img className="lnd-cell__accent lnd-cell__accent--task" src="/landing/premium/task-card.webp" alt="" width={1254} height={1254} loading="eager" decoding="async" />
           <ArrowBendUpLeft size={26} aria-hidden />
           <h3>{t.answer.title}</h3>
           <p>{t.answer.body}</p>
@@ -43,6 +45,7 @@ export function FeatureBento() {
         </Reveal>
 
         <Reveal className="lnd-cell lnd-cell--prompt">
+          <img className="lnd-cell__accent lnd-cell__accent--flow" src="/landing/premium/automation-flow.webp" alt="" width={1254} height={1254} loading="eager" decoding="async" />
           <SlidersHorizontal size={26} aria-hidden />
           <div>
             <h3>{t.prompt.title}</h3>

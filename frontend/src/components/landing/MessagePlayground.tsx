@@ -19,6 +19,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { classifyDemoMessage, DemoError } from "../../api/demo";
 import { useI18n, type PlaygroundVerdict } from "../../i18n";
+import { AppLogo } from "../AppLogo";
 import { BrandMark } from "./BrandMark";
 
 type Column = "inbox" | "progress" | "done";
@@ -76,9 +77,12 @@ function replyFor(from: Column, to: Column): Reply | null {
 }
 
 export function MessagePlayground() {
-  const { messages } = useI18n();
+  const { messages, locale } = useI18n();
   const t = messages.landing.playground;
   const live = t.live;
+  const flowLabel = locale === "ru" ? "ИИ" : "AI";
+  const telegramLabel = locale === "ru" ? "Telegram" : "Telegram";
+  const projectLabel = locale === "ru" ? "Проект" : "Project";
 
   const presets: ChatItem[] = useMemo(
     () =>
@@ -204,6 +208,7 @@ export function MessagePlayground() {
             <BrandMark brand="telegram" size={18} />
           </span>
           <span>
+            <small className="lnd-chat__platform">{telegramLabel}</small>
             <strong>{t.chatTitle}</strong>
             <small>{t.chatMeta}</small>
           </span>
@@ -292,7 +297,21 @@ export function MessagePlayground() {
         </form>
       </div>
 
+      <div className="lnd-play__bridge" aria-hidden>
+        <span className="lnd-play__bridge-label">{flowLabel}</span>
+        <span className="lnd-play__bridge-line" />
+        <span className="lnd-play__bridge-icon"><Sparkle size={15} weight="fill" /></span>
+        <ArrowRight size={17} weight="bold" />
+      </div>
+
       <div className="lnd-result" ref={resultRef} aria-label={t.resultAria} aria-live="polite">
+        <header className="lnd-result__head">
+          <span className="lnd-result__app-icon" aria-hidden><AppLogo size={27} /></span>
+          <span>
+            <small>{projectLabel}</small>
+            <strong>TaskExtraction</strong>
+          </span>
+        </header>
         <AnimatePresence mode="wait" initial={false}>
           {current === null ? (
             <motion.div key="empty" className="lnd-result__empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

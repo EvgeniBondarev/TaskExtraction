@@ -12,7 +12,8 @@ export function readThemePref(): ThemePref {
   } catch {
     /* ignore */
   }
-  return "system";
+  // A calm light surface is the product default. Explicit selections remain persisted.
+  return "light";
 }
 
 /** Ставит data-theme на <html>; "system" снимает атрибут и отдаёт выбор prefers-color-scheme. */

@@ -189,7 +189,9 @@ body:has(.te-boot) {
 
 .te-app {
   min-height: 100dvh;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 82% -12%, color-mix(in srgb, var(--accent-soft) 60%, transparent), transparent 31rem),
+    var(--bg);
   padding: 12px clamp(12px, 2vw, 24px) 48px;
 }
 
@@ -207,6 +209,46 @@ body:has(.te-boot) {
   -webkit-backdrop-filter: blur(20px) saturate(170%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), 0 0 0 0.5px var(--glass-edge), var(--shadow-md);
+}
+
+/* Premium surface language: depth is local, so work areas stay calm and legible. */
+.te-topbar {
+  box-shadow: var(--glass-highlight), 0 16px 42px -26px rgb(26 23 20 / .35), 0 1px 0 var(--glass-edge);
+}
+
+.te-page__head {
+  padding: clamp(1.2rem, 2vw, 1.75rem);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 96%, #fff), var(--surface));
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgb(255 255 255 / .6);
+}
+
+.te-toolbar,
+.te-feed__chats {
+  border-radius: var(--r-card);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .48);
+}
+
+.te-col,
+.te-empty,
+.te-settings__nav {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .58), var(--shadow-sm);
+}
+
+.te-card {
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+
+.te-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .te-card { transition: none; }
+  .te-card:hover { transform: none; }
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -3859,13 +3901,33 @@ body:has(.te-boot) {
 
 /* ---------- Login ---------- */
 .te-login {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
   padding: 16px clamp(16px, 3vw, 32px) 24px;
   background:
-    radial-gradient(60% 50% at 85% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(46% 54% at 79% 18%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 72%),
+    radial-gradient(32% 44% at 12% 85%, color-mix(in srgb, var(--ok) 5%, transparent), transparent 75%),
     var(--bg);
+  overflow: hidden;
+}
+
+.te-login::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 78px max(-20vw, -270px) auto auto;
+  width: min(56vw, 720px);
+  aspect-ratio: 1.35;
+  opacity: 0.45;
+  background:
+    linear-gradient(90deg, transparent 49.85%, color-mix(in srgb, var(--border) 55%, transparent) 50%, transparent 50.15%),
+    linear-gradient(0deg, transparent 49.85%, color-mix(in srgb, var(--border) 55%, transparent) 50%, transparent 50.15%);
+  background-size: 68px 68px;
+  mask-image: radial-gradient(ellipse at center, #000 8%, transparent 68%);
+  pointer-events: none;
 }
 
 .te-login__nav {
@@ -3898,9 +3960,10 @@ body:has(.te-boot) {
 }
 
 .te-login__main {
+  position: relative;
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1.18fr) minmax(420px, 0.82fr);
   grid-template-areas: "story card" "steps card";
   align-items: center;
   align-content: center;
@@ -3913,6 +3976,7 @@ body:has(.te-boot) {
 }
 
 .te-login__story {
+  position: relative;
   grid-area: story;
   align-self: end;
   display: grid;
@@ -3920,7 +3984,67 @@ body:has(.te-boot) {
   justify-items: start;
 }
 
+.te-login__story-mark {
+  position: relative;
+  width: 100%;
+  min-height: 76px;
+}
+
+.te-login__story-mark .te-icon3d {
+  position: relative;
+  z-index: 2;
+}
+
+.te-login__workflow {
+  position: absolute;
+  z-index: 0;
+  top: -78px;
+  right: -68px;
+  left: auto;
+  width: clamp(270px, 25vw, 330px);
+  aspect-ratio: 0.75;
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.te-login__workflow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 14% -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 11%, transparent), transparent 68%);
+  filter: blur(8px);
+}
+
+.te-login__workflow img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 28px 34px color-mix(in srgb, var(--text) 8%, transparent));
+}
+
+.te-login__workflow-icon {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+.te-login__workflow-icon--google { top: 13%; left: 4%; color: var(--text); }
+.te-login__workflow-icon--telegram { top: 45%; right: 2%; color: var(--accent); }
+.te-login__workflow-icon--kanban { bottom: 11%; left: 17%; color: var(--ok); }
+
 .te-login__story h1 {
+  position: relative;
+  z-index: 2;
+  max-width: 13ch;
   font-size: clamp(2rem, 3.6vw, 2.9rem);
   font-weight: 650;
   letter-spacing: -0.04em;
@@ -3928,7 +4052,9 @@ body:has(.te-boot) {
 }
 
 .te-login__lead {
-  max-width: 44ch;
+  position: relative;
+  z-index: 2;
+  max-width: 39ch;
   color: var(--muted);
   font-size: 1.08rem;
 }
@@ -3961,8 +4087,40 @@ body:has(.te-boot) {
   display: grid;
   gap: 1.1rem;
   padding: 28px;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 65% at 100% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 72%),
+    color-mix(in srgb, var(--surface) 96%, var(--bg));
   border-radius: 22px;
-  box-shadow: var(--glass-highlight), 0 0 0 0.5px var(--glass-edge), var(--shadow-lg);
+  box-shadow: var(--glass-highlight), 0 0 0 0.5px var(--glass-edge), 0 26px 60px -32px color-mix(in srgb, var(--text) 42%, transparent), var(--shadow-lg);
+}
+
+.te-login__card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 18%, transparent) 52%, transparent);
+}
+
+.te-login__card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.te-login__card-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--ok) 24%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ok-soft) 70%, transparent);
+  color: var(--ok);
 }
 
 .te-login__card h2 {
@@ -4022,10 +4180,19 @@ body:has(.te-boot) {
     --icon-size: 110px !important;
   }
 
+  .te-login__workflow {
+    display: none;
+  }
+
+  .te-login__story h1 {
+    max-width: none;
+  }
+
   .te-login__card {
     padding: 20px;
   }
 }
+
 
 /* ---------- Legal (privacy) ---------- */
 .te-legal {

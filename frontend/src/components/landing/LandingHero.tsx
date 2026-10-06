@@ -1,7 +1,7 @@
 import { ArrowDown } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useI18n } from "../../i18n";
-import { ThemedShot } from "./ThemedShot";
+import { HeroFlow } from "./HeroFlow";
 
 interface Props {
   onOpen: () => void;
@@ -44,7 +44,7 @@ export function LandingHero({ onOpen, onExample }: Props) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.9, delay: 0.15, ease: EASE }}
       >
-        <ThemedShot name="board" alt={t.hero.videoLabel} width={1600} height={1028} priority />
+        <HeroFlow />
       </motion.figure>
     </section>
   );

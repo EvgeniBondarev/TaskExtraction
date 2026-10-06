@@ -26,14 +26,18 @@ export function PricingPage() {
         </nav>
         <main>
           <header className="pricing__hero">
-            <p className="pricing__badge">{PRICING_PAGE.badge}</p>
-            <h1>{PRICING_PAGE.h1}</h1>
-            <p className="pricing__lead">{PRICING_PAGE.lead}</p>
+            <div className="pricing__hero-copy">
+              <p className="pricing__badge">{PRICING_PAGE.badge}</p>
+              <h1>{PRICING_PAGE.h1}</h1>
+              <p className="pricing__lead">{PRICING_PAGE.lead}</p>
+            </div>
+            <img className="pricing__hero-art" src="/landing/premium/hero-flow.webp" alt="" width="1717" height="916" />
           </header>
 
           <section className="pricing__grid" aria-label="Варианты использования">
             {PRICING_PLANS.map((plan) => (
               <article key={plan.name} className={`pricing__card${plan.featured ? " pricing__card--featured" : ""}`}>
+                <div className="pricing__card-art"><img src={plan.art} alt="" width="1024" height="1024" loading="lazy" decoding="async" /></div>
                 <h2>{plan.name}</h2>
                 <p className="pricing__tagline">{plan.tagline}</p>
                 <p className="pricing__price">{plan.price}</p>

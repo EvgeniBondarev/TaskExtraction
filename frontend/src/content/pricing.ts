@@ -1,5 +1,6 @@
 export type PricingPlan = {
   name: string;
+  art: string;
   tagline: string;
   price: string;
   priceNote: string;
@@ -24,6 +25,7 @@ export const PRICING_PAGE = {
 export const PRICING_PLANS: PricingPlan[] = [
   {
     name: "Облако",
+    art: "/landing/premium/pricing-cloud.webp",
     tagline: "Начните за пару минут",
     price: "0 ₽",
     priceNote: "Бесплатно для всех, без пробного периода",
@@ -42,6 +44,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   },
   {
     name: "Своя установка",
+    art: "/landing/premium/pricing-self-hosted.webp",
     tagline: "Данные на вашем сервере",
     price: "0 ₽",
     priceNote: "Открытый Docker-образ, лицензия MIT",
@@ -53,6 +56,22 @@ export const PRICING_PLANS: PricingPlan[] = [
       "SQLite на вашем диске, ничего не уходит на сторону",
       "Свой ключ для языковой модели",
       "Секреты хранятся в базе в зашифрованном виде",
+    ],
+  },
+  {
+    name: "Открытый код",
+    art: "/landing/premium/pricing-github.webp",
+    tagline: "Изучайте, развивайте, запускайте свой вариант",
+    price: "0 ₽",
+    priceNote: "Исходный код доступен на GitHub",
+    cta: "Открыть GitHub",
+    ctaHref: "https://github.com/EvgeniBondarev/TaskExtraction",
+    featuresTitle: "Для разработчиков:",
+    features: [
+      "Исходный код и история изменений в открытом репозитории",
+      "Лицензия MIT для самостоятельного использования и доработок",
+      "Можно предложить улучшение или отправить pull request",
+      "Документация по запуску и Docker-конфигурация в репозитории",
     ],
   },
 ];
