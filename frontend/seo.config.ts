@@ -26,7 +26,9 @@ export const SEO = {
     "telegram задачи, извлечение задач, kanban, jira, trello, slack, github issues, llm, поддержка, taskextraction, ai task manager",
 
   welcomePath: "/",
-  ogImagePath: "/og-image.png",
+  // Версия URL заставляет мессенджеры запросить обновлённую карточку, а не взять
+  // старый вариант из собственного кэша.
+  ogImagePath: "/og-image.png?v=2",
   ogImageWidth: 1200,
   ogImageHeight: 630,
   ogImageAlt: "TaskExtraction: задачи из Telegram на одной доске",

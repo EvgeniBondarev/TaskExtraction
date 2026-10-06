@@ -3,7 +3,7 @@
 
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
-RUN apk add --no-cache python3 py3-pillow
+RUN apk add --no-cache python3 py3-pillow font-dejavu
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci 2>/dev/null || npm install
 COPY frontend/ .

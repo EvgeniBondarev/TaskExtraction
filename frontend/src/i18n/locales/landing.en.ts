@@ -6,6 +6,7 @@ export const landingEn: LandingMessages = {
     example: "Example",
     setup: "Setup",
     faq: "Questions",
+    blog: "Blog",
     homeTitle: "Home",
   },
   cta: {

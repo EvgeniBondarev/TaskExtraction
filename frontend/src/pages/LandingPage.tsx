@@ -106,6 +106,7 @@ export function LandingPage({ onTry, onHome }: Props) {
                   {link.label}
                 </a>
               ))}
+              <a href="/blog/">{t.nav.blog}</a>
             </nav>
             <div className="lnd-nav__end">
               <ThemeSwitch className="lnd-theme" />
@@ -166,6 +167,7 @@ export function LandingPage({ onTry, onHome }: Props) {
           <span>
             © {new Date().getFullYear()} {t.footer.rights}
           </span>
+          <a href="/blog/">{t.nav.blog}</a>
           <a href="/privacy">{t.footer.privacy}</a>
         </footer>
       </div>

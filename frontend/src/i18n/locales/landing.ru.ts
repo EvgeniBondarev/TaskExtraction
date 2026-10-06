@@ -4,6 +4,7 @@ export const landingRu = {
     example: "Пример",
     setup: "Подключение",
     faq: "Вопросы",
+    blog: "Блог",
     homeTitle: "На главную",
   },
   cta: {
