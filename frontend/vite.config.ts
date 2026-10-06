@@ -152,8 +152,17 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
       const dist = resolve(__dirname, "dist");
       const taskDir = resolve(dist, "task");
       const compiledIndex = readFileSync(resolve(dist, "index.html"), "utf-8");
-      const bundleScript = compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js';
+      // Vite кладёт module script раньше извлечённого CSS. На медленном соединении
+      // React успевает отрисовать страницу до прихода стилей, что даёт заметный FOUC.
+      // Переносим stylesheet перед приложением во всех статических входных HTML.
       const bundleStyles = compiledIndex.match(/<link rel="stylesheet"[^>]+>/g)?.join("\n") || "";
+      const compiledIndexWithStylesFirst = bundleStyles
+        ? compiledIndex
+          .replace(/<link rel="stylesheet"[^>]+>\s*/g, "")
+          .replace(/(<script type="module"[^>]+src="[^"]+\.js"[^>]*><\/script>)/, `${bundleStyles}\n    $1`)
+        : compiledIndex;
+      writeFileSync(resolve(dist, "index.html"), compiledIndexWithStylesFirst, { encoding: "utf-8" });
+      const bundleScript = compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js';
       const withBundleAssets = (html: string) => html
         .replace('/src/main.tsx', bundleScript)
         .replace('</head>', `${bundleStyles}\n  </head>`);
