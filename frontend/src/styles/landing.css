@@ -338,6 +338,26 @@
   pointer-events: none;
 }
 
+:root[data-theme="dark"] .lnd-flow {
+  background: #111113;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lnd-flow {
+    background: #111113;
+  }
+}
+
+:root[data-theme="dark"] .lnd-flow::after {
+  background: linear-gradient(90deg, rgb(17 17 19 / .96) 0%, rgb(17 17 19 / .86) 37%, rgb(17 17 19 / .38) 56%, transparent 75%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lnd-flow::after {
+    background: linear-gradient(90deg, rgb(17 17 19 / .96) 0%, rgb(17 17 19 / .86) 37%, rgb(17 17 19 / .38) 56%, transparent 75%);
+  }
+}
+
 .lnd-flow__art {
   position: absolute;
   z-index: 0;

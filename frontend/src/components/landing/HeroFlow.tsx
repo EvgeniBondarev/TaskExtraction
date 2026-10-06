@@ -2,6 +2,7 @@ import { CheckCircle, MagicWand, PaperPlaneTilt } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
+import { useThemePref } from "../../utils/theme";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -22,6 +23,7 @@ function leftCenter(el: HTMLElement, parent: HTMLElement): Point {
 /** A concise, semantic product story layered over the decorative hero render. */
 export function HeroFlow() {
   const { locale } = useI18n();
+  const [theme] = useThemePref();
   const reduce = useReducedMotion();
   const storyRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
@@ -30,6 +32,7 @@ export function HeroFlow() {
   const [connections, setConnections] = useState<{ width: number; height: number; messageToAi: string; aiToTask: string } | null>(null);
   const float = reduce ? undefined : { y: [0, -7, 0] };
   const isRu = locale === "ru";
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const updateConnections = useCallback(() => {
     const story = storyRef.current;
@@ -62,7 +65,13 @@ export function HeroFlow() {
 
   return (
     <div className="lnd-flow" aria-label={isRu ? "Сообщение преобразуется в структурированную задачу" : "A message becomes a structured task"}>
-      <img className="lnd-flow__art" src="/landing/premium/hero-flow.webp" alt="" width={1717} height={916} />
+      <img
+        className="lnd-flow__art"
+        src={isDark ? "/landing/premium/hero-flow-dark.webp" : "/landing/premium/hero-flow.webp"}
+        alt=""
+        width={1717}
+        height={916}
+      />
       <div className="lnd-flow__story" ref={storyRef}>
         {connections && (
           <svg className="lnd-flow__connections" viewBox={`0 0 ${connections.width} ${connections.height}`} preserveAspectRatio="none" aria-hidden>
