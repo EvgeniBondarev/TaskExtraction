@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { ImageWithSkeleton } from "./ImageWithSkeleton";
 
 interface Props {
   src: string;
@@ -32,7 +33,7 @@ export function ImageLightbox({ src, alt, onClose }: Props) {
       <button type="button" className="lightbox-close" onClick={onClose} aria-label="Закрыть">
         ×
       </button>
-      <img src={src} alt={alt || ""} onClick={(e) => e.stopPropagation()} />
+      <ImageWithSkeleton src={src} alt={alt || ""} onClick={(e) => e.stopPropagation()} wrapperClassName="image-lightbox__image" />
       <style>{`
         .image-lightbox {
           position: fixed;
@@ -52,16 +53,18 @@ export function ImageLightbox({ src, alt, onClose }: Props) {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        .image-lightbox img {
+        .image-lightbox__image {
           position: relative;
           z-index: 2147483001;
           max-width: min(96vw, 1400px);
           max-height: 92vh;
-          object-fit: contain;
           border-radius: 8px;
           box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
           cursor: default;
+          min-width: min(80vw, 360px);
+          min-height: min(55vh, 280px);
         }
+        .image-lightbox__image img { object-fit: contain; }
         .image-lightbox .lightbox-close {
           position: fixed;
           top: 1rem;

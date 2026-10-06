@@ -1,4 +1,4 @@
-from app.utils.telegram_attachments import extract_urls_from_message
+from app.utils.telegram_attachments import extract_urls_from_bot_message, extract_urls_from_message
 
 
 class _Entity:
@@ -26,3 +26,11 @@ def test_extract_urls_dedupes():
     msg = _Msg("https://a.com https://a.com")
     urls = extract_urls_from_message(msg)
     assert urls.count("https://a.com") == 1
+
+
+def test_extract_urls_from_bot_api_caption():
+    urls = extract_urls_from_bot_message({
+        "caption": "Файл: https://example.com/spec.pdf",
+        "caption_entities": [{"type": "text_link", "offset": 0, "length": 4, "url": "https://example.com/open"}],
+    })
+    assert urls == ["https://example.com/open", "https://example.com/spec.pdf"]

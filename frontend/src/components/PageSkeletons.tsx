@@ -109,8 +109,7 @@ export function ChatListSkeleton({
   return (
     <SkeletonGroup className="sk-chat-list" label={message}>
       <div className="sk-chat-loading-head">
-        <span className="sk-chat-spinner" aria-hidden />
-        <span>{message}</span>
+        <Skeleton width={130} height={14} radius={5} />
       </div>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="sk-chat-row">
@@ -127,27 +126,9 @@ export function ChatListSkeleton({
         .sk-chat-loading-head {
           display: flex;
           align-items: center;
-          gap: 0.65rem;
           padding: 0.85rem 1rem;
-          font-size: 0.88rem;
-          color: #93c5fd;
           background: rgba(59, 130, 246, 0.08);
           border-bottom: 1px solid rgba(59, 130, 246, 0.2);
-        }
-        .sk-chat-spinner {
-          width: 1.1rem;
-          height: 1.1rem;
-          border: 2px solid rgba(59, 130, 246, 0.25);
-          border-top-color: #3b82f6;
-          border-radius: 50%;
-          animation: sk-chat-spin 0.75s linear infinite;
-          flex-shrink: 0;
-        }
-        @keyframes sk-chat-spin {
-          to { transform: rotate(360deg); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .sk-chat-spinner { animation: none; border-top-color: rgba(59, 130, 246, 0.5); }
         }
         .sk-chat-row {
           display: flex;
@@ -197,6 +178,76 @@ export function IntegrationsOverviewSkeleton() {
           </div>
         </div>
       ))}
+    </SkeletonGroup>
+  );
+}
+
+export function AdminDashboardSkeleton({ users = false }: { users?: boolean }) {
+  return (
+    <SkeletonGroup className="admin-skeleton" label={users ? "Загрузка пользователей" : "Загрузка аналитики"}>
+      {users ? (
+        <div className="admin-section">
+          <Skeleton width={240} height={20} radius={6} style={{ marginBottom: "1rem" }} />
+          {Array.from({ length: 5 }).map((_, row) => (
+            <div className="admin-skeleton__table-row" key={row}>
+              <Skeleton width={`${48 + (row % 3) * 8}%`} height={14} radius={4} />
+              <Skeleton width="18%" height={20} radius={999} />
+              <Skeleton width="16%" height={14} radius={4} />
+              <Skeleton width="15%" height={14} radius={4} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="admin-cards">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div className="admin-card" key={i}>
+                <Skeleton width="52%" height={10} radius={4} />
+                <Skeleton width="70%" height={28} radius={6} style={{ marginTop: "0.55rem" }} />
+              </div>
+            ))}
+          </div>
+          <div className="admin-section">
+            <Skeleton width={140} height={20} radius={6} />
+            <Skeleton height={260} radius={8} style={{ marginTop: "1rem" }} />
+          </div>
+        </>
+      )}
+      <style>{`
+        .admin-skeleton__table-row {
+          display: grid;
+          grid-template-columns: 2fr 0.7fr 0.7fr 0.7fr;
+          align-items: center;
+          gap: 1rem;
+          min-height: 3.5rem;
+          border-top: 1px solid #334155;
+        }
+        @media (max-width: 640px) {
+          .admin-skeleton__table-row { grid-template-columns: 1fr 0.65fr; }
+          .admin-skeleton__table-row > :nth-child(n + 3) { display: none; }
+        }
+      `}</style>
+    </SkeletonGroup>
+  );
+}
+
+export function AnalyticsDashboardSkeleton() {
+  return (
+    <SkeletonGroup className="te-analytics" label="Загрузка аналитики">
+      <section className="te-analytics__metrics" aria-hidden>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <article key={i}>
+            <Skeleton width="48%" height={12} radius={4} />
+            <Skeleton width="60%" height={30} radius={7} style={{ marginTop: "0.85rem" }} />
+            <Skeleton width="72%" height={10} radius={4} style={{ marginTop: "0.5rem" }} />
+          </article>
+        ))}
+      </section>
+      <section className="te-panel te-analytics__chart">
+        <Skeleton width={210} height={20} radius={6} />
+        <Skeleton width={320} height={12} radius={4} style={{ marginTop: "0.5rem", maxWidth: "80%" }} />
+        <Skeleton height={280} radius={10} style={{ marginTop: "1.5rem" }} />
+      </section>
     </SkeletonGroup>
   );
 }

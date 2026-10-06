@@ -32,6 +32,7 @@ _PUBLIC_PREFIXES_EXTRA = (
     "/api/analytics/",
     "/api/admin/",
     "/api/auth/google/",
+    "/api/demo/",
 )
 
 

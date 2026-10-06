@@ -566,6 +566,90 @@
   font-weight: 500;
 }
 
+.lnd-chat {
+  display: flex;
+  flex-direction: column;
+}
+
+.lnd-chat__list {
+  max-height: 460px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lnd-msg.is-own .lnd-msg__avatar {
+  background: var(--lnd-ink);
+  color: var(--lnd-on-ink);
+}
+
+.lnd-tag--loading,
+.lnd-tag--error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.lnd-tag--error {
+  border-color: transparent;
+  background: rgb(185 28 28 / 0.1);
+  color: #b91c1c;
+}
+
+.lnd-tag--candidate {
+  border-color: transparent;
+  background: var(--lnd-accent-soft);
+  color: var(--lnd-accent);
+}
+
+.lnd-spin {
+  animation: lnd-spin 0.9s linear infinite;
+}
+
+@keyframes lnd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lnd-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.6rem;
+  border-top: 1px solid var(--lnd-line);
+}
+
+.lnd-compose textarea {
+  flex: 1;
+  min-height: 44px;
+  max-height: 140px;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--lnd-r-control);
+  border: 1px solid var(--lnd-line);
+  background: var(--lnd-bg);
+  color: var(--lnd-ink);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  resize: none;
+  field-sizing: content;
+}
+
+.lnd-compose textarea::placeholder {
+  color: var(--lnd-muted);
+}
+
+.lnd-compose textarea:focus {
+  outline: none;
+  border-color: var(--lnd-accent);
+  box-shadow: 0 0 0 3px var(--lnd-accent-soft);
+}
+
+.lnd-compose .lnd-btn {
+  height: 44px;
+}
+
 /* Result panel */
 .lnd-result {
   position: sticky;
@@ -634,6 +718,7 @@
   color: var(--lnd-muted);
 }
 
+.lnd-verdict--candidate .lnd-verdict__icon,
 .lnd-verdict--task .lnd-verdict__icon {
   background: var(--lnd-accent-soft);
   color: var(--lnd-accent);
@@ -664,6 +749,55 @@
 
 .lnd-fields__wide dd {
   font-size: 1.02rem;
+}
+
+.lnd-result__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lnd-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--lnd-line);
+  color: var(--lnd-muted);
+  font-size: 0.74rem;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.lnd-source.is-live {
+  border-color: transparent;
+  background: var(--lnd-accent-soft);
+  color: var(--lnd-accent);
+}
+
+.lnd-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-top: -0.4rem;
+  font-size: 0.85rem;
+  color: var(--lnd-muted);
+}
+
+.lnd-score b {
+  font-family: "Geist Mono Variable", ui-monospace, monospace;
+  color: var(--lnd-ink);
+}
+
+.lnd-result__quote {
+  max-width: 46ch;
+  color: var(--lnd-ink-soft);
+  font-style: italic;
 }
 
 .lnd-result__foot {
@@ -723,7 +857,24 @@
   color: var(--lnd-muted);
 }
 
+.lnd-board__col.is-over {
+  outline: 2px dashed var(--lnd-accent);
+  outline-offset: -2px;
+  background: var(--lnd-accent-soft);
+}
+
+.lnd-board__card.is-dragging {
+  opacity: 0.4;
+}
+
+.lnd-board__grip {
+  color: var(--lnd-muted);
+  cursor: grab;
+}
+
 .lnd-board__card {
+  width: 100%;
+  cursor: grab;
   display: flex;
   gap: 0.35rem;
   align-items: flex-start;
@@ -736,7 +887,6 @@
   font-size: 0.8rem;
   line-height: 1.35;
   text-align: left;
-  cursor: pointer;
 }
 
 .lnd-board__card svg {
@@ -1262,4 +1412,137 @@
   .lnd *::after {
     transition-duration: 0.01ms !important;
   }
+}
+
+@media (max-width: 767px) {
+  .lnd-compose__label {
+    display: none;
+  }
+
+  .lnd-chat__list {
+    max-height: 380px;
+  }
+}
+
+.lnd-board__card > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Анимации (все гасятся при prefers-reduced-motion) ---------- */
+
+/* Подключение: линия прогресса по шагам */
+.lnd-setup__steps {
+  position: relative;
+}
+
+/* top/height задаются из JS: от центра первой иконки до центра последней */
+.lnd-setup__track {
+  position: absolute;
+  left: 23px;
+  top: 0;
+  height: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--lnd-line);
+  overflow: hidden;
+}
+
+.lnd-setup__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--lnd-accent);
+  transform-origin: top;
+}
+
+.lnd-setup__list li + li {
+  border-top: 0;
+}
+
+.lnd-setup__icon {
+  position: relative;
+  z-index: 1;
+  transition:
+    background-color 0.35s var(--lnd-ease),
+    border-color 0.35s var(--lnd-ease),
+    color 0.35s var(--lnd-ease),
+    transform 0.35s var(--lnd-ease);
+}
+
+.lnd-setup__icon.is-active {
+  background: var(--lnd-ink);
+  border-color: var(--lnd-ink);
+  color: var(--lnd-on-ink);
+  transform: scale(1.04);
+}
+
+/* Bento: индикатор набора у бота */
+.lnd-replies {
+  min-height: 108px;
+  align-content: start;
+}
+
+.lnd-replies__typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+}
+
+.lnd-replies__typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lnd-muted);
+  animation: lnd-typing 1s ease-in-out infinite;
+}
+
+.lnd-replies__typing i:nth-child(2) { animation-delay: 0.15s; }
+.lnd-replies__typing i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes lnd-typing {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Песочница: подсказка на первом сообщении */
+.lnd-msg.is-hint {
+  position: relative;
+  border-color: var(--lnd-accent);
+  animation: lnd-hint 2.2s ease-in-out infinite;
+}
+
+.lnd-msg__hint {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--lnd-accent);
+}
+
+@keyframes lnd-hint {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lnd-accent) 30%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--lnd-accent) 0%, transparent); }
+}
+
+/* Кнопки: стрелка слегка подаётся в сторону действия */
+.lnd-btn svg {
+  transition: transform 0.25s var(--lnd-ease);
+}
+
+.lnd-btn--ghost:hover svg {
+  transform: translateY(2px);
+}
+
+.lnd-btn--primary:hover svg {
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lnd-replies__typing i,
+  .lnd-msg.is-hint {
+    animation: none !important;
+  }
+
 }

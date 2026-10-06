@@ -3,9 +3,9 @@ import logging
 import re
 
 from app.schemas.extraction import ClassifierResult, TaskFieldsResult
-from app.services.llm_settings import get_effective_llm_config
+from app.services.llm_settings import EffectiveLlmConfig, get_effective_llm_config
 from app.services.openrouter import chat_completion
-from app.services.prompt_settings import get_prompt_config
+from app.services.prompt_settings import PromptConfig, get_prompt_config
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,16 @@ def _compact_context(context_lines: list[str]) -> str:
 async def classify_message(
     text: str,
     context_lines: list[str] | None = None,
+    *,
+    prompts: PromptConfig | None = None,
+    llm: EffectiveLlmConfig | None = None,
 ) -> ClassifierResult:
-    """Stage 1: cheap task vs non-task (minimal tokens)."""
-    prompts = await get_prompt_config()
-    llm = await get_effective_llm_config()
+    """Stage 1: cheap task vs non-task (minimal tokens).
+
+    prompts/llm можно передать явно (демо без рабочей области), иначе берутся настройки tenant.
+    """
+    prompts = prompts or await get_prompt_config()
+    llm = llm or await get_effective_llm_config()
 
     body = _truncate(text or "(медиа без текста)", MAX_MESSAGE_CHARS)
     ctx = _compact_context(context_lines or [])
@@ -69,10 +75,13 @@ async def extract_task_fields(
     text: str,
     message_id: int,
     context_lines: list[str] | None = None,
+    *,
+    prompts: PromptConfig | None = None,
+    llm: EffectiveLlmConfig | None = None,
 ) -> TaskFieldsResult:
     """Stage 2: task card fields (only after positive classification)."""
-    prompts = await get_prompt_config()
-    llm = await get_effective_llm_config()
+    prompts = prompts or await get_prompt_config()
+    llm = llm or await get_effective_llm_config()
 
     body = _truncate(text or "(медиа)", MAX_MESSAGE_CHARS)
     ctx = _compact_context(context_lines or [])

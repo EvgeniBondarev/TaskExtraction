@@ -10,6 +10,7 @@ Disallow: /settings
 Disallow: /feed
 Disallow: /logs
 Disallow: /telegram
+Disallow: /task/
 
 # Яндекс: предпочтительное зеркало (без https://)
 Host: __SITE_HOST__

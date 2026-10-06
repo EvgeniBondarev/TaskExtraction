@@ -40,6 +40,14 @@ export async function fetchTelegramSources(): Promise<TelegramSources> {
   return r.json();
 }
 
+export type TelegramConnectLinks = { group: string; business: string };
+
+export async function fetchTelegramConnectLinks(): Promise<TelegramConnectLinks> {
+  const r = await apiFetch(`${API}/api/telegram/connect-links`);
+  if (!r.ok) throw new Error("Failed to load Telegram connection links");
+  return r.json();
+}
+
 export type TelegramConnections = {
   groups: { source_id: string; title: string | null; has_avatar: boolean; paused: boolean }[]
 };
@@ -47,6 +55,28 @@ export type TelegramConnections = {
 export async function fetchTelegramConnections(): Promise<TelegramConnections> {
   const r = await apiFetch(`${API}/api/telegram/connections`);
   if (!r.ok) throw new Error("Failed to load Telegram connections");
+  return r.json();
+}
+
+export type TelegramOnboardingStatus = {
+  groups: TelegramConnections["groups"];
+  /** Пользователь открыл персональную ссылку — осталось включить бота в настройках Business. */
+  business_paired: boolean;
+  /** Telegram прислал business_connection: бот действительно может получать сообщения. */
+  business_connected: boolean;
+  business_account: { title: string | null } | null;
+};
+
+export async function fetchTelegramOnboardingStatus(): Promise<TelegramOnboardingStatus> {
+  const r = await apiFetch(`${API}/api/telegram/onboarding-status`);
+  if (!r.ok) throw new Error("Failed to load Telegram onboarding status");
+  return r.json();
+}
+
+/** Actively re-check Business access with Telegram and discard a revoked connection. */
+export async function refreshTelegramOnboardingStatus(): Promise<TelegramOnboardingStatus> {
+  const r = await apiFetch(`${API}/api/telegram/onboarding-status/refresh`, { method: "POST" });
+  if (!r.ok) throw new Error("Failed to refresh Telegram onboarding status");
   return r.json();
 }
 

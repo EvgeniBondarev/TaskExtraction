@@ -6,10 +6,10 @@ import { settingsEn } from "./settings.en";
 
 const messages: Messages = {
   meta: {
-    title: "TaskExtraction: tasks from Telegram on one board",
+    title: "TaskExtraction — AI task extraction from Telegram",
     description:
-      "A bot reads your Telegram work groups, finds requests without tags or commands and tracks them on a kanban board. Export to Jira, Trello, GitHub Issues and Slack.",
-    shareTitle: "TaskExtraction: tasks from Telegram on one board",
+      "TaskExtraction automatically extracts tasks from Telegram conversations, identifies deadlines, and helps teams organize work with a kanban board and integrations.",
+    shareTitle: "TaskExtraction — Telegram tasks, automatically",
     shareDescription:
       "A bot finds requests in Telegram work chats and creates cards on a board. Status replies in the chat, export to Jira, Trello, GitHub and Slack.",
     keywords:
@@ -42,6 +42,7 @@ const messages: Messages = {
     feedUnread: "Feed — unread",
     tasksNew: "new",
     feedNew: "new",
+    newTaskTab: "New task",
   },
   landing: landingEn,
   panel: panelEn,

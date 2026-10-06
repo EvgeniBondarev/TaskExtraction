@@ -22,6 +22,17 @@ class PromptConfig:
     review_threshold: float
 
 
+def default_prompt_config() -> PromptConfig:
+    """Промпты и порог по умолчанию (как у новой рабочей области)."""
+    return PromptConfig(
+        classifier_system=DEFAULT_CLASSIFIER_SYSTEM,
+        extractor_system=DEFAULT_EXTRACTOR_SYSTEM,
+        extractor_user_template=DEFAULT_EXTRACTOR_USER_TEMPLATE,
+        confidence_threshold=0.75,
+        review_threshold=0.5,
+    )
+
+
 async def get_prompt_config() -> PromptConfig:
     async with tenant_session() as session:
         result = await session.execute(select(LlmConfig).where(LlmConfig.id == CONFIG_ID))

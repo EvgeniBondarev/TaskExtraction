@@ -10,6 +10,8 @@ import {
 } from "../api/telegram";
 import { SetupStepper, SetupStepItem } from "../components/SetupStepper";
 import { TelegramLogo } from "../components/TelegramLogo";
+import { ImageWithSkeleton } from "../components/ImageWithSkeleton";
+import { Skeleton, SkeletonGroup } from "../components/Skeleton";
 import "../styles/telegram-auth.css";
 import { trackAnalyticsEvent } from "../api/analytics";
 import { useI18n } from "../i18n";
@@ -258,7 +260,10 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
     return (
       <div className={`tg-auth ${embedded ? "embedded" : ""} ${wizard ? "wizard-mode" : ""}`}>
         <div className="tg-auth-loading tg-auth-loading--block">
-          <span className="tg-auth-spinner" aria-hidden />
+          <SkeletonGroup label="Загрузка настроек Telegram" className="tg-auth-loading__skeleton">
+            <Skeleton width={220} height={14} radius={5} />
+            <Skeleton width={170} height={10} radius={4} style={{ marginTop: "0.65rem" }} />
+          </SkeletonGroup>
         </div>
       </div>
     );
@@ -274,8 +279,10 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
     <div className="tg-auth-qr-stage">
       {!qrUrl && loading && (
         <div className="tg-auth-loading">
-          <span className="tg-auth-spinner" aria-hidden />
-          <p>Генерация QR-кода…</p>
+          <SkeletonGroup label="Генерация QR-кода" className="tg-auth-loading__skeleton">
+            <Skeleton width={220} height={220} radius={8} />
+            <Skeleton width={160} height={12} radius={4} style={{ margin: "0.85rem auto 0" }} />
+          </SkeletonGroup>
         </div>
       )}
       {(qrUrl || qrExpired) && !loading && (
@@ -284,7 +291,7 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
             className={`tg-auth-qr-frame${qrExpired ? " tg-auth-qr-frame--expired" : ""}`}
           >
             {qrUrl && (
-              <img
+              <ImageWithSkeleton
                 src={telegramQrImageUrl(qrUrl, 260)}
                 alt="QR для входа в Telegram"
                 width={220}
@@ -447,8 +454,10 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
               <p className="hint center">{i18n.auth.qrHint}</p>
               {!qrUrl && loading && (
                 <div className="tg-auth-loading">
-                  <span className="tg-auth-spinner" aria-hidden />
-                  <p>Генерация QR…</p>
+                  <SkeletonGroup label="Генерация QR-кода" className="tg-auth-loading__skeleton">
+                    <Skeleton width={200} height={200} radius={8} />
+                    <Skeleton width={130} height={12} radius={4} style={{ margin: "0.85rem auto 0" }} />
+                  </SkeletonGroup>
                 </div>
               )}
               {!qrUrl && !loading && (
@@ -462,7 +471,7 @@ export function TelegramAuth({ onComplete, embedded, wizard }: Props) {
                     className={`tg-auth-qr-frame${qrExpired ? " tg-auth-qr-frame--expired" : ""}`}
                   >
                     {qrUrl && (
-                      <img
+                      <ImageWithSkeleton
                         src={telegramQrImageUrl(qrUrl, 240)}
                         alt="QR для входа в Telegram"
                         width={200}

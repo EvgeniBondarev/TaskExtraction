@@ -27,6 +27,9 @@ class BotMessage:
     chat_type: str | None
     reply_to_id: int | None
     raw: dict[str, Any]
+    # Original Bot API message, used to download its media after the update is
+    # safely associated with a workspace.
+    attachment_payload: dict[str, Any] | None = None
 
 
 def pairing_payload(tenant_key: str, mode: str) -> str:
@@ -97,6 +100,7 @@ def message_from_update(update: dict[str, Any]) -> BotMessage | None:
             "business_connection_id": payload.get("business_connection_id"),
             "update_id": update.get("update_id"),
         },
+        attachment_payload=payload,
     )
 
 
@@ -142,6 +146,54 @@ async def leave_chat(chat_id: int) -> bool:
     except (httpx.HTTPError, ValueError):
         return False
     return bool(response.is_success and data.get("ok"))
+
+
+async def business_connection_is_enabled(connection_id: str) -> bool | None:
+    """Return the authoritative Telegram Business connection state.
+
+    ``None`` means Telegram could not be reached, so callers must keep the
+    stored state instead of presenting a transient network failure as a
+    disconnection. Telegram returns a 400 for an already removed connection;
+    that is an authoritative disabled state.
+    """
+    settings = get_settings()
+    if not settings.telegram_bot_token or not connection_id:
+        return None
+    url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/getBusinessConnection"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(url, json={"business_connection_id": connection_id})
+        data = response.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    if not response.is_success or not data.get("ok"):
+        return False if response.status_code == 400 else None
+    result = data.get("result")
+    return bool(result.get("is_enabled")) if isinstance(result, dict) else None
+
+
+async def group_is_available(chat_id: int) -> bool | None:
+    """Return whether the bot still belongs to a group.
+
+    ``getChat`` is available to a bot while it is a member of the group.  A
+    400/403 response after it was removed is authoritative; transport and
+    server errors return ``None`` so a temporary Telegram outage never removes
+    a real connection from the workspace.
+    """
+    settings = get_settings()
+    if not settings.telegram_bot_token:
+        return None
+    url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/getChat"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(url, json={"chat_id": chat_id})
+        data = response.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    if response.is_success and data.get("ok"):
+        return True
+    error_code = data.get("error_code") if isinstance(data, dict) else None
+    return False if response.status_code in {400, 403, 404} or error_code in {400, 403, 404} else None
 
 
 async def cache_group_avatar(chat_id: int) -> str | None:

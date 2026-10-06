@@ -13,6 +13,7 @@ import {
 import "../styles/admin.css";
 import { AppBrandName } from "../components/AppBrandName";
 import { SeoHead } from "../components/SeoHead";
+import { AdminDashboardSkeleton } from "../components/PageSkeletons";
 import {
   Bar,
   BarChart,
@@ -141,7 +142,7 @@ export function AdminApp() {
     return (
       <>
         {adminSeo}
-        <div className="admin-root admin-loading">Загрузка…</div>
+        <div className="admin-root"><main className="admin-main"><AdminDashboardSkeleton users /></main></div>
       </>
     );
   }
@@ -219,7 +220,7 @@ export function AdminApp() {
           <section className="admin-section admin-section-users">
             <h2>Зарегистрированные пользователи</h2>
             {usersLoading && users.length === 0 ? (
-              <p className="admin-loading">Загрузка…</p>
+              <AdminDashboardSkeleton users />
             ) : users.length === 0 ? (
               <p style={{ color: "#94a3b8", margin: 0 }}>Пока нет tenant с данными на диске.</p>
             ) : (
@@ -295,7 +296,7 @@ export function AdminApp() {
         </div>
 
         {loading && !stats ? (
-          <p className="admin-loading">Загрузка статистики…</p>
+          <AdminDashboardSkeleton />
         ) : stats ? (
           <>
             <div className="admin-cards">

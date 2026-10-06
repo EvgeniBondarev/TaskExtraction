@@ -54,6 +54,16 @@ async def _get_row() -> LlmConfig | None:
         return result.scalar_one_or_none()
 
 
+def builtin_llm_config() -> EffectiveLlmConfig:
+    """Встроенный ключ и модель, без настроек рабочей области (для публичного демо)."""
+    return EffectiveLlmConfig(
+        api_key=get_builtin_openrouter_api_key(),
+        model=DEFAULT_MODEL,
+        base_url=OPENROUTER_BASE_URL,
+        source="builtin",
+    )
+
+
 async def get_effective_llm_config() -> EffectiveLlmConfig:
     row = await _get_row()
     if row and row.user_api_key_encrypted:

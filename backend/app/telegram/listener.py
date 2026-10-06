@@ -176,7 +176,7 @@ async def run_bot_polling_loop() -> None:
             try:
                 params: dict = {
                     "timeout": 25,
-                    "allowed_updates": ["message", "business_message", "business_connection"],
+                    "allowed_updates": ["message", "business_message", "business_connection", "my_chat_member"],
                 }
                 if offset is not None:
                     params["offset"] = offset

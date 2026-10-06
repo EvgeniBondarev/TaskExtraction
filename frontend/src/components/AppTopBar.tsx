@@ -1,4 +1,4 @@
-import { ChatsCircle, GearSix, Kanban, SignOut } from "@phosphor-icons/react";
+import { ChartLine, ChatsCircle, GearSix, Kanban, SignOut } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import type { GoogleUser } from "../api/auth";
 import { useI18n } from "../i18n";
@@ -6,7 +6,7 @@ import { AppLogo } from "./AppLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitch } from "./ThemeSwitch";
 
-export type AppMainPage = "tasks" | "feed" | "settings";
+export type AppMainPage = "tasks" | "feed" | "settings" | "analytics";
 
 export type NavBadges = {
   tasks: number;
@@ -22,9 +22,10 @@ interface Props {
   user?: GoogleUser | null;
   /** Скрыть разделы (первичная настройка, пока нет подключённых чатов). */
   hideNav?: boolean;
+  canViewAnalytics?: boolean;
 }
 
-const ITEMS: { id: AppMainPage; icon: typeof Kanban }[] = [
+const ITEMS: { id: Exclude<AppMainPage, "analytics">; icon: typeof Kanban }[] = [
   { id: "tasks", icon: Kanban },
   { id: "feed", icon: ChatsCircle },
   { id: "settings", icon: GearSix },
@@ -34,7 +35,7 @@ function formatBadge(n: number) {
   return n > 99 ? "99+" : String(n);
 }
 
-export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user, hideNav }: Props) {
+export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user, hideNav, canViewAnalytics = false }: Props) {
   const { messages } = useI18n();
   const nav = messages.panel.nav;
   const legacyNav = messages.nav;
@@ -69,7 +70,7 @@ export function AppTopBar({ page, badges, onNavigate, onHome, onLogout, user, hi
 
       {!hideNav && (
       <nav className="te-topbar__nav" aria-label={legacyNav.mainNav}>
-        {ITEMS.map(({ id, icon: Icon }) => {
+        {[...ITEMS, ...(canViewAnalytics ? [{ id: "analytics" as const, icon: ChartLine }] : [])].map(({ id, icon: Icon }) => {
           const count = id === "tasks" ? badges?.tasks ?? 0 : id === "feed" ? badges?.feed ?? 0 : 0;
           const label = nav[id];
           return (

@@ -6,10 +6,10 @@ import { settingsRu } from "./settings.ru";
 
 const messages: Messages = {
   meta: {
-    title: "TaskExtraction: задачи из Telegram на одной доске",
+    title: "TaskExtraction — извлечение задач из Telegram с помощью ИИ",
     description:
-      "Бот читает рабочие группы Telegram, находит поручения без тегов и команд и ведёт их на канбан-доске. Выгрузка в Jira, Trello, GitHub Issues и Slack.",
-    shareTitle: "TaskExtraction: задачи из Telegram на одной доске",
+      "TaskExtraction автоматически извлекает задачи из переписки Telegram, определяет сроки и помогает организовать работу. Канбан-доска и интеграции с Jira, Trello, GitHub и Slack.",
+    shareTitle: "TaskExtraction — задачи из Telegram автоматически",
     shareDescription:
       "Бот находит поручения в рабочих чатах Telegram и заводит карточки на доске. Ответы о статусе в чат, выгрузка в Jira, Trello, GitHub и Slack.",
     keywords:
@@ -42,6 +42,7 @@ const messages: Messages = {
     feedUnread: "Лента, есть непрочитанные",
     tasksNew: "новых",
     feedNew: "новых",
+    newTaskTab: "Новая задача",
   },
   landing: landingRu,
   panel: panelRu,

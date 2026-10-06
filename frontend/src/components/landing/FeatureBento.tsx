@@ -1,5 +1,6 @@
 import { ArrowBendUpLeft, SlidersHorizontal } from "@phosphor-icons/react";
 import { useI18n } from "../../i18n";
+import { ReplySequence } from "./ReplySequence";
 import { Reveal } from "./Reveal";
 import { ThemedShot } from "./ThemedShot";
 
@@ -22,16 +23,7 @@ export function FeatureBento() {
         </Reveal>
 
         <Reveal className="lnd-cell lnd-cell--replies" delay={0.05}>
-          <div className="lnd-replies" aria-hidden>
-            <span className="lnd-replies__bubble">
-              <small>{bot}</small>
-              {replies.progress}
-            </span>
-            <span className="lnd-replies__bubble">
-              <small>{bot}</small>
-              {replies.done}
-            </span>
-          </div>
+          <ReplySequence bot={bot} lines={[replies.progress, replies.done]} />
           <h3>{t.replies.title}</h3>
           <p>{t.replies.body}</p>
         </Reveal>

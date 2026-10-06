@@ -369,6 +369,11 @@
   justify-content: center;
 }
 
+.tg-auth-loading__skeleton {
+  width: 100%;
+  text-align: center;
+}
+
 .tg-auth-spinner {
   width: 2.25rem;
   height: 2.25rem;

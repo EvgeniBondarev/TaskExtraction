@@ -1,8 +1,21 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEO, SITEMAP_PATHS } from "./seo.config";
+
+const STATIC_LANDING = `<!--seo-static-start-->
+<main class="seo-static" aria-label="TaskExtraction">
+  <header><p>TaskExtraction</p><h1>ИИ-сервис для извлечения задач из Telegram</h1></header>
+  <p>TaskExtraction автоматически находит поручения в переписке Telegram, помогает команде вести их на канбан-доске и отправлять в привычные инструменты.</p>
+  <section><h2>Автоматическое создание задач из сообщений Telegram</h2><p>Сервис отличает задачу от обычной переписки, сохраняет контекст, сроки и исполнителя. Не нужны теги, команды и ручное копирование сообщений.</p></section>
+  <section><h2>Управление задачами в Telegram для команды</h2><p>Новые задачи появляются на доске со статусами «Новые», «В работе», «Готово» и «Архив». Из карточки можно ответить в исходный чат.</p></section>
+  <section><h2>Интеграции с рабочими инструментами</h2><p>Выгружайте задачи в Jira, Trello, GitHub Issues и Slack автоматически или вручную — без изменения привычного процесса команды.</p></section>
+  <section><h2>Как работает TaskExtraction</h2><ol><li>Подключите рабочую группу или разрешённые диалоги Telegram.</li><li>ИИ анализирует входящие сообщения и выделяет поручения.</li><li>Команда ведёт задачи на доске и получает обновления в чате.</li></ol></section>
+  <section><h2>Частые вопросы</h2><p>Для работы не нужны хештеги и команды боту. Данные каждой рабочей области изолированы, а интеграции подключаются только по вашему выбору.</p></section>
+</main><!--seo-static-end-->`;
+
+const STATIC_PRIVACY = `<!--seo-static-start--><main class="seo-static"><h1>Политика конфиденциальности TaskExtraction</h1><p>Здесь описано, какие данные использует сервис и как защищаются рабочие области пользователей.</p><p>TaskExtraction обрабатывает только данные, необходимые для работы с подключёнными чатами и интеграциями.</p></main><!--seo-static-end-->`;
 
 function escapeHtml(s: string): string {
   return s
@@ -70,12 +83,43 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
     __GOOGLE_VERIFICATION_META__: googleMeta,
   };
 
-  const replacePlaceholders = (content: string) => {
+  const taskPreviewVars: Record<string, string> = {
+    ...vars,
+    __SEO_TITLE__: "Задача · TaskExtraction",
+    __SEO_DESCRIPTION__: "Карточка задачи в рабочем пространстве TaskExtraction.",
+    __SEO_SHARE_TITLE__: "Задача в TaskExtraction",
+    __SEO_SHARE_DESCRIPTION__: "Откройте карточку задачи, чтобы посмотреть статус, детали и обсуждение с командой.",
+    __SEO_CANONICAL__: `${base}/task`,
+    __SEO_JSONLD_DESC__: "Карточка задачи в рабочем пространстве TaskExtraction.",
+    __SEO_JSONLD_URL__: `${base}/task`,
+  };
+
+  const privacyPreviewVars: Record<string, string> = {
+    ...vars,
+    __SEO_TITLE__: "Политика конфиденциальности · TaskExtraction",
+    __SEO_DESCRIPTION__: "Политика конфиденциальности сервиса TaskExtraction.",
+    __SEO_SHARE_TITLE__: "Политика конфиденциальности TaskExtraction",
+    __SEO_SHARE_DESCRIPTION__: "Как TaskExtraction обрабатывает и защищает данные рабочих областей.",
+    __SEO_CANONICAL__: `${base}/privacy`,
+    __SEO_JSONLD_DESC__: "Политика конфиденциальности сервиса TaskExtraction.",
+    __SEO_JSONLD_URL__: `${base}/privacy`,
+  };
+
+  const replacePlaceholders = (content: string, replacements = vars) => {
     let out = content;
-    for (const [key, value] of Object.entries(vars)) {
+    for (const [key, value] of Object.entries(replacements)) {
       out = out.replaceAll(key, value);
     }
     return out;
+  };
+
+  const staticPage = (content: string, replacements: Record<string, string>, markup: string, noindex = false) => {
+    let page = replacePlaceholders(content, replacements);
+    page = page.replace('<div id="root"></div>', `<div id="root">${markup}</div>`);
+    if (noindex) {
+      page = page.replace('content="index, follow, max-image-preview:large"', 'content="noindex, nofollow"');
+    }
+    return page;
   };
 
   return {
@@ -90,10 +134,21 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
       }
     },
     transformIndexHtml(html) {
-      return replacePlaceholders(html);
+      return staticPage(html, vars, STATIC_LANDING);
     },
     closeBundle() {
       const dist = resolve(__dirname, "dist");
+      const taskDir = resolve(dist, "task");
+      const compiledIndex = readFileSync(resolve(dist, "index.html"), "utf-8");
+      const taskHtml = staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), taskPreviewVars, "", true)
+        .replace('/src/main.tsx', compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js');
+      const privacyHtml = staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), privacyPreviewVars, STATIC_PRIVACY)
+        .replace('/src/main.tsx', compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js');
+      mkdirSync(taskDir, { recursive: true });
+      writeFileSync(resolve(taskDir, "index.html"), taskHtml, { encoding: "utf-8", flag: "w" });
+      const privacyDir = resolve(dist, "privacy");
+      mkdirSync(privacyDir, { recursive: true });
+      writeFileSync(resolve(privacyDir, "index.html"), privacyHtml, { encoding: "utf-8", flag: "w" });
       writeFileSync(resolve(dist, "sitemap.xml"), buildSitemapXml(base, lastmod));
 
       const robotsPath = resolve(__dirname, "public/robots.txt");

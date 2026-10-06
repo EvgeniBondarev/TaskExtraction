@@ -10,6 +10,7 @@ import { formatShortTime } from "../utils/time";
 import { GitHubLinkIcon } from "./GitHubLinkIcon";
 import { JiraLinkIcon } from "./JiraLinkIcon";
 import { MessageAvatar } from "./MessageAvatar";
+import { ImageWithSkeleton } from "./ImageWithSkeleton";
 import { SlackLinkIcon } from "./SlackLinkIcon";
 import { TrelloLinkIcon } from "./TrelloLinkIcon";
 
@@ -80,7 +81,7 @@ export function KanbanCard({ task, onClick, onDragStart, onDragEnd, onMove }: Pr
 
       {image && (
         <div className="te-card__thumb">
-          <img src={`${import.meta.env.VITE_API_URL || ""}${image.download_url}`} alt="" loading="lazy" />
+          <ImageWithSkeleton src={`${import.meta.env.VITE_API_URL || ""}${image.download_url}`} alt="" loading="lazy" />
         </div>
       )}
 

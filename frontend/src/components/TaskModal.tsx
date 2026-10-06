@@ -13,6 +13,7 @@ import { formatFullTime } from "../utils/time";
 import { AttachmentList } from "./AttachmentList";
 import { IntegrationBrandIcon } from "./IntegrationBrandIcon";
 import { MessageAvatar } from "./MessageAvatar";
+import { ImageWithSkeleton } from "./ImageWithSkeleton";
 import { TaskTelegramReply } from "./TaskTelegramReply";
 
 type Provider = "jira" | "trello" | "github" | "slack";
@@ -273,7 +274,7 @@ export function TaskModal({
                 {task.source_is_group && task.source_chat_title && (
                   <>
                     {task.source_chat_avatar_url && (
-                      <img className="te-source__chat-img" src={mediaUrl(task.source_chat_avatar_url)} alt="" />
+                      <ImageWithSkeleton className="te-source__chat-img" src={mediaUrl(task.source_chat_avatar_url)} alt="" />
                     )}
                     {task.source_chat_title}
                     {" · "}

@@ -1,4 +1,5 @@
 import { mediaUrl } from "../utils/mediaUrl";
+import { ImageWithSkeleton } from "./ImageWithSkeleton";
 
 interface Props {
   senderUrl?: string | null;
@@ -20,7 +21,12 @@ export function MessageAvatar({ senderUrl, chatUrl, name, size = 44 }: Props) {
   return (
     <span className="msg-avatar" style={{ width: size, height: size }}>
       {src ? (
-        <img src={src} alt="" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+        <ImageWithSkeleton
+          src={src}
+          alt=""
+          wrapperClassName="msg-avatar__photo"
+          fallback={<span className="placeholder">{initials}</span>}
+        />
       ) : (
         <span className="placeholder">{initials}</span>
       )}
@@ -34,6 +40,9 @@ export function MessageAvatar({ senderUrl, chatUrl, name, size = 44 }: Props) {
         .msg-avatar img:not(.chat-badge) {
           width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
           background: var(--border);
+        }
+        .msg-avatar__photo {
+          width: 100%; height: 100%; border-radius: 50%;
         }
         .msg-avatar .placeholder {
           width: 100%; height: 100%; border-radius: 50%;

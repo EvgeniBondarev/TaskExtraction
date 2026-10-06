@@ -5,12 +5,14 @@ from app.api import (
     analytics,
     attachments,
     chats,
+    demo,
     github,
     google_auth,
     health,
     jira,
     llm,
     messages,
+    owner_analytics,
     profiles,
     session,
     slack,
@@ -22,7 +24,9 @@ from app.api import (
 api_router = APIRouter(prefix="/api")
 api_router.include_router(analytics.router)
 api_router.include_router(admin.router)
+api_router.include_router(owner_analytics.router)
 api_router.include_router(health.router)
+api_router.include_router(demo.router)
 api_router.include_router(session.router)
 api_router.include_router(google_auth.router)
 api_router.include_router(telegram.router)

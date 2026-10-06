@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ImageLightbox } from "./ImageLightbox";
+import { ImageWithSkeleton } from "./ImageWithSkeleton";
 import { mediaUrl } from "../utils/mediaUrl";
 
 export interface Attachment {
@@ -63,7 +64,7 @@ export function AttachmentList({
                   onClick={() => setPreview({ src: fileSrc, alt: a.label })}
                   aria-label={`Открыть ${a.label}`}
                 >
-                  <img src={fileSrc} alt={a.label} loading="lazy" />
+                  <ImageWithSkeleton src={fileSrc} alt={a.label} loading="lazy" wrapperClassName="att-image" />
                   <span className="att-zoom-hint">Нажмите для просмотра</span>
                 </button>
               ) : a.is_video && fileSrc ? (
@@ -105,12 +106,12 @@ export function AttachmentList({
             display: block; width: 100%; padding: 0; border: none; background: none;
             cursor: zoom-in; position: relative;
           }
-          .att-image-btn img {
-            display: block; width: 100%;
+          .att-image {
+            display: block; width: 100%; min-height: ${compact ? "100px" : "160px"};
             max-height: ${compact ? "160px" : "280px"};
-            object-fit: contain;
           }
-          .att-image-btn:hover img { opacity: 0.92; }
+          .att-image img { object-fit: contain; }
+          .att-image-btn:hover .image-with-skeleton__image { opacity: 0.92; }
           .att-zoom-hint {
             position: absolute; bottom: 0; left: 0; right: 0;
             padding: 0.35rem 0.5rem;
