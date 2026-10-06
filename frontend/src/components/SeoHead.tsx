@@ -15,7 +15,7 @@ type PageMeta = {
   useLocaleMeta?: boolean;
 };
 
-function setMeta(attr: "name" | "property" | "itemprop", key: string, content: string) {
+function setMeta(attr: "name" | "property", key: string, content: string) {
   let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
@@ -105,11 +105,6 @@ export function SeoHead({
       setMeta("name", "twitter:image:alt", ogImageAlt);
     }
 
-    setMeta("itemprop", "name", ogTitle);
-    setMeta("itemprop", "description", ogDesc);
-    if (publicUrl) {
-      setMeta("itemprop", "image", image);
-    }
   }, [
     tabTitle,
     tabDesc,

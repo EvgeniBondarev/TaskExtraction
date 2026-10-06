@@ -13,7 +13,7 @@ export const SEO = {
 
   /** Meta description для поисковиков */
   description:
-    "TaskExtraction автоматически извлекает задачи из переписки Telegram, определяет сроки и помогает организовать работу. Канбан-доска и интеграции с Jira, Trello, GitHub и Slack.",
+    "TaskExtraction извлекает задачи из переписки Telegram, определяет сроки и ведёт их на канбан-доске. Интеграции с Jira, Trello, GitHub и Slack.",
 
   /** Короткий заголовок карточки ссылки в мессенджерах */
   shareTitle: "TaskExtraction: задачи из Telegram на одной доске",
