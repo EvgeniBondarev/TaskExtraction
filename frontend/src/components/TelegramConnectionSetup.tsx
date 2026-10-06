@@ -4,6 +4,8 @@ import {
   Briefcase,
   CheckCircle,
   CircleNotch,
+  Kanban,
+  Sparkle,
   UsersThree,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
@@ -17,10 +19,12 @@ import {
 import type { TelegramConnectLinks, TelegramOnboardingStatus, TelegramSources } from "../api/telegram";
 import { useI18n } from "../i18n";
 import { ImageLightbox } from "./ImageLightbox";
+import { ImageWithSkeleton } from "./ImageWithSkeleton";
 
 type Props = {
   variant: "dialog" | "settings";
   onClose?: () => void;
+  userName?: string | null;
 };
 
 type TutorialShot = { src: string; alt: string; orientation: "wide" | "portrait" };
@@ -42,7 +46,7 @@ const BUSINESS_SHOTS: TutorialShot[] = [
  * The server status is polled while a connection is incomplete so a successful
  * Telegram action is reflected without asking the user to reload the app.
  */
-export function TelegramConnectionSetup({ variant, onClose }: Props) {
+export function TelegramConnectionSetup({ variant, onClose, userName }: Props) {
   const { messages } = useI18n();
   const t = messages.panel.onboarding;
   const [sources, setSources] = useState<TelegramSources | null>(null);
@@ -87,14 +91,32 @@ export function TelegramConnectionSetup({ variant, onClose }: Props) {
 
   const groups = status?.groups ?? [];
   const isComplete = groups.length > 0 || Boolean(status?.business_connected);
+  const welcome = userName ? t.welcomeNamed.replace("{name}", userName) : t.welcome;
   const content = (
     <>
       <header className="te-connect__head">
-        <span className="te-connect__eyebrow">{variant === "dialog" ? t.eyebrow : t.setupTitle}</span>
-        <h2 id={variant === "dialog" ? "telegram-connect-title" : undefined}>
-          {variant === "dialog" ? t.title : t.setupTitle}
-        </h2>
-        <p>{variant === "dialog" ? t.lead : t.setupLead}</p>
+        <div className="te-connect__head-copy">
+          {variant === "dialog" && (
+            <p className="te-connect__welcome">
+              <Sparkle size={15} weight="fill" aria-hidden />
+              {welcome}
+            </p>
+          )}
+          <span className="te-connect__eyebrow">{variant === "dialog" ? t.eyebrow : t.setupTitle}</span>
+          <h2 id={variant === "dialog" ? "telegram-connect-title" : undefined}>
+            {variant === "dialog" ? t.title : t.setupTitle}
+          </h2>
+          <p>{variant === "dialog" ? t.lead : t.setupLead}</p>
+        </div>
+        {variant === "dialog" && (
+          <div className="te-connect__journey" aria-hidden="true">
+            <span><UsersThree size={18} weight="duotone" /></span>
+            <i />
+            <span><Sparkle size={16} weight="fill" /></span>
+            <i />
+            <span><Kanban size={18} weight="duotone" /></span>
+          </div>
+        )}
       </header>
 
       {loading ? (
@@ -146,7 +168,7 @@ export function TelegramConnectionSetup({ variant, onClose }: Props) {
               <div className="te-connect__shots te-connect__shots--group">
                 {GROUP_SHOTS.map((shot) => (
                   <button key={shot.src} type="button" className={`te-connect__shot te-connect__shot--${shot.orientation}`} onClick={() => setPreview(shot)}>
-                    <img src={shot.src} alt={shot.alt} loading="lazy" />
+                    <ImageWithSkeleton src={shot.src} alt={shot.alt} loading="lazy" wrapperClassName="te-connect__shot-image" />
                   </button>
                 ))}
               </div>
@@ -191,8 +213,8 @@ export function TelegramConnectionSetup({ variant, onClose }: Props) {
                   </ol>
                   <div className="te-connect__shots">
                     {BUSINESS_SHOTS.map((shot) => (
-                      <button key={shot.src} type="button" className={`te-connect__shot te-connect__shot--${shot.orientation}`} onClick={() => setPreview(shot)}>
-                        <img src={shot.src} alt={shot.alt || t.tutorialAlt} loading="lazy" />
+                    <button key={shot.src} type="button" className={`te-connect__shot te-connect__shot--${shot.orientation}`} onClick={() => setPreview(shot)}>
+                      <ImageWithSkeleton src={shot.src} alt={shot.alt || t.tutorialAlt} loading="lazy" wrapperClassName="te-connect__shot-image" />
                       </button>
                     ))}
                   </div>

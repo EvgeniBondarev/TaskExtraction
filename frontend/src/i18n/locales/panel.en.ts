@@ -19,6 +19,8 @@ export const panelEn: PanelMessages = {
   },
   onboarding: {
     eyebrow: "First step",
+    welcome: "Welcome",
+    welcomeNamed: "Welcome, {name}",
     title: "Connect Telegram",
     lead: "Choose either or both options. The status updates automatically once Telegram confirms the connection.",
     group: {
@@ -106,6 +108,9 @@ export const panelEn: PanelMessages = {
     resetFilters: "Reset filters",
     moveTo: "Move to “{status}”",
     attachments: "Has attachments",
+    attachmentsCount: "Attachments: {count}",
+    densityCompact: "Compact",
+    densityComfortable: "Comfortable",
     total: "Total",
     updated: "Updated",
   },

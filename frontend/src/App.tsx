@@ -657,7 +657,7 @@ export default function App() {
           />
           <TelegramSettings onStatusChange={() => { void checkSetup(); }} />
           {telegramConnectionIntroOpen && (
-            <TelegramConnectionSetup variant="dialog" onClose={closeTelegramConnectionIntro} />
+            <TelegramConnectionSetup variant="dialog" userName={currentUser?.name} onClose={closeTelegramConnectionIntro} />
           )}
         </div>
       </>
@@ -687,7 +687,7 @@ export default function App() {
         />
       )}
       {telegramConnectionIntroOpen && (
-        <TelegramConnectionSetup variant="dialog" onClose={closeTelegramConnectionIntro} />
+        <TelegramConnectionSetup variant="dialog" userName={currentUser?.name} onClose={closeTelegramConnectionIntro} />
       )}
 
       {page === "settings" ? (

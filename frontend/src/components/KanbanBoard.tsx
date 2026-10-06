@@ -1,4 +1,4 @@
-import { MagnifyingGlass, Tray, X } from "@phosphor-icons/react";
+import { MagnifyingGlass, Minus, Plus, Tray, X } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Task } from "../api";
 import { useI18n } from "../i18n";
@@ -19,7 +19,17 @@ interface Props {
 }
 
 type QuickFilter = "all" | "high" | "bug" | "feature" | "media";
+type BoardDensity = "comfortable" | "compact";
 const FILTERS: QuickFilter[] = ["all", "high", "bug", "feature", "media"];
+const BOARD_DENSITY_KEY = "task-extraction:board-density";
+
+function savedBoardDensity(): BoardDensity {
+  try {
+    return window.localStorage.getItem(BOARD_DENSITY_KEY) === "compact" ? "compact" : "comfortable";
+  } catch {
+    return "comfortable";
+  }
+}
 
 function matchesFilter(task: Task, filter: QuickFilter) {
   if (filter === "high") return task.priority === "high";
@@ -37,6 +47,7 @@ export function KanbanBoard({ columns, tasks, onSelect, onStatusChange }: Props)
   const [filter, setFilter] = useState<QuickFilter>("all");
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [density, setDensity] = useState<BoardDensity>(savedBoardDensity);
 
   const q = query.trim().toLowerCase();
   const visible = useMemo(
@@ -64,7 +75,7 @@ export function KanbanBoard({ columns, tasks, onSelect, onStatusChange }: Props)
   const active = tasks.filter((t) => t.status !== "archive").length;
 
   return (
-    <main className="te-page te-board-page">
+    <main className={`te-page te-board-page te-board-page--${density}`}>
       <header className="te-page__head te-board-head">
         <div>
           <h1>{b.title}</h1>
@@ -105,6 +116,26 @@ export function KanbanBoard({ columns, tasks, onSelect, onStatusChange }: Props)
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className={`te-board-density${density === "compact" ? " is-compact" : ""}`}
+          aria-pressed={density === "compact"}
+          title={density === "compact" ? b.densityComfortable : b.densityCompact}
+          onClick={() => {
+            setDensity((current) => {
+              const nextDensity = current === "compact" ? "comfortable" : "compact";
+              try {
+                window.localStorage.setItem(BOARD_DENSITY_KEY, nextDensity);
+              } catch {
+                // The board remains usable when browser storage is disabled.
+              }
+              return nextDensity;
+            });
+          }}
+        >
+          {density === "compact" ? <Plus size={15} weight="bold" aria-hidden /> : <Minus size={15} weight="bold" aria-hidden />}
+          <span>{density === "compact" ? b.densityComfortable : b.densityCompact}</span>
+        </button>
       </div>
 
       <div className="te-board">

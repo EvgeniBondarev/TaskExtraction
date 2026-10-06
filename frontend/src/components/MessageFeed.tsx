@@ -1,4 +1,4 @@
-import { ArrowSquareOut, CaretDown, ChatsCircle, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, CaretDown, ChatsCircle, MagnifyingGlass, Plus, Sparkle, X } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Message, reprocessMessage, Task } from "../api";
 import { ChatItem, chatAvatarUrl } from "../api/chats";
@@ -94,10 +94,22 @@ export function MessageFeed({
 
   return (
     <main className="te-page te-feed">
-      <header className="te-page__head">
+      <header className="te-page__head te-feed__head">
         <div>
           <h1>{f.pageTitle}</h1>
           <p>{f.pageLead}</p>
+        </div>
+        <div className="te-feed__stats" role="group" aria-label={f.statsAria}>
+          <div className="te-feed__stat">
+            <span aria-hidden><ChatsCircle size={18} weight="duotone" /></span>
+            <strong>{counts.all}</strong>
+            <small>{f.statMessages}</small>
+          </div>
+          <div className="te-feed__stat te-feed__stat--accent">
+            <span aria-hidden><Sparkle size={16} weight="fill" /></span>
+            <strong>{counts.candidates}</strong>
+            <small>{f.statCandidates}</small>
+          </div>
         </div>
       </header>
 

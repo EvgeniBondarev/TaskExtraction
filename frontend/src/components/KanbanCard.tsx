@@ -31,6 +31,7 @@ export function KanbanCard({ task, onClick, onDragStart, onDragEnd, onMove }: Pr
   const github = getTaskGitHubLink(task);
   const slack = getTaskSlackLink(task);
   const image = task.attachments?.find((a) => a.is_image && a.download_url);
+  const attachmentCount = task.attachments?.length ?? 0;
   const next = task.status === "archive" ? null : nextStatus(task.status);
   const nextLabel = next ? labels.status[next as keyof typeof labels.status] : "";
   const typeLabel = labels.type[task.type as keyof typeof labels.type] ?? task.type;
@@ -99,7 +100,14 @@ export function KanbanCard({ task, onClick, onDragStart, onDragEnd, onMove }: Pr
           )}
         </span>
         {hasAttachments(task) && (
-          <Paperclip size={15} className="te-card__clip" aria-label={p.board.attachments} />
+          <span
+            className="te-card__attachment"
+            aria-label={p.board.attachmentsCount.replace("{count}", String(attachmentCount))}
+            title={p.board.attachmentsCount.replace("{count}", String(attachmentCount))}
+          >
+            <Paperclip size={14} weight="bold" aria-hidden />
+            <b>{attachmentCount}</b>
+          </span>
         )}
         {when && <time className="te-card__time">{when}</time>}
         {next && onMove && (

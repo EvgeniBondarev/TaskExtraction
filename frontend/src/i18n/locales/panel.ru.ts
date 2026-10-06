@@ -17,6 +17,8 @@ export const panelRu = {
   },
   onboarding: {
     eyebrow: "Первый шаг",
+    welcome: "Рады видеть вас",
+    welcomeNamed: "Рады видеть, {name}",
     title: "Подключите Telegram",
     lead: "Выберите один или оба способа. Состояние обновится автоматически, как только Telegram подтвердит подключение.",
     group: {
@@ -104,6 +106,9 @@ export const panelRu = {
     resetFilters: "Сбросить фильтры",
     moveTo: "Перенести в «{status}»",
     attachments: "Есть вложения",
+    attachmentsCount: "Вложения: {count}",
+    densityCompact: "Компактнее",
+    densityComfortable: "Обычный вид",
     total: "Всего",
     updated: "Обновлено",
   },
