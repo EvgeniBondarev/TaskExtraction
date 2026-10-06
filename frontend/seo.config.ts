@@ -28,7 +28,7 @@ export const SEO = {
   welcomePath: "/",
   // Версия URL заставляет мессенджеры запросить обновлённую карточку, а не взять
   // старый вариант из собственного кэша.
-  ogImagePath: "/og-image.png?v=2",
+  ogImagePath: "/og-image.png?v=3",
   ogImageWidth: 1200,
   ogImageHeight: 630,
   ogImageAlt: "TaskExtraction: задачи из Telegram на одной доске",
