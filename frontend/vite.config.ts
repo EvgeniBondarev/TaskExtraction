@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEO, SITEMAP_PATHS } from "./seo.config";
-import { SEO_PAGES, type SeoPage } from "./src/content/seoPages";
+import { SEO_PAGES, isArticlePath, relatedSeoPages, seoBreadcrumbs, type SeoPage } from "./src/content/seoPages";
 
 const STATIC_LANDING = `<!--seo-static-start-->
 <main class="seo-static" aria-label="TaskExtraction">
@@ -14,6 +14,7 @@ const STATIC_LANDING = `<!--seo-static-start-->
   <section><h2>Интеграции с рабочими инструментами</h2><p>Выгружайте задачи в Jira, Trello, GitHub Issues и Slack автоматически или вручную — без изменения привычного процесса команды.</p></section>
   <section><h2>Как работает TaskExtraction</h2><ol><li>Подключите рабочую группу или разрешённые диалоги Telegram.</li><li>ИИ анализирует входящие сообщения и выделяет поручения.</li><li>Команда ведёт задачи на доске и получает обновления в чате.</li></ol></section>
   <section><h2>Частые вопросы</h2><p>Для работы не нужны хештеги и команды боту. Данные каждой рабочей области изолированы, а интеграции подключаются только по вашему выбору.</p></section>
+  <nav aria-label="Разделы сайта"><h2>Материалы и интеграции</h2><ul><li><a href="/features/">Возможности</a></li><li><a href="/telegram-task-manager/">Таск-менеджер для Telegram</a></li><li><a href="/integrations/">Интеграции</a></li><li><a href="/integrations/telegram-jira/">Telegram + Jira</a></li><li><a href="/integrations/telegram-trello/">Telegram + Trello</a></li><li><a href="/integrations/telegram-github/">Telegram + GitHub</a></li><li><a href="/integrations/telegram-slack/">Telegram + Slack</a></li><li><a href="/blog/">Блог</a></li><li><a href="/privacy/">Политика конфиденциальности</a></li></ul></nav>
 </main><!--seo-static-end-->`;
 
 const STATIC_PRIVACY = `<!--seo-static-start--><main class="seo-static"><h1>Политика конфиденциальности TaskExtraction</h1><p>Здесь описано, какие данные использует сервис и как защищаются рабочие области пользователей.</p><p>TaskExtraction обрабатывает только данные, необходимые для работы с подключёнными чатами и интеграциями.</p></main><!--seo-static-end-->`;
@@ -34,7 +35,7 @@ function siteHost(siteUrl: string): string {
 }
 
 function buildSitemapXml(base: string, lastmod: string): string {
-  const urls = [...SITEMAP_PATHS, ...SEO_PAGES.map((page) => ({ path: page.path, changefreq: "monthly" as const, priority: 0.7 }))].map(
+  const urls = [...SITEMAP_PATHS, ...SEO_PAGES.map((page) => ({ path: page.path, changefreq: "monthly" as const, priority: page.path.split("/").filter(Boolean).length === 1 ? 0.8 : 0.7 }))].map(
     (entry) => `  <url>
     <loc>${base}${entry.path}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -52,12 +53,56 @@ ${urls}
 function staticSeoPage(page: SeoPage): string {
   const sections = page.sections.map((section) => `<section><h2>${escapeHtml(section.heading)}</h2>${section.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}</section>`).join("");
   const image = `/landing/${page.image}-light.jpg`;
-  const allPages = SEO_PAGES;
-  const related = page.path === "/blog/"
-    ? allPages.filter((item) => item.path.startsWith("/blog/") && item.path !== page.path)
-    : [allPages.find((item) => item.path === "/blog/"), ...allPages.filter((item) => item.path !== page.path && item.path !== "/blog/").slice(0, 2)].filter(Boolean) as SeoPage[];
+  const related = relatedSeoPages(page);
   const links = related.map((item) => `<li><a href="${item.path}">${escapeHtml(item.h1)}</a></li>`).join("");
-  return `<!--seo-static-start--><main class="seo-static" aria-label="${escapeHtml(page.h1)}"><article><header><p>TaskExtraction · работа с задачами в Telegram</p><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><a href="/login">Попробовать TaskExtraction</a></header><figure><img src="${image}" alt="${escapeHtml(page.imageAlt)}" width="1600" height="1028"><figcaption>Интерфейс TaskExtraction: задачи сохраняют связь с исходной перепиской.</figcaption></figure><div aria-label="Схема работы: сообщение в Telegram превращается в задачу, а затем в действие команды"><span>Сообщение в Telegram</span> → <span>Понятная задача</span> → <span>Статус и действие команды</span></div>${sections}<aside><h2>Хотите перестать терять задачи в переписке?</h2><p>Подключите рабочий чат и посмотрите, как поручения превращаются в карточки с контекстом.</p><a href="/login">Открыть TaskExtraction</a></aside><nav aria-label="Материалы по теме"><h2>Читайте также</h2><ul>${links}</ul></nav></article></main><!--seo-static-end-->`;
+  return `<!--seo-static-start--><main class="seo-static" aria-label="${escapeHtml(page.h1)}"><article><header><p>TaskExtraction · работа с задачами в Telegram</p><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><a href="/login">Попробовать TaskExtraction</a></header><figure><img src="${image}" alt="${escapeHtml(page.imageAlt)}" width="1600" height="1028" fetchpriority="high" decoding="async"><figcaption>Интерфейс TaskExtraction: задачи сохраняют связь с исходной перепиской.</figcaption></figure><div aria-label="Схема работы: сообщение в Telegram превращается в задачу, а затем в действие команды"><span>Сообщение в Telegram</span> → <span>Понятная задача</span> → <span>Статус и действие команды</span></div>${sections}<aside><h2>Хотите перестать терять задачи в переписке?</h2><p>Подключите рабочий чат и посмотрите, как поручения превращаются в карточки с контекстом.</p><a href="/login">Открыть TaskExtraction</a></aside><nav aria-label="Материалы по теме"><h2>Читайте также</h2><ul>${links}</ul></nav></article></main><!--seo-static-end-->`;
+}
+
+function jsonLdScript(data: unknown): string {
+  return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+}
+
+function homeJsonLd(base: string, description: string, url: string, image: string): string {
+  return jsonLdScript([
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "TaskExtraction",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      description,
+      url,
+      image,
+      inLanguage: "ru",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    },
+    { "@context": "https://schema.org", "@type": "Organization", name: "TaskExtraction", url: base, logo: `${base}/brand/logo-mark-512.png` },
+    { "@context": "https://schema.org", "@type": "WebSite", name: "TaskExtraction", url: base, inLanguage: "ru" },
+  ]);
+}
+
+function pageJsonLd(base: string, page: SeoPage, image: string, lastmod: string): string {
+  const url = `${base}${page.path}`;
+  const crumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: seoBreadcrumbs(page).map((crumb, index) => ({ "@type": "ListItem", position: index + 1, name: crumb.name, item: `${base}${crumb.path}` })),
+  };
+  const main = isArticlePath(page.path)
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: page.h1,
+        description: page.description,
+        image,
+        inLanguage: "ru",
+        mainEntityOfPage: url,
+        dateModified: lastmod,
+        author: { "@type": "Organization", name: "TaskExtraction", url: base },
+        publisher: { "@type": "Organization", name: "TaskExtraction", url: base, logo: { "@type": "ImageObject", url: `${base}/brand/logo-mark-512.png` } },
+      }
+    : { "@context": "https://schema.org", "@type": "WebPage", name: page.title, description: page.description, url, inLanguage: "ru", isPartOf: { "@type": "WebSite", name: "TaskExtraction", url: base } };
+  return jsonLdScript([main, crumbs]);
 }
 
 function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
@@ -89,8 +134,8 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
     __SEO_OG_IMAGE__: `${base}${SEO.ogImagePath}`,
     __SEO_OG_WIDTH__: String(SEO.ogImageWidth),
     __SEO_OG_HEIGHT__: String(SEO.ogImageHeight),
-    __SEO_JSONLD_DESC__: escapeHtml(SEO.description),
-    __SEO_JSONLD_URL__: canonical,
+    __SEO_OG_TYPE__: "website",
+    __SEO_JSONLD__: homeJsonLd(base, SEO.description, canonical, `${base}${SEO.ogImagePath}`),
     __YANDEX_VERIFICATION_META__: yandexMeta,
     __GOOGLE_VERIFICATION_META__: googleMeta,
   };
@@ -102,8 +147,7 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
     __SEO_SHARE_TITLE__: "Задача в TaskExtraction",
     __SEO_SHARE_DESCRIPTION__: "Откройте карточку задачи, чтобы посмотреть статус, детали и обсуждение с командой.",
     __SEO_CANONICAL__: `${base}/task`,
-    __SEO_JSONLD_DESC__: "Карточка задачи в рабочем пространстве TaskExtraction.",
-    __SEO_JSONLD_URL__: `${base}/task`,
+    __SEO_JSONLD__: "",
   };
 
   const privacyPreviewVars: Record<string, string> = {
@@ -112,9 +156,8 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
     __SEO_DESCRIPTION__: "Политика конфиденциальности сервиса TaskExtraction.",
     __SEO_SHARE_TITLE__: "Политика конфиденциальности TaskExtraction",
     __SEO_SHARE_DESCRIPTION__: "Как TaskExtraction обрабатывает и защищает данные рабочих областей.",
-    __SEO_CANONICAL__: `${base}/privacy`,
-    __SEO_JSONLD_DESC__: "Политика конфиденциальности сервиса TaskExtraction.",
-    __SEO_JSONLD_URL__: `${base}/privacy`,
+    __SEO_CANONICAL__: `${base}/privacy/`,
+    __SEO_JSONLD__: "",
   };
 
   const replacePlaceholders = (content: string, replacements = vars) => {
@@ -183,12 +226,22 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
           __SEO_SHARE_TITLE__: escapeHtml(page.title),
           __SEO_SHARE_DESCRIPTION__: escapeHtml(page.description),
           __SEO_CANONICAL__: `${base}${page.path}`,
-          __SEO_JSONLD_DESC__: escapeHtml(page.description),
-          __SEO_JSONLD_URL__: `${base}${page.path}`,
+          __SEO_OG_TYPE__: isArticlePath(page.path) ? "article" : "website",
+          __SEO_JSONLD__: pageJsonLd(base, page, `${base}/landing/${page.image}-light.jpg`, lastmod),
         };
         const pageHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), pageVars, staticSeoPage(page)));
         writeFileSync(resolve(dir, "index.html"), pageHtml, { encoding: "utf-8", flag: "w" });
       }
+      const notFoundHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), {
+        ...vars,
+        __SEO_TITLE__: "Страница не найдена · TaskExtraction",
+        __SEO_DESCRIPTION__: "Такой страницы нет. Вернитесь на главную TaskExtraction.",
+        __SEO_CANONICAL__: `${base}/`,
+        __SEO_JSONLD__: "",
+      }, '<!--seo-static-start--><main class="seo-static"><h1>Страница не найдена</h1><p>Такой страницы нет или она переехала.</p><p><a href="/">Вернуться на главную TaskExtraction</a> · <a href="/blog/">Блог</a></p></main><!--seo-static-end-->', true)
+        // 404 — статический документ без SPA: роутер не должен подменить его главной.
+        .replace(/<script type="module"[^>]*><\/script>\s*/g, ""));
+      writeFileSync(resolve(dist, "404.html"), notFoundHtml, { encoding: "utf-8" });
       writeFileSync(resolve(dist, "sitemap.xml"), buildSitemapXml(base, lastmod));
 
       const robotsPath = resolve(__dirname, "public/robots.txt");

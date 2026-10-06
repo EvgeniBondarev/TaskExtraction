@@ -43,5 +43,5 @@ export const SITEMAP_PATHS: ReadonlyArray<{
   priority: number;
 }> = [
   { path: "/", changefreq: "weekly", priority: 0.9 },
-  { path: "/privacy", changefreq: "monthly", priority: 0.2 },
+  { path: "/privacy/", changefreq: "monthly", priority: 0.2 },
 ];
