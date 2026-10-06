@@ -152,10 +152,13 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
       const dist = resolve(__dirname, "dist");
       const taskDir = resolve(dist, "task");
       const compiledIndex = readFileSync(resolve(dist, "index.html"), "utf-8");
-      const taskHtml = staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), taskPreviewVars, "", true)
-        .replace('/src/main.tsx', compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js');
-      const privacyHtml = staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), privacyPreviewVars, STATIC_PRIVACY)
-        .replace('/src/main.tsx', compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js');
+      const bundleScript = compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js';
+      const bundleStyles = compiledIndex.match(/<link rel="stylesheet"[^>]+>/g)?.join("\n") || "";
+      const withBundleAssets = (html: string) => html
+        .replace('/src/main.tsx', bundleScript)
+        .replace('</head>', `${bundleStyles}\n  </head>`);
+      const taskHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), taskPreviewVars, "", true));
+      const privacyHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), privacyPreviewVars, STATIC_PRIVACY));
       mkdirSync(taskDir, { recursive: true });
       writeFileSync(resolve(taskDir, "index.html"), taskHtml, { encoding: "utf-8", flag: "w" });
       const privacyDir = resolve(dist, "privacy");
@@ -174,8 +177,7 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
           __SEO_JSONLD_DESC__: escapeHtml(page.description),
           __SEO_JSONLD_URL__: `${base}${page.path}`,
         };
-        const pageHtml = staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), pageVars, staticSeoPage(page))
-          .replace('/src/main.tsx', compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js');
+        const pageHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), pageVars, staticSeoPage(page)));
         writeFileSync(resolve(dir, "index.html"), pageHtml, { encoding: "utf-8", flag: "w" });
       }
       writeFileSync(resolve(dist, "sitemap.xml"), buildSitemapXml(base, lastmod));
