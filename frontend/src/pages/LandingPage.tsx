@@ -52,7 +52,7 @@ function scrollToId(id: string) {
 }
 
 export function LandingPage({ onTry, onHome }: Props) {
-  const { messages } = useI18n();
+  const { messages, locale } = useI18n();
   const t = messages.landing;
 
   useEffect(() => {
@@ -106,7 +106,13 @@ export function LandingPage({ onTry, onHome }: Props) {
                   {link.label}
                 </a>
               ))}
-              <a href="/blog/">{t.nav.blog}</a>
+              {locale !== "en" && (
+            <>
+              <a href="/features/">Возможности</a>
+              <a href="/integrations/">Интеграции</a>
+            </>
+          )}
+          <a href="/blog/">{t.nav.blog}</a>
             </nav>
             <div className="lnd-nav__end">
               <ThemeSwitch className="lnd-theme" />
@@ -168,7 +174,7 @@ export function LandingPage({ onTry, onHome }: Props) {
             © {new Date().getFullYear()} {t.footer.rights}
           </span>
           <a href="/blog/">{t.nav.blog}</a>
-          <a href="/privacy">{t.footer.privacy}</a>
+          <a href="/privacy/">{t.footer.privacy}</a>
         </footer>
       </div>
     </MotionConfig>

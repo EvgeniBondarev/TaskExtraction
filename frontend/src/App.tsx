@@ -113,7 +113,7 @@ function isLoginPath(path: string): boolean {
 }
 
 function isPrivacyPath(path: string): boolean {
-  return path === "/privacy";
+  return path === "/privacy" || path === "/privacy/";
 }
 
 function goToWelcomeUrl(replace = false): void {
