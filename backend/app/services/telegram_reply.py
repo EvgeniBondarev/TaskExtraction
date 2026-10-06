@@ -37,8 +37,8 @@ _STATUS_EVENT = {
 def build_task_panel_url(task_id: UUID, panel_base: str | None) -> str:
     base = (panel_base or "").strip().rstrip("/")
     if not base:
-        return f"/?task={task_id}"
-    return f"{base}/?task={task_id}"
+        return f"/task/{task_id}"
+    return f"{base}/task/{task_id}"
 
 
 def build_default_reply_text(task: Task, panel_url: str) -> str:

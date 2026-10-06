@@ -9,11 +9,11 @@ export const SEO = {
   themeColor: "#0f1419",
 
   /** Заголовок вкладки браузера */
-  title: "TaskExtraction: задачи из Telegram на одной доске",
+  title: "TaskExtraction — извлечение задач из Telegram с помощью ИИ",
 
   /** Meta description для поисковиков */
   description:
-    "Бот читает рабочие группы Telegram, находит поручения без тегов и команд и ведёт их на канбан-доске. Выгрузка в Jira, Trello, GitHub Issues и Slack.",
+    "TaskExtraction автоматически извлекает задачи из переписки Telegram, определяет сроки и помогает организовать работу. Канбан-доска и интеграции с Jira, Trello, GitHub и Slack.",
 
   /** Короткий заголовок карточки ссылки в мессенджерах */
   shareTitle: "TaskExtraction: задачи из Telegram на одной доске",
@@ -25,7 +25,7 @@ export const SEO = {
   keywords:
     "telegram задачи, извлечение задач, kanban, jira, trello, slack, github issues, llm, поддержка, taskextraction, ai task manager",
 
-  welcomePath: "/welcome",
+  welcomePath: "/",
   ogImagePath: "/og-image.png",
   ogImageWidth: 1200,
   ogImageHeight: 630,
@@ -40,6 +40,6 @@ export const SITEMAP_PATHS: ReadonlyArray<{
   changefreq: "weekly" | "monthly";
   priority: number;
 }> = [
-  { path: "/welcome", changefreq: "weekly", priority: 1.0 },
   { path: "/", changefreq: "weekly", priority: 0.9 },
+  { path: "/privacy", changefreq: "monthly", priority: 0.2 },
 ];

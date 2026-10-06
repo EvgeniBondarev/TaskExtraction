@@ -19,7 +19,7 @@ type DeepString<T> = T extends string
 
 export type SettingsMessages = DeepString<typeof settingsEn>;
 
-export type PlaygroundVerdict = "task" | "question" | "noise";
+export type PlaygroundVerdict = "task" | "question" | "noise" | "candidate" | "not_task";
 
 export type PlaygroundMessage = {
   author: string;
@@ -94,6 +94,7 @@ export type Messages = {
     feedUnread: string;
     tasksNew: string;
     feedNew: string;
+    newTaskTab: string;
   };
   landing: LandingMessages;
   panel: PanelMessages;

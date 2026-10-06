@@ -1,4 +1,5 @@
 import { Check, EyeSlash, ShieldCheck } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 import { useI18n } from "../../i18n";
 import { Reveal } from "./Reveal";
 
@@ -13,22 +14,34 @@ export function PrivacySplit() {
         <Reveal className="lnd-privacy__col">
           <h3>{t.seesTitle}</h3>
           <ul>
-            {t.sees.map((line) => (
-              <li key={line}>
+            {t.sees.map((line, i) => (
+              <motion.li
+                key={line}
+                initial={{ opacity: 0, x: -8 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ duration: 0.4, delay: 0.15 + i * 0.08 }}
+              >
                 <Check size={18} weight="bold" aria-hidden />
                 {line}
-              </li>
+              </motion.li>
             ))}
           </ul>
         </Reveal>
         <Reveal className="lnd-privacy__col lnd-privacy__col--hidden" delay={0.08}>
           <h3>{t.hiddenTitle}</h3>
           <ul>
-            {t.hidden.map((line) => (
-              <li key={line}>
+            {t.hidden.map((line, i) => (
+              <motion.li
+                key={line}
+                initial={{ opacity: 0, x: -8 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ duration: 0.4, delay: 0.25 + i * 0.08 }}
+              >
                 <EyeSlash size={18} aria-hidden />
                 {line}
-              </li>
+              </motion.li>
             ))}
           </ul>
         </Reveal>

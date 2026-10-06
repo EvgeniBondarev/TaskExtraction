@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     media_dir: str = "/data/media"
     public_api_url: str = "http://localhost:8000"
+    # Google account permitted to view workspace-wide product analytics.
+    analytics_owner_email: str = ""
 
     github_token: str = ""
     github_repo: str = ""

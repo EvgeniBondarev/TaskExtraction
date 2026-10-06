@@ -21,7 +21,9 @@ from app.schemas.telegram import (
 )
 from app.services import chat_sync, telegram_auth
 from app.services.telegram_bot import (
+    business_connection_is_enabled,
     cache_group_avatar,
+    group_is_available,
     leave_chat,
     message_from_update,
     pairing_payload,
@@ -129,6 +131,68 @@ async def telegram_connections(request: Request):
     }
 
 
+async def _telegram_onboarding_status(tenant: str, verify_remote: bool = False) -> dict:
+    """Connection state used by the first-run Telegram onboarding.
+
+    A group is available immediately after the bot receives its pairing message.
+    Telegram Business is considered connected only after Telegram sends the
+    ``business_connection`` update, rather than when the user merely opens the
+    deep link. This keeps the UI confirmation truthful.
+    """
+    groups = list_sources(tenant, "group")
+    if verify_remote:
+        for group in groups:
+            try:
+                chat_id = _group_chat_id(group["source_id"])
+            except HTTPException:
+                continue
+            available = await group_is_available(chat_id)
+            if available is False:
+                remove_source(tenant, "group", group["source_id"])
+                await chat_sync.set_bot_group_monitored(tenant, chat_id, False)
+        groups = list_sources(tenant, "group")
+    business_connections = list_sources(tenant, "business_connection")
+    if verify_remote:
+        for connection in business_connections:
+            enabled = await business_connection_is_enabled(connection["source_id"].removeprefix("business:"))
+            if enabled is False:
+                remove_source(tenant, "business_connection", connection["source_id"])
+        business_connections = list_sources(tenant, "business_connection")
+    business_pairings = list_sources(tenant, "business_user")
+    business = business_connections[0] if business_connections else None
+    return {
+        "groups": [
+            {
+                "source_id": group["source_id"],
+                "title": group["title"],
+                "has_avatar": bool(group.get("avatar_path")),
+                "paused": bool(group.get("paused")),
+            }
+            for group in groups
+        ],
+        "business_paired": bool(business_pairings),
+        "business_connected": bool(business_connections),
+        "business_account": {
+            "title": business["title"],
+        } if business else None,
+    }
+
+
+@router.get("/onboarding-status")
+async def telegram_onboarding_status(request: Request):
+    from app.tenancy import require_session_tenant
+
+    return await _telegram_onboarding_status(require_session_tenant(request))
+
+
+@router.post("/onboarding-status/refresh")
+async def refresh_telegram_onboarding_status(request: Request):
+    """Ask Telegram for the current group and Business connection state on demand."""
+    from app.tenancy import require_session_tenant
+
+    return await _telegram_onboarding_status(require_session_tenant(request), verify_remote=True)
+
+
 def _group_chat_id(source_id: str) -> int:
     try:
         return int(source_id.removeprefix("chat:"))
@@ -194,12 +258,35 @@ async def telegram_webhook(request: Request):
         raise HTTPException(400, "Invalid Telegram update")
     connection = update.get("business_connection")
     if isinstance(connection, dict):
-        owner = (connection.get("user") or {}).get("id")
+        owner_profile = connection.get("user") or {}
+        owner = owner_profile.get("id")
         connection_id = connection.get("id")
         tenant = tenant_for_source(f"business-user:{owner}") if owner else None
         if tenant and connection_id:
-            set_source("business_connection", f"business:{connection_id}", tenant)
+            source_id = f"business:{connection_id}"
+            if connection.get("is_enabled") is False:
+                remove_source(tenant, "business_connection", source_id)
+            else:
+                title = " ".join(
+                    part for part in (owner_profile.get("first_name"), owner_profile.get("last_name")) if part
+                ) or owner_profile.get("username")
+                set_source("business_connection", source_id, tenant, title=title)
         return {"ok": True, "ignored": tenant is None}
+
+    membership = update.get("my_chat_member")
+    if isinstance(membership, dict):
+        chat = membership.get("chat") or {}
+        new_member = membership.get("new_chat_member") or {}
+        chat_id = chat.get("id")
+        status = new_member.get("status")
+        if isinstance(chat_id, int) and chat.get("type") in {"group", "supergroup"}:
+            source_id = f"chat:{chat_id}"
+            tenant = tenant_for_source(source_id)
+            if tenant and status in {"left", "kicked", "banned"}:
+                remove_source(tenant, "group", source_id)
+                await chat_sync.set_bot_group_monitored(tenant, chat_id, False)
+                return {"ok": True, "removed": True}
+        return {"ok": True, "ignored": True}
 
     message = message_from_update(update)
     if message is None:

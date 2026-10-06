@@ -9,6 +9,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import httpx
+
 from telethon.tl.types import (
     DocumentAttributeAnimated,
     DocumentAttributeAudio,
@@ -140,6 +142,132 @@ def extract_urls_from_message(tg_message) -> list[str]:
             urls.append(url)
 
     return urls
+
+
+def extract_urls_from_bot_message(payload: dict) -> list[str]:
+    """Extract URLs from a Bot API message or caption without duplicating them."""
+    text = str(payload.get("text") or payload.get("caption") or "")
+    urls: list[str] = []
+    seen: set[str] = set()
+
+    for entity in payload.get("entities") or payload.get("caption_entities") or []:
+        if not isinstance(entity, dict):
+            continue
+        if entity.get("type") == "text_link" and isinstance(entity.get("url"), str):
+            url = entity["url"]
+        elif entity.get("type") == "url":
+            offset, length = entity.get("offset"), entity.get("length")
+            url = text[offset : offset + length] if isinstance(offset, int) and isinstance(length, int) else ""
+        else:
+            continue
+        if url and url not in seen:
+            seen.add(url)
+            urls.append(url)
+
+    for match in URL_RE.findall(text):
+        url = match.rstrip(".,;:!?)")
+        if url not in seen:
+            seen.add(url)
+            urls.append(url)
+    return urls
+
+
+def _bot_document_kind(item: dict, fallback: str = "file") -> str:
+    mime = str(item.get("mime_type") or "").lower()
+    name = str(item.get("file_name") or "").lower()
+    if item.get("is_video") or mime.startswith("video/"):
+        return "video"
+    if mime.startswith("audio/"):
+        return "audio"
+    if mime in IMAGE_MIMES or name.endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")):
+        return "photo"
+    if name.endswith(".pdf"):
+        return "pdf"
+    if name.endswith((".xls", ".xlsx", ".csv")):
+        return "spreadsheet"
+    if name.endswith((".doc", ".docx", ".rtf", ".txt", ".md")):
+        return "document"
+    if name.endswith((".zip", ".rar", ".7z", ".tar", ".gz")):
+        return "archive"
+    return fallback
+
+
+def _bot_media_info(payload: dict) -> tuple[str, dict, str, str | None] | None:
+    """Return kind, Bot API media object, default filename and MIME type."""
+    message_id = payload.get("message_id")
+    suffix = str(message_id) if isinstance(message_id, int) else "file"
+    photos = payload.get("photo")
+    if isinstance(photos, list) and photos and isinstance(photos[-1], dict):
+        return "photo", photos[-1], f"photo_{suffix}.jpg", "image/jpeg"
+    for field, kind, ext, mime in (
+        ("animation", "animation", ".mp4", "video/mp4"),
+        ("video", "video", ".mp4", "video/mp4"),
+        ("video_note", "video", ".mp4", "video/mp4"),
+        ("voice", "voice", ".ogg", "audio/ogg"),
+        ("audio", "audio", ".mp3", "audio/mpeg"),
+        ("sticker", "sticker", ".webp", "image/webp"),
+    ):
+        item = payload.get(field)
+        if isinstance(item, dict):
+            return kind, item, f"{kind}_{suffix}{ext}", str(item.get("mime_type") or mime)
+    document = payload.get("document")
+    if isinstance(document, dict):
+        kind = _bot_document_kind(document)
+        name = str(document.get("file_name") or f"{kind}_{suffix}")
+        return kind, document, name, str(document.get("mime_type") or _mime_from_name(name) or "") or None
+    return None
+
+
+async def download_bot_api_attachments(payload: dict, media_dir: str) -> list[PreparedAttachment]:
+    """Download every file that a Telegram Bot API message can carry.
+
+    The normal Telethon path already persists attachments. This parallel path is
+    for messages delivered directly to the project bot (groups and Business),
+    where no user Telegram session is available to download the media.
+    """
+    results: list[PreparedAttachment] = []
+    media = _bot_media_info(payload)
+    if media:
+        kind, item, fallback_name, mime_type = media
+        file_id = item.get("file_id") if isinstance(item, dict) else None
+        chat = payload.get("chat") or {}
+        chat_id = chat.get("id") if isinstance(chat, dict) else None
+        message_id = payload.get("message_id")
+        from app.config import get_settings
+
+        token = get_settings().telegram_bot_token
+        if isinstance(file_id, str) and token and isinstance(chat_id, int) and isinstance(message_id, int):
+            try:
+                api_url = f"https://api.telegram.org/bot{token}"
+                async with httpx.AsyncClient(timeout=30) as client:
+                    file_response = await client.post(f"{api_url}/getFile", json={"file_id": file_id})
+                    file_data = file_response.json()
+                    file_path = (file_data.get("result") or {}).get("file_path") if file_response.is_success else None
+                    if not file_path:
+                        raise ValueError("Telegram did not return a file path")
+                    download_response = await client.get(f"https://api.telegram.org/file/bot{token}/{file_path}")
+                    download_response.raise_for_status()
+                dest_dir = Path(media_dir) / "messages" / str(chat_id) / str(message_id)
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                filename = _safe_filename(str(item.get("file_name") or fallback_name))
+                target = dest_dir / filename
+                target.write_bytes(download_response.content)
+                results.append(
+                    PreparedAttachment(
+                        kind=kind,
+                        file_name=filename,
+                        stored_path=target.relative_to(Path(media_dir)).as_posix(),
+                        mime_type=mime_type,
+                        file_size=target.stat().st_size,
+                        meta={"telegram_file_id": file_id},
+                    )
+                )
+            except (httpx.HTTPError, ValueError, OSError):
+                logger.exception("Failed to download Bot API media for message %s", message_id)
+
+    for url in extract_urls_from_bot_message(payload):
+        results.append(PreparedAttachment(kind="link", url=url, file_name=url))
+    return results
 
 
 def _message_media_kind(tg_message) -> str | None:

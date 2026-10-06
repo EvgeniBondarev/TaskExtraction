@@ -13,8 +13,8 @@ import pytest
 
 def test_build_task_panel_url():
     tid = uuid4()
-    assert build_task_panel_url(tid, "https://panel.example.com") == f"https://panel.example.com/?task={tid}"
-    assert build_task_panel_url(tid, None) == f"/?task={tid}"
+    assert build_task_panel_url(tid, "https://panel.example.com") == f"https://panel.example.com/task/{tid}"
+    assert build_task_panel_url(tid, None) == f"/task/{tid}"
 
 
 def test_build_default_reply_text():

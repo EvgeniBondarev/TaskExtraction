@@ -19,7 +19,7 @@ from app.services.avatars import ensure_business_user_profile, ensure_chat_avata
 from app.services.message_attachments import persist_attachments
 from app.services.task_broadcast import load_task_for_broadcast
 from app.utils.message_media import chat_avatar_url, sender_avatar_url
-from app.utils.telegram_attachments import download_message_attachments
+from app.utils.telegram_attachments import download_bot_api_attachments, download_message_attachments
 from app.utils.telegram_ids import chat_id_matches, normalize_telegram_chat_id
 from app.utils.telegram_link import build_telegram_message_link
 
@@ -184,9 +184,13 @@ async def store_message(
     await session.flush()
 
     try:
-        if not client:
-            return msg, profile
-        prepared = await download_message_attachments(client, tg_message, media_dir)
+        prepared = (
+            await download_bot_api_attachments(tg_message.attachment_payload or {}, media_dir)
+            if is_bot_message
+            else await download_message_attachments(client, tg_message, media_dir)
+            if client
+            else []
+        )
         if prepared:
             rows = persist_attachments(session, msg, prepared)
             await session.flush()

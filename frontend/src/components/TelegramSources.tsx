@@ -1,8 +1,8 @@
 import { ArrowSquareOut, Briefcase, ChatCircleDots, Lightbulb, Pause, Play, Trash, UsersThree } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
-import { apiFetch } from "../api/http";
 import {
   deleteTelegramGroup,
+  fetchTelegramConnectLinks,
   fetchTelegramConnections,
   setTelegramGroupPaused,
   fetchTelegramPreferences,
@@ -14,6 +14,7 @@ import type { TelegramConnections, TelegramSources as Sources } from "../api/tel
 import { useI18n } from "../i18n";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { SettingsFormSkeleton } from "./PageSkeletons";
+import { TelegramConnectionSetup } from "./TelegramConnectionSetup";
 
 export function TelegramSources() {
   const { messages } = useI18n();
@@ -33,10 +34,7 @@ export function TelegramSources() {
       fetchTelegramSources(),
       fetchTelegramConnections(),
       fetchTelegramPreferences(),
-      apiFetch("/api/telegram/connect-links").then(async (response) => {
-        if (!response.ok) throw new Error();
-        return response.json() as Promise<{ group: string; business: string }>;
-      }),
+      fetchTelegramConnectLinks(),
     ])
       .then(([source, connected, preferences, connectLinks]) => {
         setSources(source);
@@ -101,6 +99,7 @@ export function TelegramSources() {
 
   return (
     <div className="te-stack">
+      <TelegramConnectionSetup variant="settings" />
       {error && <p className="te-alert te-alert--error">{error}</p>}
       {notice && !error && <p className="te-alert te-alert--ok" role="status">{notice}</p>}
       {confirmGroup && (

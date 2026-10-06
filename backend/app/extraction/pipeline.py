@@ -6,10 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.extraction.heuristics import combined_confidence, score_message
-from app.extraction.jev import decide_task
-from app.extraction.llm import classify_message, extract_task_fields
-from app.extraction.prefilter import analyze_prefilter, is_incident_report
+from app.extraction.analysis import analyze_text, resolve_type_priority
+from app.extraction.llm import extract_task_fields
 from app.models.entities import Message, Task, TaskComment, TaskStatus
 from app.services.message_attachments import message_has_attachments
 from app.services.prompt_settings import get_prompt_config
@@ -49,138 +47,45 @@ async def process_message(
         return comment
 
     has_media = message_has_attachments(message)
-    pre = analyze_prefilter(message.text, has_media)
     prompts = await get_prompt_config()
-    threshold = prompts.confidence_threshold
-
-    if pre.skip:
-        logger.debug("Prefilter skip message %s: %s", message.id, pre.reason)
-        message.raw = message.raw or {}
-        message.raw["classification"] = {
-            "status": "prefilter_skip",
-            "reason": pre.reason,
-            "is_task": False,
-            "threshold": threshold,
-        }
-        flag_modified(message, "raw")
-        return None
-
-    if not pre.should_call_llm:
-        logger.debug("Prefilter skip LLM message %s: no signals", message.id)
-        h = score_message(message.text)
-        message.raw = message.raw or {}
-        message.raw["classification"] = {
-            "status": "no_signals",
-            "is_task": False,
-            "heuristic": h.score,
-            "threshold": threshold,
-            "reason": "Нет сигналов для классификатора",
-        }
-        flag_modified(message, "raw")
-        return None
-
-    heuristic = score_message(message.text)
-    context = await _build_context(session, message, limit=2)
-
-    decision = None
-    try:
-        decision = await decide_task(message.text or "", context)
-    except Exception:
-        logger.exception("Jev decision failed; using legacy classifier")
-
-    if decision:
-        from app.schemas.extraction import ClassifierResult
-
-        classification = ClassifierResult(
-            is_task=decision.is_task_probability >= 0.5,
-            confidence=decision.is_task_probability,
-            reason="TypeSafe Jev structured decision",
-        )
-    else:
-        classification = await classify_message(message.text or "", context)
-    # Jev already returns a calibrated task probability. Do not dilute a clear
-    # decision with keyword heuristics that were designed for the legacy LLM.
-    final_confidence = decision.is_task_probability if decision else combined_confidence(
-        heuristic.score, classification.confidence
+    analysis = await analyze_text(
+        message.text,
+        prompts=prompts,
+        has_media=has_media,
+        force_create=force_create,
+        context_loader=lambda: _build_context(session, message, limit=2),
     )
-    incident = heuristic.incident_report or is_incident_report(message.text or "")
-    # Classifier positive, or clear incident report (e.g. «студия не работает?») with decent AI score.
-    requires_review = bool(
-        decision
-        and (
-            decision.needs_review_probability >= 0.55
-            or decision.task_count == "multiple"
-            or decision.task_type_confidence < 0.45
-            or decision.priority_confidence < 0.45
-        )
-    )
-    effective_is_task = classification.is_task or (
-        incident
-        and heuristic.has_action_verb
-        and classification.confidence >= min(0.50, threshold - 0.15)
-    )
-    if decision:
-        # Review is shown to the user, but must not prevent an unambiguous,
-        # high-confidence incident from reaching the board.
-        passes_gate = (
-            decision.is_task_probability >= threshold
-            and decision.task_type_confidence >= 0.45
-            and decision.priority_confidence >= 0.45
-        )
-    else:
-        passes_gate = (
-            classification.is_task and classification.confidence >= threshold
-        ) or (
-            incident
-            and heuristic.has_action_verb
-            and classification.confidence >= min(0.50, threshold - 0.15)
-        )
-    if force_create and effective_is_task:
-        passes_gate = True
 
-    if not passes_gate:
-        skip_reason = "not_task" if not effective_is_task else (
-            "needs_review" if requires_review else "ai_below_threshold"
-        )
+    if not analysis.passes_gate:
         logger.debug(
-            "Not a task message %s: is_task=%s ai=%.2f combined=%.2f skip=%s reason=%s",
+            "Not a task message %s: status=%s confidence=%s skip=%s reason=%s",
             message.id,
-            classification.is_task,
-            classification.confidence,
-            final_confidence,
-            skip_reason,
-            classification.reason,
+            analysis.status,
+            analysis.confidence,
+            analysis.skip_reason,
+            analysis.reason,
         )
-        if message.raw is None:
-            message.raw = {}
-        message.raw["classification"] = {
-            "status": "classified",
-            "is_task": effective_is_task,
-            "confidence": final_confidence,
-            "ai_confidence": classification.confidence,
-            "reason": classification.reason,
-            "heuristic": heuristic.score,
-            "threshold": threshold,
-            "skip_reason": skip_reason,
-            "incident_report": incident,
-            "requires_review": requires_review,
-            "decision": decision.as_dict() if decision else None,
-        }
+        message.raw = message.raw or {}
+        message.raw["classification"] = analysis.classification()
         flag_modified(message, "raw")
         return None
 
+    decision = analysis.decision
+    final_confidence = analysis.confidence or 0.0
     fields = await extract_task_fields(
         message.text or "",
         message.telegram_message_id,
-        context,
+        analysis.context,
+        prompts=prompts,
     )
 
+    task_type, priority = resolve_type_priority(decision, fields.type, fields.priority)
     task = Task(
         source_message_id=message.id,
         title=fields.title[:500] or "Без названия",
         description=fields.description,
-        type=(decision.task_type if decision else fields.type) if (decision.task_type if decision else fields.type) in ("bug", "feature", "question", "other") else "other",
-        priority=(decision.priority if decision else fields.priority) if (decision.priority if decision else fields.priority) in ("low", "medium", "high") else "medium",
+        type=task_type,
+        priority=priority,
         status=TaskStatus.inbox.value,
         confidence=round(final_confidence, 3),
     )
@@ -189,17 +94,7 @@ async def process_message(
 
     if message.raw is None:
         message.raw = {}
-    message.raw["classification"] = {
-        "status": "classified",
-        "is_task": True,
-        "confidence": final_confidence,
-        "ai_confidence": classification.confidence,
-        "reason": classification.reason,
-        "heuristic": heuristic.score,
-        "threshold": threshold,
-        "requires_review": requires_review,
-        "decision": decision.as_dict() if decision else None,
-    }
+    message.raw["classification"] = analysis.classification(created=True)
     flag_modified(message, "raw")
 
     logger.info(

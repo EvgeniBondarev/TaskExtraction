@@ -45,3 +45,47 @@ button {
 a {
   color: var(--accent);
 }
+
+/* Shared loading language: all content placeholders use the same quiet shimmer. */
+.skeleton-block {
+  display: block;
+  background: linear-gradient(90deg, rgba(45, 58, 79, 0.55) 0%, rgba(148, 163, 184, 0.12) 45%, rgba(45, 58, 79, 0.55) 90%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.image-with-skeleton {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.image-with-skeleton__placeholder,
+.image-with-skeleton__image {
+  width: 100%;
+  height: 100%;
+}
+
+.image-with-skeleton__placeholder {
+  position: absolute;
+  inset: 0;
+}
+
+.image-with-skeleton__image {
+  display: block;
+  transition: opacity 160ms ease-out;
+}
+
+.image-with-skeleton__image.is-loading { opacity: 0; }
+.image-with-skeleton__image.is-ready { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block { animation: none; background: rgba(45, 58, 79, 0.55); }
+  .image-with-skeleton__image { transition: none; }
+}

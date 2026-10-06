@@ -34,6 +34,7 @@ import { LandingPage, markWelcomeSeen } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TelegramSettings } from "./pages/TelegramSettings";
+import { TelegramConnectionSetup } from "./components/TelegramConnectionSetup";
 import { useJiraIntegration } from "./hooks/useJiraIntegration";
 import { useGitHubIntegration } from "./hooks/useGitHubIntegration";
 import { useSlackIntegration } from "./hooks/useSlackIntegration";
@@ -47,9 +48,29 @@ import { trackVisit } from "./api/analytics";
 import { captureUtmFromUrl } from "./utils/utm";
 import { SeoHead } from "./components/SeoHead";
 import { useI18n } from "./i18n";
+import { fetchOwnerAnalyticsAccess } from "./api/ownerAnalytics";
+import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 
-type MainPage = "tasks" | "feed" | "settings";
+type MainPage = "tasks" | "feed" | "settings" | "analytics";
 type Gate = "loading" | "setup" | "chats" | "ready";
+
+const TELEGRAM_CONNECTION_INTRO_KEY = "te_telegram_connection_intro_seen";
+
+function telegramConnectionIntroSeen(email: string | null | undefined): boolean {
+  try {
+    return localStorage.getItem(`${TELEGRAM_CONNECTION_INTRO_KEY}:${email || "workspace"}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markTelegramConnectionIntroSeen(email: string | null | undefined): void {
+  try {
+    localStorage.setItem(`${TELEGRAM_CONNECTION_INTRO_KEY}:${email || "workspace"}`, "1");
+  } catch {
+    /* ignore */
+  }
+}
 
 function useKanbanColumns() {
   const { messages } = useI18n();
@@ -67,12 +88,19 @@ function useKanbanColumns() {
 function pathToPage(path: string): MainPage {
   if (path === "/settings" || path === "/telegram") return "settings";
   if (path === "/feed" || path === "/logs") return "feed";
+  if (path === "/analytics") return "analytics";
   return "tasks";
+}
+
+function taskIdFromLocation(): string | null {
+  const pathMatch = window.location.pathname.match(/^\/task\/([0-9a-f-]{36})\/?$/i);
+  return pathMatch?.[1] || new URLSearchParams(window.location.search).get("task");
 }
 
 function pageToPath(page: MainPage): string {
   if (page === "settings") return "/settings";
   if (page === "feed") return "/feed";
+  if (page === "analytics") return "/analytics";
   return "/";
 }
 
@@ -99,6 +127,7 @@ function goToWelcomeUrl(replace = false): void {
 }
 
 export default function App() {
+  const { messages: copy } = useI18n();
   useEffect(() => {
     captureUtmFromUrl();
     void trackVisit();
@@ -118,14 +147,18 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [integrationsPromptOpen, setIntegrationsPromptOpen] = useState(false);
+  const [telegramConnectionIntroOpen, setTelegramConnectionIntroOpen] = useState(false);
   const [integrationsPromptTick] = useState(0);
   const [navBadges, setNavBadges] = useState<NavBadges>({ tasks: 0, feed: 0 });
   const [livePollSeedReady, setLivePollSeedReady] = useState(false);
   const [liveSessionKey] = useState(0);
+  const [analyticsAllowed, setAnalyticsAllowed] = useState<boolean | null>(null);
   const seenMessages = useRef<Set<string>>(new Set());
   const pageRef = useRef(page);
   const feedBadgeIds = useRef(new Set<string>());
   const taskBadgeIds = useRef(new Set<string>());
+  const taskTabNoticeIds = useRef(new Set<string>());
+  const taskTabBaseTitle = useRef<string | null>(null);
   const openedTaskFromUrl = useRef<string | null>(null);
   const reloadRef = useRef<() => Promise<void>>(async () => {});
   const reloadMessagesRef = useRef<() => Promise<void>>(async () => {});
@@ -135,6 +168,34 @@ export default function App() {
   const { enabled: trelloEnabled } = useTrelloIntegration(gate === "ready");
   const { enabled: githubEnabled } = useGitHubIntegration(gate === "ready");
   const { enabled: slackEnabled } = useSlackIntegration(gate === "ready");
+
+  const clearTaskTabNotice = useCallback(() => {
+    if (!taskTabBaseTitle.current) return;
+    document.title = taskTabBaseTitle.current;
+    taskTabBaseTitle.current = null;
+  }, []);
+
+  const notifyNewTaskInTab = useCallback((taskKey: string) => {
+    if (taskTabNoticeIds.current.has(taskKey)) return;
+    taskTabNoticeIds.current.add(taskKey);
+    // In the foreground the new card and toast are already visible. The tab
+    // title is reserved for bringing an inactive browser tab to attention.
+    if (document.visibilityState !== "hidden") return;
+    if (!taskTabBaseTitle.current) taskTabBaseTitle.current = document.title;
+    document.title = `${copy.nav.newTaskTab} · ${taskTabBaseTitle.current}`;
+  }, [copy.nav.newTaskTab]);
+
+  useEffect(() => {
+    const restoreTitle = () => {
+      if (document.visibilityState === "visible") clearTaskTabNotice();
+    };
+    document.addEventListener("visibilitychange", restoreTitle);
+    window.addEventListener("focus", restoreTitle);
+    return () => {
+      document.removeEventListener("visibilitychange", restoreTitle);
+      window.removeEventListener("focus", restoreTitle);
+    };
+  }, [clearTaskTabNotice]);
 
   const checkSetup = useCallback(async () => {
     const auth = await fetchGoogleAuthStatus();
@@ -170,6 +231,11 @@ export default function App() {
     dismissIntegrationsPrompt();
     setIntegrationsPromptOpen(false);
   }, []);
+
+  const closeTelegramConnectionIntro = useCallback(() => {
+    markTelegramConnectionIntroSeen(currentUser?.email);
+    setTelegramConnectionIntroOpen(false);
+  }, [currentUser?.email]);
 
   const tryShowIntegrationsPrompt = useCallback(
     async (opts?: { force?: boolean }) => {
@@ -271,9 +337,24 @@ export default function App() {
   }, [checkSetup]);
 
   useEffect(() => {
+    let cancelled = false;
+    if (!panelAuthed || !currentUser?.email) {
+      setAnalyticsAllowed(false);
+      return;
+    }
+    void fetchOwnerAnalyticsAccess().then((allowed) => {
+      if (!cancelled) setAnalyticsAllowed(allowed);
+    });
+    return () => { cancelled = true; };
+  }, [currentUser?.email, panelAuthed]);
+
+  useEffect(() => {
+    if (analyticsAllowed === false && page === "analytics") navigate("tasks");
+  }, [analyticsAllowed, navigate, page]);
+
+  useEffect(() => {
     if (gate !== "ready") return;
-    const params = new URLSearchParams(window.location.search);
-    const taskId = params.get("task");
+    const taskId = taskIdFromLocation();
     if (!taskId || openedTaskFromUrl.current === taskId) return;
 
     setView("app");
@@ -300,6 +381,11 @@ export default function App() {
     if (gate !== "ready") return;
     void tryShowIntegrationsPrompt();
   }, [gate, integrationsPromptTick, tryShowIntegrationsPrompt]);
+
+  useEffect(() => {
+    if (gate === "loading" || telegramConnectionIntroSeen(currentUser?.email)) return;
+    setTelegramConnectionIntroOpen(true);
+  }, [currentUser?.email, gate]);
 
   useEffect(() => {
     if (window.location.pathname === "/guide") {
@@ -414,7 +500,8 @@ export default function App() {
 
         if (payload.type !== "message_processing") {
           if (payload.type === "new_task") {
-            const badgeKey = payload.task?.id ?? payload.message_id;
+            const badgeKey = payload.message_id ?? payload.task?.source_message_id ?? payload.task?.id ?? payload.task_id;
+            if (badgeKey) notifyNewTaskInTab(badgeKey);
             if (
               badgeKey &&
               !taskBadgeIds.current.has(badgeKey) &&
@@ -486,7 +573,7 @@ export default function App() {
       }
       void reloadRef.current();
     },
-    []
+    [notifyNewTaskInTab]
   );
 
   useEffect(() => {
@@ -569,6 +656,9 @@ export default function App() {
             onLogout={() => { void handleGoogleLogout(); }}
           />
           <TelegramSettings onStatusChange={() => { void checkSetup(); }} />
+          {telegramConnectionIntroOpen && (
+            <TelegramConnectionSetup variant="dialog" onClose={closeTelegramConnectionIntro} />
+          )}
         </div>
       </>
     );
@@ -583,6 +673,7 @@ export default function App() {
       <AppTopBar
         page={page}
         badges={navBadges}
+        canViewAnalytics={analyticsAllowed === true}
         onNavigate={navigate}
         onHome={goHome}
         user={currentUser}
@@ -595,6 +686,9 @@ export default function App() {
           onSkip={skipIntegrationsPrompt}
         />
       )}
+      {telegramConnectionIntroOpen && (
+        <TelegramConnectionSetup variant="dialog" onClose={closeTelegramConnectionIntro} />
+      )}
 
       {page === "settings" ? (
         <TelegramSettings
@@ -602,6 +696,8 @@ export default function App() {
             await checkSetup();
           }}
         />
+      ) : page === "analytics" && analyticsAllowed === true ? (
+        <AnalyticsDashboard />
       ) : loading ? (
         page === "feed" ? (
           <FeedPageSkeleton />

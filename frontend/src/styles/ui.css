@@ -198,17 +198,6 @@ body:has(.te-boot) {
   display: inline-flex;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .te-theme .app-logo-mark {
-    border-radius: 25%;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
-  }
-}
-
-:root[data-theme="dark"] .te-theme .app-logo-mark {
-  border-radius: 25%;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
-}
 
 
 /* ---------- Glass (лёгкое стекло) ---------- */
@@ -1274,6 +1263,11 @@ body:has(.te-boot) {
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border);
+}
+
+.te-card__thumb .image-with-skeleton {
+  display: block;
+  min-height: 96px;
 }
 
 .te-card__thumb img {
@@ -3035,6 +3029,486 @@ body:has(.te-boot) {
   margin-top: 0.5rem;
 }
 
+/* ---------- Telegram connection onboarding ---------- */
+.te-dialog--connect {
+  width: min(920px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.te-connect {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.te-connect--settings {
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  background: var(--surface);
+}
+
+.te-connect__head {
+  max-width: 680px;
+}
+
+.te-connect__eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.te-connect__head h2 {
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.te-connect__head p {
+  margin-top: 0.55rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.te-connect__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.te-connect__option {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+
+.te-connect__option.is-connected {
+  border-color: color-mix(in srgb, var(--ok) 55%, var(--border));
+  background: color-mix(in srgb, var(--ok-soft) 58%, var(--surface));
+}
+
+.te-connect__option > header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.te-connect__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: var(--r-control);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.te-connect__option h3 {
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.te-connect__option header p,
+.te-connect__hint {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.te-connect__check,
+.te-connect__success {
+  color: var(--ok);
+}
+
+.te-connect__groups {
+  display: grid;
+  gap: 6px;
+}
+
+.te-connect__groups li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.te-connect__groups img,
+.te-connect__group-placeholder {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.te-connect__group-placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.te-connect__groups li > span:last-child {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.te-connect__groups strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.te-connect__groups small {
+  margin-top: 2px;
+  color: var(--ok);
+  font-size: 0.76rem;
+}
+
+.te-connect__success,
+.te-connect__waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 550;
+}
+
+.te-connect__business-account {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.te-connect__business-account > span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.te-connect__business-account p {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.te-connect__business-account strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.te-connect__business-account small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2px;
+  color: var(--ok);
+  font-size: 0.76rem;
+}
+
+.te-connect__waiting {
+  color: var(--muted);
+  font-weight: 450;
+}
+
+.te-connect__action {
+  justify-self: start;
+}
+
+.te-connect__tutorial {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.te-connect__tutorial summary {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.te-connect__tutorial ol {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.te-connect__tutorial li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--text-2);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.te-connect__tutorial li > span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.te-connect__shots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 0.85rem;
+}
+
+.te-connect__shot {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-3);
+  box-shadow: var(--shadow-sm);
+  cursor: zoom-in;
+  transition: transform 0.18s var(--ease), border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+
+.te-connect__shot:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+.te-connect__shot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.te-connect__shot img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.te-connect__shot--portrait img {
+  aspect-ratio: 9 / 16;
+}
+
+.te-connect__shot--wide {
+  grid-column: span 2;
+}
+
+.te-connect__shot--wide img {
+  aspect-ratio: 16 / 10;
+}
+
+/* The group walkthrough stays visible after a connection is made.  Keep its
+   three reference screenshots as compact, equal-height previews; the full
+   image remains one click away in the lightbox. */
+.te-connect__shots--group {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.te-connect__shots--group .te-connect__shot--wide {
+  grid-column: auto;
+}
+
+.te-connect__shots--group .te-connect__shot img,
+.te-connect__shots--group .te-connect__shot--wide img,
+.te-connect__shots--group .te-connect__shot--portrait img {
+  height: 92px;
+  aspect-ratio: auto;
+  object-fit: contain;
+  background: #101820;
+}
+
+.te-connect__loading {
+  display: flex;
+  min-height: 160px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--muted);
+}
+
+.te-analytics {
+  width: min(1440px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 36px 0 56px;
+}
+
+.te-analytics__period {
+  display: inline-flex;
+  margin: 22px 0;
+}
+
+.te-analytics__period button {
+  min-width: 76px;
+}
+
+.te-analytics__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.te-analytics__metrics article {
+  display: grid;
+  gap: 3px;
+  min-height: 130px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.te-analytics__metrics article > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.te-analytics__metrics article > span svg {
+  color: var(--accent);
+}
+
+.te-analytics__metrics strong {
+  align-self: end;
+  color: var(--text);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.te-analytics__metrics small,
+.te-analytics__sub {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.te-analytics__chart,
+.te-analytics__accounts {
+  margin-bottom: 16px;
+}
+
+.te-analytics__chart-canvas {
+  height: 285px;
+  margin-top: 12px;
+}
+
+.te-analytics__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.te-analytics__medium {
+  margin-bottom: 0;
+}
+
+.te-analytics__loading {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  color: var(--muted);
+}
+
+.te-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.te-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.te-table th,
+.te-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.te-table th {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.te-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+.te-table td strong {
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .te-analytics { width: min(100% - 32px, 720px); padding-top: 26px; }
+  .te-analytics__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .te-analytics__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .te-analytics { width: min(100% - 24px, 720px); }
+  .te-analytics__metrics { gap: 8px; }
+  .te-analytics__metrics article { min-height: 112px; padding: 14px; }
+  .te-analytics__chart-canvas { height: 235px; }
+}
+
+.te-connect__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+}
+
 /* ---------- Skeletons ---------- */
 .te-theme .skeleton-group {
   --sk-base: var(--surface-2);
@@ -3213,6 +3687,45 @@ body:has(.te-boot) {
 
   .te-panel {
     padding: 16px;
+  }
+
+  .te-dialog--connect {
+    max-height: calc(100dvh - 16px);
+    padding: 18px;
+  }
+
+  .te-connect--settings {
+    padding: 16px;
+  }
+
+  .te-connect__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .te-connect__shots {
+    grid-template-columns: repeat(3, minmax(108px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .te-connect__shots--group {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .te-connect__shots--group .te-connect__shot img,
+  .te-connect__shots--group .te-connect__shot--wide img,
+  .te-connect__shots--group .te-connect__shot--portrait img {
+    height: 78px;
+  }
+
+  .te-connect__footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .te-connect__footer .te-btn {
+    width: 100%;
   }
 
   .te-threshold-demo li {
@@ -3746,4 +4259,52 @@ body:has(.te-boot) {
   .te-legal__toc > .te-field__label {
     display: none;
   }
+}
+
+/* 3D-значок: элементы — span (значок живёт внутри ссылок и кнопок) */
+.te-icon3d__body,
+.te-icon3d__tile,
+.te-icon3d__glare {
+  display: block;
+}
+
+/* Компактный режим: логотип в шапках */
+.te-icon3d--compact {
+  display: inline-grid;
+  height: var(--icon-size);
+  flex-shrink: 0;
+  perspective: calc(var(--icon-size) * 4);
+  vertical-align: middle;
+}
+
+.te-icon3d--compact .te-icon3d__tile {
+  border-radius: 26%;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -1px 3px rgb(0 0 0 / 0.5),
+    0 2px 4px -1px rgb(24 24 27 / 0.35);
+}
+
+.te-icon3d--compact .te-icon3d__bubble {
+  transform: translateZ(calc(var(--icon-size) * 0.22));
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.45));
+}
+
+.te-icon3d--compact .te-icon3d__check {
+  transform: translateZ(calc(var(--icon-size) * 0.36));
+  filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .te-icon3d--compact .te-icon3d__tile {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      0 0 0 1px rgb(255 255 255 / 0.12);
+  }
+}
+
+:root[data-theme="dark"] .te-icon3d--compact .te-icon3d__tile {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 0 0 1px rgb(255 255 255 / 0.12);
 }

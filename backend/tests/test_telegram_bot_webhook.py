@@ -68,6 +68,27 @@ async def test_group_update_is_forwarded_to_bot_ingest(client, monkeypatch):
     assert len(received) == 1
     assert received[0].chat_id == -100123
     assert received[0].raw["source"] == "telegram_bot"
+    removed = await client.post(
+        "/api/telegram/webhook",
+        headers={"X-Telegram-Bot-Api-Secret-Token": "webhook-secret"},
+        json={
+            "update_id": 3,
+            "my_chat_member": {
+                "chat": {"id": -100123, "type": "supergroup", "title": "Рабочая"},
+                "new_chat_member": {"status": "left", "user": {"id": 999}},
+            },
+        },
+    )
+    assert removed.status_code == 200
+    assert removed.json()["removed"] is True
+    from app.services.source_registry import tenant_for_source
+
+    assert tenant_for_source("chat:-100123") is None
+    async with tenant_session("123456789012345") as session:
+        chat = (
+            await session.execute(select(Chat).where(Chat.telegram_chat_id == -100123))
+        ).scalar_one()
+        assert chat.is_monitored is False
 
 
 @pytest.mark.asyncio
@@ -128,3 +149,12 @@ async def test_business_update_is_forwarded_only_with_valid_secret(client, monke
     assert response.status_code == 200
     assert received[0].raw["source"] == "telegram_business"
     assert received[0].raw["business_connection_id"] == "business-1"
+    disconnected = await client.post(
+        "/api/telegram/webhook",
+        headers={"X-Telegram-Bot-Api-Secret-Token": "webhook-secret"},
+        json={"business_connection": {"id": "business-1", "user": {"id": 777}, "is_enabled": False}},
+    )
+    assert disconnected.status_code == 200
+    from app.services.source_registry import tenant_for_source
+
+    assert tenant_for_source("business:business-1") is None
