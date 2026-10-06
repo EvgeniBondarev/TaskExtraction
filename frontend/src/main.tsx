@@ -2,6 +2,8 @@ import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { AdminApp } from "./pages/AdminApp";
+import { SeoContentPage } from "./pages/SeoContentPage";
+import { SEO_PAGE_BY_PATH } from "./content/seoPages";
 import { I18nProvider } from "./i18n";
 import { applyThemePref, readThemePref } from "./utils/theme";
 import "./index.css";
@@ -18,6 +20,8 @@ const isShotsRoute = ShotsPage !== null && window.location.pathname.startsWith("
 const isAdminRoute =
   window.location.pathname === "/admin" ||
   window.location.pathname.startsWith("/admin/");
+const seoPath = window.location.pathname.endsWith("/") ? window.location.pathname : `${window.location.pathname}/`;
+const isSeoContentRoute = SEO_PAGE_BY_PATH.has(seoPath);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -28,6 +32,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         </Suspense>
       ) : isAdminRoute ? (
         <AdminApp />
+      ) : isSeoContentRoute ? (
+        <SeoContentPage />
       ) : (
         <App />
       )}

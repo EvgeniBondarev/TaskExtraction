@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEO, SITEMAP_PATHS } from "./seo.config";
+import { SEO_PAGES, type SeoPage } from "./src/content/seoPages";
 
 const STATIC_LANDING = `<!--seo-static-start-->
 <main class="seo-static" aria-label="TaskExtraction">
@@ -33,7 +34,7 @@ function siteHost(siteUrl: string): string {
 }
 
 function buildSitemapXml(base: string, lastmod: string): string {
-  const urls = SITEMAP_PATHS.map(
+  const urls = [...SITEMAP_PATHS, ...SEO_PAGES.map((page) => ({ path: page.path, changefreq: "monthly" as const, priority: 0.7 }))].map(
     (entry) => `  <url>
     <loc>${base}${entry.path}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -46,6 +47,17 @@ function buildSitemapXml(base: string, lastmod: string): string {
 ${urls}
 </urlset>
 `;
+}
+
+function staticSeoPage(page: SeoPage): string {
+  const sections = page.sections.map((section) => `<section><h2>${escapeHtml(section.heading)}</h2>${section.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}</section>`).join("");
+  const image = `/landing/${page.image}-light.jpg`;
+  const allPages = SEO_PAGES;
+  const related = page.path === "/blog/"
+    ? allPages.filter((item) => item.path.startsWith("/blog/") && item.path !== page.path)
+    : [allPages.find((item) => item.path === "/blog/"), ...allPages.filter((item) => item.path !== page.path && item.path !== "/blog/").slice(0, 2)].filter(Boolean) as SeoPage[];
+  const links = related.map((item) => `<li><a href="${item.path}">${escapeHtml(item.h1)}</a></li>`).join("");
+  return `<!--seo-static-start--><main class="seo-static" aria-label="${escapeHtml(page.h1)}"><article><header><p>TaskExtraction · работа с задачами в Telegram</p><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><a href="/login">Попробовать TaskExtraction</a></header><figure><img src="${image}" alt="${escapeHtml(page.imageAlt)}" width="1600" height="1028"><figcaption>Интерфейс TaskExtraction: задачи сохраняют связь с исходной перепиской.</figcaption></figure><div aria-label="Схема работы: сообщение в Telegram превращается в задачу, а затем в действие команды"><span>Сообщение в Telegram</span> → <span>Понятная задача</span> → <span>Статус и действие команды</span></div>${sections}<aside><h2>Хотите перестать терять задачи в переписке?</h2><p>Подключите рабочий чат и посмотрите, как поручения превращаются в карточки с контекстом.</p><a href="/login">Открыть TaskExtraction</a></aside><nav aria-label="Материалы по теме"><h2>Читайте также</h2><ul>${links}</ul></nav></article></main><!--seo-static-end-->`;
 }
 
 function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
@@ -149,6 +161,23 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
       const privacyDir = resolve(dist, "privacy");
       mkdirSync(privacyDir, { recursive: true });
       writeFileSync(resolve(privacyDir, "index.html"), privacyHtml, { encoding: "utf-8", flag: "w" });
+      for (const page of SEO_PAGES) {
+        const dir = resolve(dist, page.path.replace(/^\//, ""));
+        mkdirSync(dir, { recursive: true });
+        const pageVars = {
+          ...vars,
+          __SEO_TITLE__: escapeHtml(page.title),
+          __SEO_DESCRIPTION__: escapeHtml(page.description),
+          __SEO_SHARE_TITLE__: escapeHtml(page.title),
+          __SEO_SHARE_DESCRIPTION__: escapeHtml(page.description),
+          __SEO_CANONICAL__: `${base}${page.path}`,
+          __SEO_JSONLD_DESC__: escapeHtml(page.description),
+          __SEO_JSONLD_URL__: `${base}${page.path}`,
+        };
+        const pageHtml = staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), pageVars, staticSeoPage(page))
+          .replace('/src/main.tsx', compiledIndex.match(/src="([^"]+\.js)"/)?.[1] || '/assets/index.js');
+        writeFileSync(resolve(dir, "index.html"), pageHtml, { encoding: "utf-8", flag: "w" });
+      }
       writeFileSync(resolve(dist, "sitemap.xml"), buildSitemapXml(base, lastmod));
 
       const robotsPath = resolve(__dirname, "public/robots.txt");
