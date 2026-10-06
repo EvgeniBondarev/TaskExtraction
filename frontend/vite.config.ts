@@ -8,6 +8,7 @@ import { SEO_PAGES, isArticlePath, relatedSeoPages, seoBreadcrumbs, type SeoPage
 const STATIC_LANDING = `<!--seo-static-start-->
 <main class="seo-static" aria-label="TaskExtraction">
   <header><p>TaskExtraction</p><h1>ИИ-сервис для извлечения задач из Telegram</h1></header>
+  <img src="/landing/board-light.jpg" alt="Канбан-доска TaskExtraction с задачами из Telegram" width="1600" height="1028" decoding="async">
   <p>TaskExtraction автоматически находит поручения в переписке Telegram, помогает команде вести их на канбан-доске и отправлять в привычные инструменты.</p>
   <section><h2>Автоматическое создание задач из сообщений Telegram</h2><p>Сервис отличает задачу от обычной переписки, сохраняет контекст, сроки и исполнителя. Не нужны теги, команды и ручное копирование сообщений.</p></section>
   <section><h2>Управление задачами в Telegram для команды</h2><p>Новые задачи появляются на доске со статусами «Новые», «В работе», «Готово» и «Архив». Из карточки можно ответить в исходный чат.</p></section>
