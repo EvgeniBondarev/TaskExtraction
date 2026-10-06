@@ -109,6 +109,7 @@ export function LandingPage({ onTry, onHome }: Props) {
               {locale !== "en" && (
             <>
               <a href="/features/">Возможности</a>
+              <a href="/pricing/">Цены</a>
               <a href="/integrations/">Интеграции</a>
             </>
           )}

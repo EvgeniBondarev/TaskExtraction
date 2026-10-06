@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { SEO_PAGE_BY_PATH } from "./content/seoPages";
+import { PRICING_PATH } from "./content/pricing";
 import { I18nProvider } from "./i18n";
 import { applyThemePref, readThemePref } from "./utils/theme";
 import "./index.css";
@@ -24,6 +25,10 @@ async function loadRoot(): Promise<React.ReactElement> {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const { AdminApp } = await import("./pages/AdminApp");
     return <AdminApp />;
+  }
+  if (seoPath === PRICING_PATH) {
+    const { PricingPage } = await import("./pages/PricingPage");
+    return <PricingPage />;
   }
   if (SEO_PAGE_BY_PATH.has(seoPath)) {
     const { SeoContentPage } = await import("./pages/SeoContentPage");
