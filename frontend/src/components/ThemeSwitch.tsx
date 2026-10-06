@@ -23,7 +23,10 @@ export function ThemeSwitch({ className = "" }: { className?: string }) {
           role="radio"
           aria-checked={pref === id}
           className={pref === id ? "is-active" : ""}
-          onClick={() => setPref(id)}
+          onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setPref(id, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+          }}
           title={t[id]}
           aria-label={t[id]}
         >

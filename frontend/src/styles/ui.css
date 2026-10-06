@@ -888,7 +888,7 @@ body:has(.te-boot) {
   background: transparent;
   color: var(--muted, #5c5c63);
   cursor: pointer;
-  transition: background-color 0.18s, color 0.18s;
+  transition: background-color 0.18s, color 0.18s, transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
 }
 
 .te-theme-switch button:hover {
@@ -898,6 +898,20 @@ body:has(.te-boot) {
 .te-theme-switch button.is-active {
   background: var(--surface-3, rgb(24 24 27 / 0.08));
   color: var(--text, #18181b);
+}
+
+.theme-transitioning .te-theme-switch {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #c2410c) 15%, transparent), 0 0 22px color-mix(in srgb, var(--accent, #c2410c) 23%, transparent);
+}
+
+.theme-transitioning .te-theme-switch button.is-active svg {
+  animation: te-theme-icon-pop .68s var(--ease);
+}
+
+@keyframes te-theme-icon-pop {
+  0% { transform: rotate(-18deg) scale(.78); opacity: .5; }
+  60% { transform: rotate(8deg) scale(1.18); opacity: 1; }
+  100% { transform: none; }
 }
 
 .te-account {
@@ -4616,6 +4630,8 @@ body:has(.te-boot) {
   perspective: calc(var(--icon-size) * 5);
   display: grid;
   justify-items: center;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .te-icon3d__body {
@@ -4678,6 +4694,45 @@ body:has(.te-boot) {
   filter: blur(calc(var(--icon-size) * 0.06));
 }
 
+.te-icon3d__celebration {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.te-icon3d__celebration i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--icon-size) * 0.07);
+  height: calc(var(--icon-size) * 0.07);
+  border-radius: 50%;
+  background: #f97316;
+  box-shadow: 0 0 0 calc(var(--icon-size) * 0.02) rgb(255 255 255 / .78);
+  transform: translate(-50%, -50%) rotate(calc(var(--burst-index) * 45deg)) translateY(0) scale(.35);
+  animation: te-icon-burst .78s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.te-icon3d__celebration i:nth-child(3n) { background: #4ade80; }
+.te-icon3d__celebration i:nth-child(3n + 1) { background: #facc15; }
+
+.te-icon3d.is-celebrating .te-icon3d__check {
+  animation: te-icon-check-dance .78s cubic-bezier(.16, 1, .3, 1);
+}
+
+@keyframes te-icon-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(var(--burst-index) * 45deg)) translateY(0) scale(.25); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(var(--burst-index) * 45deg)) translateY(calc(var(--icon-size) * -.74)) scale(1); }
+}
+
+@keyframes te-icon-check-dance {
+  0%, 100% { filter: drop-shadow(0 calc(var(--icon-size) * 0.02) calc(var(--icon-size) * 0.03) rgb(234 88 12 / 0.45)); }
+  45% { filter: drop-shadow(0 0 calc(var(--icon-size) * 0.12) rgb(250 204 21 / .88)); }
+}
+
 .te-icon3d.is-floating .te-icon3d__shadow {
   animation: te-icon-shadow 6s ease-in-out infinite;
 }
@@ -4694,7 +4749,9 @@ body:has(.te-boot) {
 
 @media (prefers-reduced-motion: reduce) {
   .te-icon3d__body,
-  .te-icon3d__shadow {
+  .te-icon3d__shadow,
+  .te-icon3d__check,
+  .te-icon3d__celebration i {
     animation: none !important;
   }
 }

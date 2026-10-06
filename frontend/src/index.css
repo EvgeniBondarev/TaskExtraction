@@ -89,3 +89,59 @@ a {
   .skeleton-block { animation: none; background: rgba(45, 58, 79, 0.55); }
   .image-with-skeleton__image { transition: none; }
 }
+
+/* Theme changes reveal from the chosen sun/moon/system control instead of flashing the page. */
+.te-theme-iris {
+  position: fixed;
+  z-index: 2147483646;
+  inset: 0;
+  /* The outgoing palette begins as a full surface, then contracts to the icon. */
+  clip-path: circle(150vmax at var(--theme-reveal-x, 50vw) var(--theme-reveal-y, 50vh));
+  pointer-events: none;
+}
+
+.te-theme-iris--dark {
+  background:
+    radial-gradient(circle at var(--theme-reveal-x, 50vw) var(--theme-reveal-y, 50vh), rgb(242 128 79 / .24), transparent 18%),
+    #111113;
+}
+
+.te-theme-iris--light {
+  background:
+    radial-gradient(circle at var(--theme-reveal-x, 50vw) var(--theme-reveal-y, 50vh), rgb(251 233 223 / .95), transparent 19%),
+    #f6f6f4;
+}
+
+.te-theme-iris.is-revealing {
+  animation: theme-iris-reveal 510ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+html.theme-transitioning::after {
+  position: fixed;
+  z-index: 2147483647;
+  top: var(--theme-reveal-y, 50vh);
+  left: var(--theme-reveal-x, 50vw);
+  width: 14px;
+  height: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent, #c2410c) 72%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent, #c2410c) 34%, transparent);
+  content: "";
+  pointer-events: none;
+  animation: theme-signal 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes theme-iris-reveal {
+  from { clip-path: circle(150vmax at var(--theme-reveal-x, 50vw) var(--theme-reveal-y, 50vh)); }
+  to { clip-path: circle(0 at var(--theme-reveal-x, 50vw) var(--theme-reveal-y, 50vh)); }
+}
+
+@keyframes theme-signal {
+  0% { transform: translate(-50%, -50%) scale(.5); opacity: .95; }
+  100% { transform: translate(-50%, -50%) scale(48); box-shadow: 0 0 0 18px color-mix(in srgb, var(--accent, #c2410c) 0%, transparent); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .te-theme-iris,
+  html.theme-transitioning::after { animation: none; }
+}
