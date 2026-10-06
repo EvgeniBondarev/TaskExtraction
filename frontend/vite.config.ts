@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEO, SITEMAP_PATHS } from "./seo.config";
 import { SEO_PAGES, isArticlePath, relatedSeoPages, seoBreadcrumbs, type SeoPage } from "./src/content/seoPages";
@@ -198,7 +198,14 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
       // Vite кладёт module script раньше извлечённого CSS. На медленном соединении
       // React успевает отрисовать страницу до прихода стилей, что даёт заметный FOUC.
       // Переносим stylesheet перед приложением во всех статических входных HTML.
-      const bundleStyles = compiledIndex.match(/<link rel="stylesheet"[^>]+>/g)?.join("\n") || "";
+      const stylesheetLinks = compiledIndex.match(/<link rel="stylesheet"[^>]+>/g)?.join("\n") || "";
+      // Шрифты браузер находит только внутри CSS и грузит после него — текст мигает запасным шрифтом.
+      // Preload основных начертаний (кириллица и латиница) убирает эту задержку.
+      const fontPreloads = readdirSync(resolve(dist, "assets"))
+        .filter((file) => /^geist-(cyrillic|latin)-wght-normal-.+\.woff2$/.test(file))
+        .map((file) => `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${file}">`)
+        .join("\n");
+      const bundleStyles = [fontPreloads, stylesheetLinks].filter(Boolean).join("\n");
       const compiledIndexWithStylesFirst = bundleStyles
         ? compiledIndex
           .replace(/<link rel="stylesheet"[^>]+>\s*/g, "")
