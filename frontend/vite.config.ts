@@ -4,7 +4,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SEO, SITEMAP_PATHS } from "./seo.config";
 import { PRICING_FAQ, PRICING_PAGE, PRICING_PLANS } from "./src/content/pricing";
-import { SEO_PAGES, isArticlePath, relatedSeoPages, seoBreadcrumbs, type SeoPage } from "./src/content/seoPages";
+import { SEO_PAGES, isArticlePath, splitInlineLinks, relatedSeoPages, seoBreadcrumbs, type SeoImage, type SeoPage } from "./src/content/seoPages";
 
 const STATIC_LANDING = `<!--seo-static-start-->
 <main class="seo-static" aria-label="TaskExtraction">
@@ -53,11 +53,13 @@ ${urls}
 }
 
 function staticSeoPage(page: SeoPage): string {
-  const sections = page.sections.map((section) => `<section><h2>${escapeHtml(section.heading)}</h2>${section.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}</section>`).join("");
-  const image = `/landing/${page.image}-light.jpg`;
+  const inline = (text: string) => splitInlineLinks(text).map((part) => (typeof part === "string" ? escapeHtml(part) : `<a href="${escapeHtml(part.href)}">${escapeHtml(part.text)}</a>`)).join("");
+  const sectionImage = (image?: SeoImage) => (image ? `<figure><img src="${image.src}" alt="${escapeHtml(image.alt)}" width="${image.width}" height="${image.height}" loading="lazy" decoding="async"></figure>` : "");
+  const sections = page.sections.map((section) => `<section><h2>${escapeHtml(section.heading)}</h2>${sectionImage(section.image)}${section.paragraphs.map((p) => `<p>${inline(p)}</p>`).join("")}${section.list ? `<ul>${section.list.map((item) => `<li>${inline(item)}</li>`).join("")}</ul>` : ""}</section>`).join("");
+  const image = page.cover?.src ?? `/landing/${page.image}-light.jpg`;
   const related = relatedSeoPages(page);
   const links = related.map((item) => `<li><a href="${item.path}">${escapeHtml(item.h1)}</a></li>`).join("");
-  return `<!--seo-static-start--><main class="seo-static" aria-label="${escapeHtml(page.h1)}"><article><header><p>TaskExtraction · работа с задачами в Telegram</p><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><a href="/login">Попробовать TaskExtraction</a></header><figure><img src="${image}" alt="${escapeHtml(page.imageAlt)}" width="1600" height="1028" fetchpriority="high" decoding="async"><figcaption>Интерфейс TaskExtraction: задачи сохраняют связь с исходной перепиской.</figcaption></figure><div aria-label="Схема работы: сообщение в Telegram превращается в задачу, а затем в действие команды"><span>Сообщение в Telegram</span> → <span>Понятная задача</span> → <span>Статус и действие команды</span></div>${sections}<aside><h2>Хотите перестать терять задачи в переписке?</h2><p>Подключите рабочий чат и посмотрите, как поручения превращаются в карточки с контекстом.</p><a href="/login">Открыть TaskExtraction</a></aside><nav aria-label="Материалы по теме"><h2>Читайте также</h2><ul>${links}</ul></nav></article></main><!--seo-static-end-->`;
+  return `<!--seo-static-start--><main class="seo-static" aria-label="${escapeHtml(page.h1)}"><article><header><p>TaskExtraction · работа с задачами в Telegram</p><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><a href="/login">Попробовать TaskExtraction</a></header>${page.cover ? `<figure><img src="${page.cover.src}" alt="${escapeHtml(page.cover.alt)}" width="${page.cover.width}" height="${page.cover.height}" fetchpriority="high" decoding="async"></figure>` : `<figure><img src="${image}" alt="${escapeHtml(page.imageAlt)}" width="1600" height="1028" fetchpriority="high" decoding="async"><figcaption>Интерфейс TaskExtraction: задачи сохраняют связь с исходной перепиской.</figcaption></figure><div aria-label="Схема работы: сообщение в Telegram превращается в задачу, а затем в действие команды"><span>Сообщение в Telegram</span> → <span>Понятная задача</span> → <span>Статус и действие команды</span></div>`}${sections}<aside><h2>Хотите перестать терять задачи в переписке?</h2><p>Подключите рабочий чат и посмотрите, как поручения превращаются в карточки с контекстом.</p><a href="/login">Открыть TaskExtraction</a></aside><nav aria-label="Материалы по теме"><h2>Читайте также</h2><ul>${links}</ul></nav></article></main><!--seo-static-end-->`;
 }
 
 function jsonLdScript(data: unknown): string {
@@ -261,7 +263,7 @@ function seoSitePlugin(siteUrl: string, isProd: boolean): Plugin {
           __SEO_SHARE_DESCRIPTION__: escapeHtml(page.description),
           __SEO_CANONICAL__: `${base}${page.path}`,
           __SEO_OG_TYPE__: isArticlePath(page.path) ? "article" : "website",
-          __SEO_JSONLD__: pageJsonLd(base, page, `${base}/landing/${page.image}-light.jpg`, lastmod),
+          __SEO_JSONLD__: pageJsonLd(base, page, `${base}${page.cover?.src ?? `/landing/${page.image}-light.jpg`}`, lastmod),
         };
         const pageHtml = withBundleAssets(staticPage(readFileSync(resolve(__dirname, "index.html"), "utf-8"), pageVars, staticSeoPage(page)));
         writeFileSync(resolve(dir, "index.html"), pageHtml, { encoding: "utf-8", flag: "w" });
