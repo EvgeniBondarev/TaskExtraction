@@ -140,6 +140,8 @@ export const panelEn: PanelMessages = {
     saved: "Saved",
     saving: "Saving…",
     error: "Could not save",
+    moved: "Moved to “{status}”",
+    moveError: "Could not move the task. Please try again.",
     confidence: "Model confidence",
     reply: {
       title: "Reply in the chat",

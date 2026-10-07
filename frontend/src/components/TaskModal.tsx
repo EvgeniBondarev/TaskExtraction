@@ -1,4 +1,4 @@
-import { ArrowSquareOut, Check, Prohibit, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Check, CircleNotch, Prohibit, X } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { dismissTask, fetchTask, pushTask, Task, updateTask } from "../api";
@@ -53,10 +53,28 @@ export function TaskModal({
   const [description, setDescription] = useState(task.description || "");
   const [assignee, setAssignee] = useState(task.assignee || "");
   const [busy, setBusy] = useState(false);
+  const [movingTo, setMovingTo] = useState<string | null>(null);
+  const [movedTo, setMovedTo] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
   const [pushing, setPushing] = useState<Provider | null>(null);
   const [error, setError] = useState("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const statusMoveInFlight = useRef(false);
+  const closeStarted = useRef(false);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const schedule = (callback: () => void, delay: number) => {
+    const timer = window.setTimeout(callback, delay);
+    timers.current.push(timer);
+  };
+
+  const closeSheet = () => {
+    if (closeStarted.current) return;
+    closeStarted.current = true;
+    setClosing(true);
+    schedule(onClose, 220);
+  };
 
   useEffect(() => {
     setTitle(task.title);
@@ -67,16 +85,20 @@ export function TaskModal({
   useEffect(() => {
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !statusMoveInFlight.current) closeSheet();
     };
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.removeEventListener("keydown", onKey);
+        document.body.style.overflow = prevOverflow;
+      };
   }, [onClose]);
+
+  useEffect(() => () => {
+    timers.current.forEach(window.clearTimeout);
+  }, []);
 
   const patch = async (body: Partial<Task>) => {
     setBusy(true);
@@ -88,6 +110,35 @@ export function TaskModal({
     } catch (e) {
       setError(e instanceof Error ? e.message : tm.error);
     } finally {
+      setBusy(false);
+    }
+  };
+
+  const moveStatus = async (status: string) => {
+    if (status === task.status || statusMoveInFlight.current || closing) return;
+
+    // Lock synchronously as well as through React state: two very quick taps
+    // cannot create two PATCH requests before the button has re-rendered.
+    statusMoveInFlight.current = true;
+    const previousTask = task;
+    const optimisticTask = { ...task, status };
+    setBusy(true);
+    setMovingTo(status);
+    setMovedTo(null);
+    setError("");
+    onUpdate(optimisticTask);
+
+    try {
+      const updated = await updateTask(task.id, { status });
+      onUpdate(updated);
+      setMovedTo(status);
+      schedule(closeSheet, 360);
+    } catch {
+      onUpdate(previousTask);
+      setError(tm.moveError);
+    } finally {
+      statusMoveInFlight.current = false;
+      setMovingTo(null);
       setBusy(false);
     }
   };
@@ -152,9 +203,9 @@ export function TaskModal({
     <div className="te-sheet-layer" role="presentation">
       <motion.div
         className="te-sheet-backdrop"
-        onClick={onClose}
+        onClick={() => !busy && !movingTo && closeSheet()}
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{ opacity: closing ? 0 : 1 }}
         transition={{ duration: 0.2 }}
       />
       <motion.aside
@@ -163,8 +214,8 @@ export function TaskModal({
         aria-modal="true"
         aria-label={task.title}
         initial={{ x: 32, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 320, damping: 34 }}
+        animate={closing ? { x: 24, y: 12, opacity: 0 } : { x: 0, y: 0, opacity: 1 }}
+        transition={closing ? { duration: 0.2, ease: "easeIn" } : { type: "spring", stiffness: 320, damping: 34 }}
       >
         <header className="te-sheet__head te-glass">
           <div className="te-segment" role="radiogroup" aria-label={tm.status}>
@@ -175,18 +226,23 @@ export function TaskModal({
                 role="radio"
                 aria-checked={task.status === s}
                 className={`te-segment__item te-segment__item--${s}${task.status === s ? " is-active" : ""}`}
-                disabled={busy}
-                onClick={() => task.status !== s && patch({ status: s })}
+                disabled={busy || Boolean(movingTo) || closing}
+                onClick={() => void moveStatus(s)}
               >
+                {movingTo === s && <CircleNotch className="te-segment__spinner" size={14} weight="bold" aria-hidden />}
                 {labels.status[s]}
               </button>
             ))}
           </div>
-          <span className="te-sheet__saved" aria-live="polite">
+          <span className={`te-sheet__saved${movedTo ? ` te-sheet__saved--${movedTo}` : ""}`} aria-live="polite">
             <AnimatePresence>
-              {busy ? (
+              {movingTo ? null : busy ? (
                 <motion.span key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   {tm.saving}
+                </motion.span>
+              ) : movedTo ? (
+                <motion.span key={`moved-${movedTo}`} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  <Check size={14} weight="bold" aria-hidden /> {tm.moved.replace("{status}", labels.status[movedTo as keyof typeof labels.status])}
                 </motion.span>
               ) : savedAt ? (
                 <motion.span key={savedAt} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -195,7 +251,7 @@ export function TaskModal({
               ) : null}
             </AnimatePresence>
           </span>
-          <button ref={closeRef} type="button" className="te-icon-btn" onClick={onClose} aria-label={tm.close}>
+          <button ref={closeRef} type="button" className="te-icon-btn" onClick={closeSheet} disabled={busy || Boolean(movingTo) || closing} aria-label={tm.close}>
             <X size={18} />
           </button>
         </header>

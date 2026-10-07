@@ -1585,31 +1585,45 @@ body:has(.te-boot) {
 }
 
 .te-segment__item {
+  --segment-color: var(--st-inbox);
   height: 30px;
   padding: 0 0.75rem;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--segment-color) 18%, transparent);
   border-radius: 9px;
-  background: none;
-  color: var(--muted);
+  background: color-mix(in srgb, var(--segment-color) 11%, var(--surface));
+  color: color-mix(in srgb, var(--segment-color) 78%, var(--text));
   font-size: 0.82rem;
   font-weight: 550;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.18s, color 0.18s;
+  transition: background-color 0.18s, color 0.18s, border-color 0.18s, opacity 0.18s;
 }
 
+.te-segment__item--in_progress { --segment-color: var(--st-progress); }
+.te-segment__item--done { --segment-color: var(--st-done); }
+.te-segment__item--archive { --segment-color: var(--st-archive); }
+
 .te-segment__item:hover:not(:disabled) {
-  color: var(--text);
+  background: color-mix(in srgb, var(--segment-color) 20%, var(--surface));
 }
 
 .te-segment__item.is-active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow-sm), 0 0 0 0.5px var(--glass-edge);
+  border-color: var(--segment-color);
+  background: var(--segment-color);
+  color: var(--on-ink);
+  box-shadow: var(--shadow-sm), 0 0 0 0.5px color-mix(in srgb, var(--segment-color) 42%, transparent);
 }
 
-.te-segment__item--in_progress.is-active { color: var(--st-progress); }
-.te-segment__item--done.is-active { color: var(--st-done); }
+.te-segment__item:disabled { cursor: wait; opacity: .68; }
+
+.te-segment__spinner { margin-right: .26rem; vertical-align: -2px; animation: te-status-spin .7s linear infinite; }
+
+@keyframes te-status-spin { to { transform: rotate(360deg); } }
+
+.te-sheet__saved--inbox { color: var(--st-inbox); }
+.te-sheet__saved--in_progress { color: var(--st-progress); }
+.te-sheet__saved--done { color: var(--st-done); }
+.te-sheet__saved--archive { color: var(--st-archive); }
 
 .te-sheet__body {
   flex: 1;
@@ -4876,11 +4890,45 @@ body:has(.te-boot) {
   }
 
   .te-sheet__head {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: .5rem;
+  }
+
+  .te-sheet__head .te-segment {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .te-sheet__head .te-segment__item {
+    min-width: 0;
+    height: 36px;
+    padding: 0 .2rem;
+    font-size: .74rem;
+  }
+
+  .te-sheet__head .te-icon-btn {
+    flex: 0 0 auto;
   }
 
   .te-sheet__saved {
     display: none;
+  }
+
+  .te-sheet__saved[class*="te-sheet__saved--"] {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    display: inline-flex;
+    min-width: 0;
+    padding: 6px 10px;
+    border: 1px solid currentColor;
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    transform: translateX(-50%);
+    white-space: nowrap;
   }
 
   .te-sheet__body {
