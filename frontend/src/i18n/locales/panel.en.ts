@@ -87,6 +87,9 @@ export const panelEn: PanelMessages = {
     title: "Tasks",
     lead: "Drag cards between columns or press the arrow on a card to move it forward.",
     search: "Find a task",
+    searchPeople: "People",
+    searchSuggestions: "Suggestions",
+    recentTasks: "Recent tasks",
     clearSearch: "Clear search",
     filtersAria: "Task filters",
     filters: {

@@ -85,6 +85,9 @@ export const panelRu = {
     title: "Задачи",
     lead: "Перетаскивайте карточки между колонками или жмите стрелку на карточке, чтобы сдвинуть её дальше.",
     search: "Найти задачу",
+    searchPeople: "Пользователи",
+    searchSuggestions: "Подсказки",
+    recentTasks: "Последние задачи",
     clearSearch: "Очистить поиск",
     filtersAria: "Фильтры задач",
     filters: {
