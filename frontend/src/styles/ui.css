@@ -4669,7 +4669,8 @@ body:has(.te-boot) {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin-bottom: 10px;
-    padding: 0;
+    /* The mobile search is fixed into the app bar; keep an explicit row for it in document flow. */
+    padding: 50px 0 0;
     border: 0;
     background: none;
     box-shadow: none;
